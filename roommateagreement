@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roommate agreement</title>
+<style>
+  :root{
+    --bg:#FAF9F6; --card:#FFFFFF; --ink:#242322; --muted:#6B6A66; --line:#E4E1D8;
+    --accent:#1F6F5C; --accent-ink:#0F3B31; --accent-bg:#E3EFEC;
+    --warn:#B4562E; --warn-bg:#F7E7DE;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; line-height:1.5;}
+  .wrap{max-width:760px; margin:0 auto; padding:20px 16px 80px;}
+  h1{font-size:20px; font-weight:600; margin:0 0 4px;}
+  .sub{color:var(--muted); font-size:14px; margin:0 0 20px;}
+  h2{font-size:16px; font-weight:600; margin:0 0 2px;}
+  .section-note{color:var(--muted); font-size:13px; margin:0 0 14px;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px 18px; margin-bottom:16px;}
+  .topbar{display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:18px;}
+  .field{display:flex; flex-direction:column; gap:4px;}
+  label{font-size:12px; color:var(--muted);}
+  select, input[type=text], input[type=email], textarea{
+    font-family:inherit; font-size:14px; padding:8px 10px; border:1px solid var(--line);
+    border-radius:7px; background:#fff; color:var(--ink);
+  }
+  textarea{resize:vertical; min-height:60px; width:100%;}
+  button{
+    font-family:inherit; font-size:13px; padding:8px 14px; border-radius:7px;
+    border:1px solid var(--accent); background:var(--accent); color:#fff; cursor:pointer;
+  }
+  button.secondary{background:#fff; color:var(--accent-ink); border-color:var(--line);}
+  button.secondary:hover{border-color:var(--accent);}
+  button:disabled{opacity:.5; cursor:default;}
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th{text-align:left; font-weight:600; padding:6px 8px; border-bottom:1px solid var(--line); font-size:12px; color:var(--muted);}
+  td{padding:6px 8px; border-bottom:1px solid var(--line); vertical-align:top;}
+  .pill{display:inline-block; padding:3px 9px; border-radius:20px; font-size:12px; background:var(--accent-bg); color:var(--accent-ink);}
+  .radio-row{display:flex; flex-wrap:wrap; gap:14px; margin:6px 0;}
+  .radio-row label{display:flex; align-items:center; gap:5px; font-size:13px; color:var(--ink); cursor:pointer;}
+  .mini-input{width:90px;}
+  .additional-list{margin:8px 0 0; padding:0; list-style:none;}
+  .additional-list li{background:var(--warn-bg); color:var(--warn); border-radius:7px; padding:6px 10px; font-size:13px; margin-bottom:6px;}
+  .add-extra{display:flex; gap:8px; margin-top:8px;}
+  .add-extra input{flex:1;}
+  .status{font-size:12px; color:var(--muted);}
+  .status.saved{color:var(--accent-ink);}
+  .row-line{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px solid var(--line);}
+  .row-line:last-child{border-bottom:none;}
+  .locked{color:var(--muted); font-style:italic;}
+  .divider{height:1px; background:var(--line); margin:14px 0;}
+  .who{font-size:12px; color:var(--muted); margin-top:2px;}
+  .footer-actions{display:flex; flex-wrap:wrap; gap:10px; margin-top:6px;}
+  .hidden{display:none;}
+  @media (max-width:480px){ table, thead, tbody, th, td, tr{display:block;} th{display:none;} td{display:flex; justify-content:space-between; gap:8px; border-bottom:none; padding:4px 0;} tr{border-bottom:1px solid var(--line); padding:6px 0;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Roommate agreement</h1>
+  <p class="sub">Fill this out together with your roommates &mdash; each of you can join from your own device.</p>
+
+  <div class="card topbar">
+    <div class="field">
+      <label for="roomSelect">Room</label>
+      <select id="roomSelect"></select>
+    </div>
+    <div class="field" id="joinFields">
+      <label for="nameInput">Your name</label>
+      <input type="text" id="nameInput" placeholder="e.g. Alex">
+    </div>
+    <div class="field" id="emailField">
+      <label for="emailInput">Your email</label>
+      <input type="email" id="emailInput" placeholder="you@liberty.edu">
+    </div>
+    <button id="joinBtn">Join room</button>
+    <button id="refreshBtn" class="secondary">Refresh</button>
+    <span class="status" id="statusText"></span>
+  </div>
+
+  <div id="app" class="hidden">
+
+    <!-- PERSONAL PROPERTY -->
+    <div class="card">
+      <h2>Personal property</h2>
+      <p class="section-note">For each item, say whether roommates can use it without asking, need to ask first, or can't use it.</p>
+      <div style="overflow-x:auto;">
+        <table id="propertyTable"></table>
+      </div>
+      <div class="divider"></div>
+      <label for="propertyOtherName">Other item (name it)</label>
+      <input type="text" id="propertyOtherName" placeholder="e.g. Bike">
+      <div class="radio-row" id="propertyOtherRadios"></div>
+      <div class="divider"></div>
+      <label>Other desires and expectations related to use of personal property</label>
+      <textarea id="propertyNotes" placeholder="Anything else about sharing your stuff..."></textarea>
+      <div id="propertyAdditional"></div>
+      <div class="add-extra"><input type="text" id="propertyExtraInput" placeholder="Add an agreement not listed above"><button class="secondary" data-cat="property">Add</button></div>
+    </div>
+
+    <!-- FRIENDS -->
+    <div class="card">
+      <h2>Friends</h2>
+      <p class="section-note">Mutual agreement between all roommates.</p>
+
+      <p><strong>Friends of roommates...</strong></p>
+      <div class="radio-row" data-group="friendsEntry1">
+        <label><input type="radio" name="friendsEntry1" value="Need to knock before entering"> Need to knock before entering</label>
+        <label><input type="radio" name="friendsEntry1" value="Can come right in"> Can come right in</label>
+        <label><input type="radio" name="friendsEntry1" value="Other"> Other:</label>
+      </div>
+      <input type="text" class="other-text" data-group="friendsEntry1" placeholder="Other...">
+
+      <div class="divider"></div>
+      <p><strong>Friends of roommates...</strong></p>
+      <div class="radio-row" data-group="friendsEntry2">
+        <label><input type="radio" name="friendsEntry2" value="Can borrow my things"> Can borrow my things</label>
+        <label><input type="radio" name="friendsEntry2" value="Need to ask first"> Need to ask first</label>
+        <label><input type="radio" name="friendsEntry2" value="Other"> Other:</label>
+      </div>
+      <input type="text" class="other-text" data-group="friendsEntry2" placeholder="Other...">
+
+      <div class="divider"></div>
+      <p><strong>Friends of roommates...</strong></p>
+      <div class="radio-row" data-group="friendsEntry3">
+        <label><input type="radio" name="friendsEntry3" value="Okay at any time"> Okay for friends to be over at any time</label>
+        <label><input type="radio" name="friendsEntry3" value="Not okay between"> Not okay between</label>
+        <label><input type="radio" name="friendsEntry3" value="Other"> Other:</label>
+      </div>
+      <div class="radio-row">
+        <input type="text" class="mini-input" id="friendsEntry3From" placeholder="from">
+        <span>until</span>
+        <input type="text" class="mini-input" id="friendsEntry3Until" placeholder="until">
+      </div>
+      <input type="text" class="other-text" data-group="friendsEntry3" placeholder="Other...">
+
+      <div class="divider"></div>
+      <p><strong>Friends of roommates...</strong></p>
+      <div class="radio-row" data-group="friendsEntry4">
+        <label><input type="radio" name="friendsEntry4" value="Can sit on my bed"> Can sit on my bed</label>
+        <label><input type="radio" name="friendsEntry4" value="Need to ask first"> Need to ask first</label>
+        <label><input type="radio" name="friendsEntry4" value="Other"> Other:</label>
+      </div>
+      <input type="text" class="other-text" data-group="friendsEntry4" placeholder="Other...">
+
+      <div class="divider"></div>
+      <label>Other comments</label>
+      <textarea id="friendsComments"></textarea>
+      <div id="friendsAdditional"></div>
+      <div class="add-extra"><input type="text" id="friendsExtraInput" placeholder="Add an agreement not listed above"><button class="secondary" data-cat="friends">Add</button></div>
+    </div>
+
+    <!-- PHONE / FACETIME -->
+    <div class="card">
+      <h2>Phone / FaceTime use</h2>
+      <p class="section-note">Mutual agreement between all roommates.</p>
+
+      <p><strong>Phone calls</strong></p>
+      <div class="radio-row" data-group="phone">
+        <label><input type="radio" name="phone" value="Okay at any time"> Okay to be on the phone at any time</label>
+        <label><input type="radio" name="phone" value="Not okay between"> Not okay between</label>
+        <label><input type="radio" name="phone" value="Other"> Other:</label>
+      </div>
+      <div class="radio-row">
+        <input type="text" class="mini-input" id="phoneFrom" placeholder="from">
+        <span>until</span>
+        <input type="text" class="mini-input" id="phoneUntil" placeholder="until">
+      </div>
+      <input type="text" class="other-text" data-group="phone" placeholder="Other...">
+
+      <div class="divider"></div>
+      <p><strong>FaceTime</strong></p>
+      <div class="radio-row" data-group="facetime">
+        <label><input type="radio" name="facetime" value="Okay at any time"> Okay to be on FaceTime at any time</label>
+        <label><input type="radio" name="facetime" value="Not okay between"> Not okay between</label>
+        <label><input type="radio" name="facetime" value="Other"> Other:</label>
+      </div>
+      <div class="radio-row">
+        <input type="text" class="mini-input" id="facetimeFrom" placeholder="from">
+        <span>until</span>
+        <input type="text" class="mini-input" id="facetimeUntil" placeholder="until">
+      </div>
+      <input type="text" class="other-text" data-group="facetime" placeholder="Other...">
+
+      <div class="divider"></div>
+      <label>Other comments</label>
+      <textarea id="phoneComments"></textarea>
+      <div id="phoneAdditional"></div>
+      <div class="add-extra"><input type="text" id="phoneExtraInput" placeholder="Add an agreement not listed above"><button class="secondary" data-cat="phone">Add</button></div>
+    </div>
+
+    <!-- NOISE / QUIET HOURS / LIGHTS -->
+    <div class="card">
+      <h2>Noise, quiet hours &amp; lights</h2>
+      <p class="section-note">Mutual agreement between all roommates.</p>
+      <div id="noiseQuestions"></div>
+      <div class="divider"></div>
+      <label>Other comments</label>
+      <textarea id="noiseComments"></textarea>
+      <div id="noiseAdditional"></div>
+      <div class="add-extra"><input type="text" id="noiseExtraInput" placeholder="Add an agreement not listed above"><button class="secondary" data-cat="noise">Add</button></div>
+    </div>
+
+    <!-- CLEANLINESS -->
+    <div class="card">
+      <h2>Personal cleanliness, laundry &amp; room arrangements</h2>
+      <p class="section-note">Mutual agreement between all roommates.</p>
+
+      <p><strong>We agree to</strong></p>
+      <div class="radio-row" data-group="cleaningAgreement">
+        <label><input type="radio" name="cleaningAgreement" value="Take care of our own areas"> Take care of our own areas (desk, bed, closet, dresser)</label>
+        <label><input type="radio" name="cleaningAgreement" value="Take turns cleaning the room"> Take turns cleaning the room</label>
+        <label><input type="radio" name="cleaningAgreement" value="Rotate every"> Each roommate will rotate cleaning every</label>
+        <label><input type="radio" name="cleaningAgreement" value="Other"> Other:</label>
+      </div>
+      <input type="text" class="mini-input" id="cleaningRotateEvery" placeholder="e.g. 2 weeks">
+      <input type="text" class="other-text" data-group="cleaningAgreement" placeholder="Other...">
+
+      <div class="divider"></div>
+      <p><strong>Between room checks our clothes will</strong></p>
+      <div class="radio-row" data-group="clothesChecks">
+        <label><input type="radio" name="clothesChecks" value="Be stored neatly"> Be stored neatly</label>
+        <label><input type="radio" name="clothesChecks" value="Doesn't matter"> It doesn't matter</label>
+        <label><input type="radio" name="clothesChecks" value="Other"> Other:</label>
+      </div>
+      <input type="text" class="other-text" data-group="clothesChecks" placeholder="Other...">
+
+      <div class="divider"></div>
+      <p><strong>Furniture</strong></p>
+      <div class="radio-row" data-group="furniture">
+        <label><input type="radio" name="furniture" value="Should not be moved"> Should not be moved from its current position</label>
+        <label><input type="radio" name="furniture" value="Moved when all present"> May be moved when all roommates are present</label>
+        <label><input type="radio" name="furniture" value="Moved any time"> Can be moved at any time</label>
+      </div>
+
+      <div class="divider"></div>
+      <label>Other comments</label>
+      <textarea id="cleanlinessComments"></textarea>
+      <div id="cleanlinessAdditional"></div>
+      <div class="add-extra"><input type="text" id="cleanlinessExtraInput" placeholder="Add an agreement not listed above"><button class="secondary" data-cat="cleanliness">Add</button></div>
+    </div>
+
+    <!-- COMMUNICATION -->
+    <div class="card">
+      <h2>Communication</h2>
+      <p class="section-note">Each roommate completes their own statement below.</p>
+      <div id="communicationBlock"></div>
+      <div class="divider"></div>
+      <p style="font-size:13px; color:var(--muted);">We have discussed and agreed upon these conditions. We have also agreed that if a problem occurs, we will discuss it individually with the offender first before asking the RAs for their assistance.</p>
+    </div>
+
+    <!-- REVIEW / SEND -->
+    <div class="card">
+      <h2>Review &amp; get a copy</h2>
+      <p class="section-note">Anyone can email themselves a copy at any time. Once everyone has signed, anyone can send the final PDF to the whole room.</p>
+      <div class="footer-actions">
+        <button class="secondary" id="emailMeBtn">Email me a copy</button>
+        <button id="finalizeBtn">Finalize &amp; send to everyone</button>
+      </div>
+      <p class="status" id="finalizeStatus"></p>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ---------- CONFIG ---------- */
+const API_URL = "https://script.google.com/macros/s/AKfycbxYkalnbtPqo0MRogfyGNaWh1cQOAFrP80Wcwf58SIyc1nPspwt959bYZfXEPRd49ri/exec";
+
+const PROPERTY_ITEMS = ["Computer","Phone","Chargers","Appliances","Headphones/AirPods","Clothes","Food","Bed","Makeup","Toiletries","Kitchen supplies","Cleaning supplies"];
+const PROPERTY_OPTIONS = ["Yes","No","Ask first"];
+
+const NOISE_QUESTIONS = [
+  {key:"musicSleep", label:"Music can be played while others sleep"},
+  {key:"musicStudy", label:"Music can be played while others study"},
+  {key:"tvSleep", label:"TV and movies can be on while others sleep"},
+  {key:"tvStudy", label:"TV and movies can be on while others study"},
+  {key:"friendsSleep", label:"Friends can be over while others sleep"},
+  {key:"friendsStudy", label:"Friends can be over while others study"},
+  {key:"overheadLights", label:"Overhead lights can be on while I am asleep"},
+  {key:"bathroomLights", label:"Sink/bathroom lights can be on while I am asleep"},
+  {key:"softLamps", label:"Soft lamps can be on while I am asleep"}
+];
+
+let state = null;       // full room object from server
+let currentUser = null; // {name, email}
+let saveTimers = {};    // per-field debounce timers
+
+/* ---------- INIT ---------- */
+function populateRoomDropdown(){
+  const sel = document.getElementById("roomSelect");
+  for(let i=301;i<=324;i++){
+    const opt = document.createElement("option");
+    opt.value = String(i);
+    opt.textContent = String(i);
+    sel.appendChild(opt);
+  }
+}
+populateRoomDropdown();
+
+document.getElementById("joinBtn").addEventListener("click", joinRoom);
+document.getElementById("refreshBtn").addEventListener("click", () => loadRoom(false));
+document.getElementById("emailMeBtn").addEventListener("click", emailMe);
+document.getElementById("finalizeBtn").addEventListener("click", finalizeSend);
+
+document.querySelectorAll("button[data-cat]").forEach(btn=>{
+  btn.addEventListener("click", ()=>addExtra(btn.dataset.cat));
+});
+
+async function joinRoom(){
+  const room = document.getElementById("roomSelect").value;
+  const name = document.getElementById("nameInput").value.trim();
+  const email = document.getElementById("emailInput").value.trim();
+  if(!name || !email){
+    setStatus("Enter your name and email first.");
+    return;
+  }
+  currentUser = {name, email};
+  setStatus("Joining...");
+  const res = await apiPost({action:"join", room, name, email});
+  state = res;
+  document.getElementById("app").classList.remove("hidden");
+  renderAll();
+  setStatus("Joined " + room, true);
+}
+
+async function loadRoom(showBusy){
+  if(!state) return;
+  if(showBusy!==false) setStatus("Refreshing...");
+  const room = document.getElementById("roomSelect").value;
+  const res = await apiGet({action:"get", room});
+  state = res;
+  renderAll();
+  setStatus("Refreshed", true);
+}
+
+function setStatus(text, saved){
+  const el = document.getElementById("statusText");
+  el.textContent = text;
+  el.className = "status" + (saved ? " saved" : "");
+}
+
+/* ---------- API HELPERS ---------- */
+async function apiGet(params){
+  const url = API_URL + "?" + new URLSearchParams(params).toString();
+  const res = await fetch(url);
+  return res.json();
+}
+async function apiPost(body){
+  const res = await fetch(API_URL, {
+    method:"POST",
+    headers:{"Content-Type":"text/plain;charset=utf-8"},
+    body: JSON.stringify(body)
+  });
+  return res.json();
+}
+
+/* debounced field save: fires shortly after the user stops editing THIS field,
+   not on an interval, and does not touch other fields */
+function saveField(path, value){
+  clearTimeout(saveTimers[path]);
+  saveTimers[path] = setTimeout(async ()=>{
+    setStatus("Saving...");
+    const room = document.getElementById("roomSelect").value;
+    await apiPost({action:"update", room, path, value});
+    setStatus("Saved", true);
+  }, 500);
+}
+
+/* ---------- RENDER ---------- */
+function renderAll(){
+  if(!state) return;
+  renderPropertyTable();
+  renderMutualRadios();
+  renderNoiseQuestions();
+  renderCommunication();
+  ["property","friends","phone","noise","cleanliness"].forEach(renderAdditionalList);
+  document.getElementById("propertyNotes").value = state.shared.propertyNotes || "";
+  document.getElementById("friendsComments").value = state.shared.friendsComments || "";
+  document.getElementById("phoneComments").value = state.shared.phoneComments || "";
+  document.getElementById("noiseComments").value = state.shared.noiseComments || "";
+  document.getElementById("cleanlinessComments").value = state.shared.cleanlinessComments || "";
+}
+
+function renderPropertyTable(){
+  const table = document.getElementById("propertyTable");
+  const roommates = state.roommates;
+  let html = "<thead><tr><th>Item</th>";
+  roommates.forEach(r=> html += `<th>${escapeHtml(r.name)}</th>`);
+  html += "</tr></thead><tbody>";
+  PROPERTY_ITEMS.forEach(item=>{
+    html += `<tr><td>${item}</td>`;
+    roommates.forEach(r=>{
+      const val = (r.property && r.property[item]) || "";
+      if(r.email === currentUser.email){
+        html += `<td>${radiosFor("prop_"+item+"_"+r.email, PROPERTY_OPTIONS, val, `roommates.${r.email}.property.${item}`)}</td>`;
+      } else {
+        html += `<td>${val ? `<span class="pill">${val}</span>` : `<span class="locked">not answered</span>`}</td>`;
+      }
+    });
+    html += "</tr>";
+  });
+  html += "</tbody>";
+  table.innerHTML = html;
+  table.querySelectorAll("input[type=radio]").forEach(r=>{
+    r.addEventListener("change", (e)=> saveField(e.target.dataset.path, e.target.value));
+  });
+
+  // "other" property item, current user only
+  const me = roommates.find(r=>r.email===currentUser.email);
+  document.getElementById("propertyOtherName").value = (me.property && me.property["_otherName"]) || "";
+  document.getElementById("propertyOtherName").oninput = (e)=> saveField(`roommates.${currentUser.email}.property._otherName`, e.target.value);
+  document.getElementById("propertyOtherRadios").innerHTML = radiosFor("prop_other", PROPERTY_OPTIONS, (me.property && me.property["_otherValue"])||"", `roommates.${currentUser.email}.property._otherValue`);
+  document.getElementById("propertyOtherRadios").querySelectorAll("input").forEach(r=>{
+    r.addEventListener("change",(e)=>saveField(e.target.dataset.path, e.target.value));
+  });
+}
+
+function radiosFor(name, options, selected, path){
+  return options.map(o=>{
+    const checked = o===selected ? "checked" : "";
+    return `<label style="display:inline-flex;align-items:center;gap:3px;margin-right:8px;font-size:12px;"><input type="radio" name="${name}" value="${o}" data-path="${path}" ${checked}> ${o}</label>`;
+  }).join("");
+}
+
+const MUTUAL_GROUPS = ["friendsEntry1","friendsEntry2","friendsEntry3","friendsEntry4","phone","facetime","cleaningAgreement","clothesChecks","furniture"];
+function renderMutualRadios(){
+  MUTUAL_GROUPS.forEach(group=>{
+    const val = state.shared[group] || "";
+    document.querySelectorAll(`input[name="${group}"]`).forEach(r=>{
+      r.checked = (r.value === val);
+      r.onchange = ()=> saveField(`shared.${group}`, r.value);
+    });
+  });
+  document.querySelectorAll(".other-text").forEach(inp=>{
+    const g = inp.dataset.group;
+    inp.value = state.shared[g+"_otherText"] || "";
+    inp.oninput = ()=> saveField(`shared.${g}_otherText`, inp.value);
+  });
+  bindText("friendsEntry3From","shared.friendsEntry3From");
+  bindText("friendsEntry3Until","shared.friendsEntry3Until");
+  bindText("phoneFrom","shared.phoneFrom");
+  bindText("phoneUntil","shared.phoneUntil");
+  bindText("facetimeFrom","shared.facetimeFrom");
+  bindText("facetimeUntil","shared.facetimeUntil");
+  bindText("cleaningRotateEvery","shared.cleaningRotateEvery");
+  ["propertyNotes","friendsComments","phoneComments","noiseComments","cleanlinessComments"].forEach(id=>{
+    document.getElementById(id).oninput = (e)=> saveField("shared."+id, e.target.value);
+  });
+}
+function bindText(id, path){
+  const el = document.getElementById(id);
+  el.value = getByPath(state, path) || "";
+  el.oninput = ()=> saveField(path, el.value);
+}
+function getByPath(obj, path){
+  return path.split(".").reduce((o,k)=> (o||{})[k], obj);
+}
+
+function renderNoiseQuestions(){
+  const container = document.getElementById("noiseQuestions");
+  let html = "";
+  NOISE_QUESTIONS.forEach(q=>{
+    const val = state.shared.noise ? state.shared.noise[q.key] : "";
+    html += `<p style="margin:10px 0 2px;">${q.label}</p>
+      <div class="radio-row" data-noise="${q.key}">
+        <label><input type="radio" name="noise_${q.key}" value="Yes" ${val==="Yes"?"checked":""}> Yes</label>
+        <label><input type="radio" name="noise_${q.key}" value="No" ${val==="No"?"checked":""}> No</label>
+        <label><input type="radio" name="noise_${q.key}" value="Other" ${val==="Other"?"checked":""}> Other:</label>
+        <input type="text" class="mini-input noise-other" data-key="${q.key}" placeholder="Other..." value="${escapeHtml((state.shared.noiseOther && state.shared.noiseOther[q.key]) || "")}">
+      </div>`;
+  });
+  container.innerHTML = html;
+  container.querySelectorAll("input[type=radio]").forEach(r=>{
+    r.addEventListener("change", ()=>{
+      const key = r.name.replace("noise_","");
+      saveField(`shared.noise.${key}`, r.value);
+    });
+  });
+  container.querySelectorAll(".noise-other").forEach(inp=>{
+    inp.addEventListener("input", ()=> saveField(`shared.noiseOther.${inp.dataset.key}`, inp.value));
+  });
+}
+
+function renderCommunication(){
+  const container = document.getElementById("communicationBlock");
+  let html = "";
+  state.roommates.forEach(r=>{
+    const answer = r.communication || "";
+    const signed = r.signedAt;
+    html += `<div class="row-line" style="display:block;">
+      <strong>${escapeHtml(r.name)}</strong> &mdash; if I begin feeling disrespected or frustrated by my roommates, I will:
+      ${r.email===currentUser.email
+        ? `<textarea data-comm="${r.email}">${escapeHtml(answer)}</textarea>`
+        : `<p style="color:var(--muted); margin:4px 0;">${answer ? escapeHtml(answer) : "not answered yet"}</p>`}
+      <div class="who">${signed ? "Signed electronically &middot; " + new Date(signed).toLocaleString() : (r.email===currentUser.email ? "" : "Not yet signed")}</div>
+      ${r.email===currentUser.email && !signed ? `<button class="secondary" id="signBtn" style="margin-top:6px;">I agree &amp; sign</button>` : ""}
+    </div>`;
+  });
+  container.innerHTML = html;
+  const ta = container.querySelector(`textarea[data-comm="${currentUser.email}"]`);
+  if(ta) ta.oninput = ()=> saveField(`roommates.${currentUser.email}.communication`, ta.value);
+  const signBtn = document.getElementById("signBtn");
+  if(signBtn) signBtn.onclick = async ()=>{
+    setStatus("Signing...");
+    const room = document.getElementById("roomSelect").value;
+    state = await apiPost({action:"sign", room, email: currentUser.email});
+    renderAll();
+    setStatus("Signed", true);
+  };
+}
+
+function renderAdditionalList(cat){
+  const list = (state.shared.additional && state.shared.additional[cat]) || [];
+  const el = document.getElementById(cat+"Additional");
+  el.innerHTML = list.length
+    ? `<ul class="additional-list">${list.map(t=>`<li>${escapeHtml(t)}</li>`).join("")}</ul>`
+    : "";
+}
+async function addExtra(cat){
+  const input = document.getElementById(cat+"ExtraInput");
+  const text = input.value.trim();
+  if(!text) return;
+  const room = document.getElementById("roomSelect").value;
+  state = await apiPost({action:"addExtra", room, category:cat, text});
+  input.value = "";
+  renderAdditionalList(cat);
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+/* ---------- SEND / EMAIL ---------- */
+async function emailMe(){
+  document.getElementById("finalizeStatus").textContent = "Sending your copy...";
+  const room = document.getElementById("roomSelect").value;
+  await apiPost({action:"emailMe", room, email: currentUser.email});
+  document.getElementById("finalizeStatus").textContent = "Sent! Check " + currentUser.email + ".";
+}
+async function finalizeSend(){
+  document.getElementById("finalizeStatus").textContent = "Generating and sending final copy to everyone...";
+  const room = document.getElementById("roomSelect").value;
+  await apiPost({action:"finalize", room});
+  document.getElementById("finalizeStatus").textContent = "Sent to everyone in this room.";
+}
+</script>
+</body>
+</html>
