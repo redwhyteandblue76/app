@@ -7,7 +7,7 @@
 <style>
   :root{
     --bg:#FAF9F6; --card:#FFFFFF; --ink:#242322; --muted:#6B6A66; --line:#E4E1D8;
-    --accent:#1F6F5C; --accent-ink:#0F3B31; --accent-bg:#E3EFEC;
+    --accent:#4E97D9; --accent-ink:#104660; --accent-bg:#E8F1FA;
     --warn:#B4562E; --warn-bg:#F7E7DE;
     --personal:#2D5F8A; --personal-bg:#E7EEF5;
   }
@@ -44,6 +44,8 @@
   .radio-row{display:flex; flex-wrap:wrap; gap:14px; margin:6px 0;}
   .radio-row label{display:flex; align-items:center; gap:5px; font-size:13px; color:var(--ink); cursor:pointer;}
   .mini-input{width:110px; display:inline-block;}
+  .other-text{display:none; margin-top:6px;}
+  .time-row{display:none; margin-top:6px;}
   .additional-list{margin:8px 0 0; padding:0; list-style:none;}
   .additional-list li{background:var(--warn-bg); color:var(--warn); border-radius:7px; padding:6px 10px; font-size:13px; margin-bottom:6px; display:flex; justify-content:space-between; gap:8px;}
   .add-extra{display:flex; gap:8px; margin-top:8px;}
@@ -90,13 +92,8 @@
     <p class="section-note">For each item, say whether roommates can use it without asking, need to ask first, or can't use it.</p>
     <div style="overflow-x:auto;"><table id="propertyTable"></table></div>
     <div class="divider"></div>
-    <p style="font-size:13px; font-weight:600; margin:0 0 4px;">Other item</p>
-    <div id="propertyOtherRows"></div>
-    <div class="divider"></div>
     <label>Other desires and expectations related to use of personal property <span class="tag community" style="margin-left:6px;">Community</span></label>
     <textarea id="propertyNotes"></textarea>
-    <div id="propertyAdditional"></div>
-    <div class="add-extra"><input type="text" id="propertyExtraInput" placeholder="Add an agreement not listed above"><button class="secondary" data-cat="property">Add</button></div>
   </div>
 
   <!-- FRIENDS -->
@@ -107,7 +104,7 @@
     <div class="radio-row" data-group="friendsEntry1">
       <label><input type="radio" name="friendsEntry1" value="Need to knock before entering"> Need to knock before entering</label>
       <label><input type="radio" name="friendsEntry1" value="Can come right in"> Can come right in</label>
-      <label><input type="radio" name="friendsEntry1" value="Other"> Other:</label>
+      <label><input type="radio" name="friendsEntry1" value="Other"> Other</label>
     </div>
     <input type="text" class="other-text" data-group="friendsEntry1" placeholder="Other...">
 
@@ -116,7 +113,7 @@
     <div class="radio-row" data-group="friendsEntry2">
       <label><input type="radio" name="friendsEntry2" value="Can borrow my things"> Can borrow my things</label>
       <label><input type="radio" name="friendsEntry2" value="Need to ask first"> Need to ask first</label>
-      <label><input type="radio" name="friendsEntry2" value="Other"> Other:</label>
+      <label><input type="radio" name="friendsEntry2" value="Other"> Other</label>
     </div>
     <input type="text" class="other-text" data-group="friendsEntry2" placeholder="Other...">
 
@@ -125,9 +122,9 @@
     <div class="radio-row" data-group="friendsEntry3">
       <label><input type="radio" name="friendsEntry3" value="Okay at any time"> Okay for friends to be over at any time</label>
       <label><input type="radio" name="friendsEntry3" value="Not okay between"> Not okay between</label>
-      <label><input type="radio" name="friendsEntry3" value="Other"> Other:</label>
+      <label><input type="radio" name="friendsEntry3" value="Other"> Other</label>
     </div>
-    <div class="radio-row">
+    <div class="radio-row time-row" id="friendsEntry3TimeRow">
       <input type="text" class="mini-input" id="friendsEntry3From" placeholder="from">
       <span>until</span>
       <input type="text" class="mini-input" id="friendsEntry3Until" placeholder="until">
@@ -139,15 +136,13 @@
     <div class="radio-row" data-group="friendsEntry4">
       <label><input type="radio" name="friendsEntry4" value="Can sit on my bed"> Can sit on my bed</label>
       <label><input type="radio" name="friendsEntry4" value="Need to ask first"> Need to ask first</label>
-      <label><input type="radio" name="friendsEntry4" value="Other"> Other:</label>
+      <label><input type="radio" name="friendsEntry4" value="Other"> Other</label>
     </div>
     <input type="text" class="other-text" data-group="friendsEntry4" placeholder="Other...">
 
     <div class="divider"></div>
     <label>Other comments</label>
     <textarea id="friendsComments"></textarea>
-    <div id="friendsAdditional"></div>
-    <div class="add-extra"><input type="text" id="friendsExtraInput" placeholder="Add an agreement not listed above"><button class="secondary" data-cat="friends">Add</button></div>
   </div>
 
   <!-- PHONE / FACETIME -->
@@ -158,9 +153,9 @@
     <div class="radio-row" data-group="phone">
       <label><input type="radio" name="phone" value="Okay at any time"> Okay to be on the phone at any time</label>
       <label><input type="radio" name="phone" value="Not okay between"> Not okay between</label>
-      <label><input type="radio" name="phone" value="Other"> Other:</label>
+      <label><input type="radio" name="phone" value="Other"> Other</label>
     </div>
-    <div class="radio-row">
+    <div class="radio-row time-row" id="phoneTimeRow">
       <input type="text" class="mini-input" id="phoneFrom" placeholder="from">
       <span>until</span>
       <input type="text" class="mini-input" id="phoneUntil" placeholder="until">
@@ -172,9 +167,9 @@
     <div class="radio-row" data-group="facetime">
       <label><input type="radio" name="facetime" value="Okay at any time"> Okay to be on FaceTime at any time</label>
       <label><input type="radio" name="facetime" value="Not okay between"> Not okay between</label>
-      <label><input type="radio" name="facetime" value="Other"> Other:</label>
+      <label><input type="radio" name="facetime" value="Other"> Other</label>
     </div>
-    <div class="radio-row">
+    <div class="radio-row time-row" id="facetimeTimeRow">
       <input type="text" class="mini-input" id="facetimeFrom" placeholder="from">
       <span>until</span>
       <input type="text" class="mini-input" id="facetimeUntil" placeholder="until">
@@ -184,8 +179,6 @@
     <div class="divider"></div>
     <label>Other comments</label>
     <textarea id="phoneComments"></textarea>
-    <div id="phoneAdditional"></div>
-    <div class="add-extra"><input type="text" id="phoneExtraInput" placeholder="Add an agreement not listed above"><button class="secondary" data-cat="phone">Add</button></div>
   </div>
 
   <!-- NOISE / QUIET HOURS / LIGHTS -->
@@ -195,8 +188,6 @@
     <div class="divider"></div>
     <label>Other comments</label>
     <textarea id="noiseComments"></textarea>
-    <div id="noiseAdditional"></div>
-    <div class="add-extra"><input type="text" id="noiseExtraInput" placeholder="Add an agreement not listed above"><button class="secondary" data-cat="noise">Add</button></div>
   </div>
 
   <!-- CLEANLINESS -->
@@ -208,9 +199,11 @@
       <label><input type="radio" name="cleaningAgreement" value="Take care of our own areas"> Take care of our own areas (desk, bed, closet, dresser)</label>
       <label><input type="radio" name="cleaningAgreement" value="Take turns cleaning the room"> Take turns cleaning the room</label>
       <label><input type="radio" name="cleaningAgreement" value="Rotate every"> Each roommate will rotate cleaning every</label>
-      <label><input type="radio" name="cleaningAgreement" value="Other"> Other:</label>
+      <label><input type="radio" name="cleaningAgreement" value="Other"> Other</label>
     </div>
-    <input type="text" class="mini-input" id="cleaningRotateEvery" placeholder="e.g. 2 weeks">
+    <div class="time-row" id="cleaningRotateRow">
+      <input type="text" class="mini-input" id="cleaningRotateEvery" placeholder="e.g. 2 weeks">
+    </div>
     <input type="text" class="other-text" data-group="cleaningAgreement" placeholder="Other...">
 
     <div class="divider"></div>
@@ -218,7 +211,7 @@
     <div class="radio-row" data-group="clothesChecks">
       <label><input type="radio" name="clothesChecks" value="Be stored neatly"> Be stored neatly</label>
       <label><input type="radio" name="clothesChecks" value="Doesn't matter"> It doesn't matter</label>
-      <label><input type="radio" name="clothesChecks" value="Other"> Other:</label>
+      <label><input type="radio" name="clothesChecks" value="Other"> Other</label>
     </div>
     <input type="text" class="other-text" data-group="clothesChecks" placeholder="Other...">
 
@@ -233,8 +226,13 @@
     <div class="divider"></div>
     <label>Other comments</label>
     <textarea id="cleanlinessComments"></textarea>
-    <div id="cleanlinessAdditional"></div>
-    <div class="add-extra"><input type="text" id="cleanlinessExtraInput" placeholder="Add an agreement not listed above"><button class="secondary" data-cat="cleanliness">Add</button></div>
+  </div>
+
+  <!-- CLEANLINESS CHECK RESPONSIBILITIES -->
+  <div class="card">
+    <h2>Cleanliness check responsibilities <span class="tag community">Community &mdash; one shared answer</span></h2>
+    <p class="section-note">Assign a roommate to each task.</p>
+    <div id="cleaningResponsibilities"></div>
   </div>
 
   <!-- COMMUNICATION -->
@@ -249,11 +247,15 @@
   <!-- SEND -->
   <div class="card">
     <h2>Send the agreement</h2>
-    <p class="section-note">Sends a nicely formatted copy by email to every roommate listed above, plus the CC addresses set on the Settings tab.</p>
+    <p class="section-note">Sends a nicely formatted copy by email to every roommate listed above.</p>
     <div class="footer-actions">
       <button id="sendBtn">Send agreement by email</button>
     </div>
     <p class="status" id="sendStatus"></p>
+  </div>
+
+  <div style="text-align:center; padding:20px 0 10px;">
+    <a href="https://upperroom.12one.page" style="display:inline-block; padding:10px 20px; border-radius:7px; background:var(--accent); color:#fff; font-size:13px; text-decoration:none; font-weight:500;">Return to The Upper Room</a>
   </div>
 
 </div>
@@ -280,7 +282,7 @@ const NOISE_QUESTIONS = [
 function emptyRoom(){
   return {
     roommates: [ {name:"", email:"", property:{}, communication:"", signed:false}, {name:"", email:"", property:{}, communication:"", signed:false} ],
-    shared: { additional:{property:[],friends:[],phone:[],noise:[],cleanliness:[]}, noise:{}, noiseOther:{} }
+    shared: { noise:{}, noiseOther:{} }
   };
 }
 
@@ -297,15 +299,6 @@ function populateRoomDropdown(){
     sel.appendChild(opt);
   }
 }
-populateRoomDropdown();
-renderAll();
-
-document.getElementById("roomSelect").addEventListener("change", ()=> loadRoom(true));
-document.getElementById("loadBtn").addEventListener("click", ()=> loadRoom(false));
-document.getElementById("saveBtn").addEventListener("click", ()=> saveRoom(true));
-document.getElementById("addRoommateBtn").addEventListener("click", addRoommate);
-document.getElementById("sendBtn").addEventListener("click", sendAgreement);
-document.querySelectorAll("button[data-cat]").forEach(btn=> btn.addEventListener("click", ()=>addExtra(btn.dataset.cat)));
 
 /* ---------- API ---------- */
 async function apiGet(params){
@@ -376,7 +369,7 @@ function renderRoommateInputs(){
   el.querySelectorAll("input[data-rfield]").forEach(inp=>{
     inp.oninput = ()=>{
       data.roommates[inp.dataset.ridx][inp.dataset.rfield] = inp.value;
-      renderPropertyTable(); renderCommunication();
+      renderPropertyTable(); renderCommunication(); renderCleaningResponsibilities();
       scheduleAutosave();
     };
   });
@@ -386,18 +379,46 @@ function renderRoommateInputs(){
 }
 
 /* ---------- RENDER ---------- */
+const CLEANING_TASKS = [
+  {key:"sink", label:"Sink cleaned"},
+  {key:"mirror", label:"Mirror cleaned"},
+  {key:"trash", label:"Trash empty"},
+  {key:"floor", label:"Floor swept/vacuumed"}
+];
+
 function renderAll(){
   renderRoommateInputs();
   renderPropertyTable();
   renderMutualRadios();
   renderNoiseQuestions();
+  renderCleaningResponsibilities();
   renderCommunication();
-  ["property","friends","phone","noise","cleanliness"].forEach(renderAdditionalList);
   document.getElementById("propertyNotes").value = data.shared.propertyNotes || "";
   document.getElementById("friendsComments").value = data.shared.friendsComments || "";
   document.getElementById("phoneComments").value = data.shared.phoneComments || "";
   document.getElementById("noiseComments").value = data.shared.noiseComments || "";
   document.getElementById("cleanlinessComments").value = data.shared.cleanlinessComments || "";
+}
+
+function renderCleaningResponsibilities(){
+  const container = document.getElementById("cleaningResponsibilities");
+  if(!data.shared.cleaningResponsibilities) data.shared.cleaningResponsibilities = {};
+  const options = data.roommates.map((r,idx)=> r.name || ("Roommate "+(idx+1)));
+  let html = "";
+  CLEANING_TASKS.forEach(task=>{
+    const current = data.shared.cleaningResponsibilities[task.key] || "";
+    html += `<div class="field" style="margin-bottom:10px; max-width:280px;">
+      <label>${task.label}</label>
+      <select data-task="${task.key}">
+        <option value="">Choose a roommate&hellip;</option>
+        ${options.map(name=>`<option value="${escapeHtml(name)}" ${name===current?"selected":""}>${escapeHtml(name)}</option>`).join("")}
+      </select>
+    </div>`;
+  });
+  container.innerHTML = html;
+  container.querySelectorAll("select[data-task]").forEach(sel=>{
+    sel.onchange = ()=>{ data.shared.cleaningResponsibilities[sel.dataset.task] = sel.value; scheduleAutosave(); };
+  });
 }
 
 function radioLabel(name, options, selected, onSelect){
@@ -435,24 +456,26 @@ function renderPropertyTable(){
       });
     });
   });
+}
 
-  // "Other" item row, one per roommate
-  const otherEl = document.getElementById("propertyOtherRows");
-  otherEl.innerHTML = data.roommates.map((r,idx)=>`
-    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:8px;">
-      <span style="font-size:13px; min-width:90px;">${escapeHtml(r.name || "Roommate "+(idx+1))}:</span>
-      <input type="text" class="mini-input" style="width:160px;" data-other-name="${idx}" placeholder="Name an item" value="${escapeHtml((r.property && r.property._otherName)||"")}">
-      <span id="otherRadios_${idx}"></span>
-    </div>`).join("");
-  data.roommates.forEach((r,idx)=>{
-    const nameInp = otherEl.querySelector(`input[data-other-name="${idx}"]`);
-    nameInp.oninput = ()=>{ if(!data.roommates[idx].property) data.roommates[idx].property={}; data.roommates[idx].property._otherName = nameInp.value; scheduleAutosave(); };
-    const radiosSpan = document.getElementById("otherRadios_"+idx);
-    radiosSpan.innerHTML = radioLabel("prop_other_"+idx, PROPERTY_OPTIONS, (r.property && r.property._otherValue)||"");
-    radiosSpan.querySelectorAll("input").forEach(radio=>{
-      radio.onchange = ()=>{ if(!data.roommates[idx].property) data.roommates[idx].property={}; data.roommates[idx].property._otherValue = radio.value; scheduleAutosave(); };
-    });
+
+const TIME_TRIGGERS = {
+  friendsEntry3: {value:"Not okay between", rowId:"friendsEntry3TimeRow"},
+  phone: {value:"Not okay between", rowId:"phoneTimeRow"},
+  facetime: {value:"Not okay between", rowId:"facetimeTimeRow"},
+  cleaningAgreement: {value:"Rotate every", rowId:"cleaningRotateRow"}
+};
+
+function updateConditionals(group){
+  const val = data.shared[group] || "";
+  document.querySelectorAll(`.other-text[data-group="${group}"]`).forEach(inp=>{
+    inp.style.display = (val === "Other") ? "block" : "none";
   });
+  const trig = TIME_TRIGGERS[group];
+  if(trig){
+    const row = document.getElementById(trig.rowId);
+    if(row) row.style.display = (val === trig.value) ? "flex" : "none";
+  }
 }
 
 function renderMutualRadios(){
@@ -460,8 +483,9 @@ function renderMutualRadios(){
     const val = data.shared[group] || "";
     document.querySelectorAll(`input[name="${group}"]`).forEach(r=>{
       r.checked = (r.value === val);
-      r.onchange = ()=>{ data.shared[group] = r.value; scheduleAutosave(); };
+      r.onchange = ()=>{ data.shared[group] = r.value; updateConditionals(group); scheduleAutosave(); };
     });
+    updateConditionals(group);
   });
   document.querySelectorAll(".other-text").forEach(inp=>{
     const g = inp.dataset.group;
@@ -495,14 +519,20 @@ function renderNoiseQuestions(){
       <div class="radio-row">
         <label><input type="radio" name="noise_${q.key}" value="Yes" ${val==="Yes"?"checked":""}> Yes</label>
         <label><input type="radio" name="noise_${q.key}" value="No" ${val==="No"?"checked":""}> No</label>
-        <label><input type="radio" name="noise_${q.key}" value="Other" ${val==="Other"?"checked":""}> Other:</label>
-        <input type="text" class="mini-input noise-other" data-key="${q.key}" placeholder="Other..." value="${escapeHtml(otherVal)}">
+        <label><input type="radio" name="noise_${q.key}" value="Other" ${val==="Other"?"checked":""}> Other</label>
+        <input type="text" class="mini-input noise-other" data-key="${q.key}" placeholder="Other..." value="${escapeHtml(otherVal)}" style="display:${val==="Other"?"inline-block":"none"};">
       </div>`;
   });
   container.innerHTML = html;
   NOISE_QUESTIONS.forEach(q=>{
     container.querySelectorAll(`input[name="noise_${q.key}"]`).forEach(r=>{
-      r.onchange = ()=>{ if(!data.shared.noise) data.shared.noise={}; data.shared.noise[q.key]=r.value; scheduleAutosave(); };
+      r.onchange = ()=>{
+        if(!data.shared.noise) data.shared.noise={};
+        data.shared.noise[q.key]=r.value;
+        const otherInp = container.querySelector(`.noise-other[data-key="${q.key}"]`);
+        if(otherInp) otherInp.style.display = (r.value === "Other") ? "inline-block" : "none";
+        scheduleAutosave();
+      };
     });
   });
   container.querySelectorAll(".noise-other").forEach(inp=>{
@@ -531,29 +561,6 @@ function renderCommunication(){
   });
 }
 
-function renderAdditionalList(cat){
-  const list = (data.shared.additional && data.shared.additional[cat]) || [];
-  const el = document.getElementById(cat+"Additional");
-  el.innerHTML = list.length
-    ? `<ul class="additional-list">${list.map((t,i)=>`<li><span>${escapeHtml(t)}</span><button class="danger" data-remove-extra="${cat}:${i}">Remove</button></li>`).join("")}</ul>`
-    : "";
-  el.querySelectorAll("button[data-remove-extra]").forEach(btn=>{
-    const [c, i] = btn.dataset.removeExtra.split(":");
-    btn.onclick = ()=>{ data.shared.additional[c].splice(Number(i),1); renderAdditionalList(c); scheduleAutosave(); };
-  });
-}
-function addExtra(cat){
-  const input = document.getElementById(cat+"ExtraInput");
-  const text = input.value.trim();
-  if(!text) return;
-  if(!data.shared.additional) data.shared.additional = {};
-  if(!data.shared.additional[cat]) data.shared.additional[cat] = [];
-  data.shared.additional[cat].push(text);
-  input.value = "";
-  renderAdditionalList(cat);
-  scheduleAutosave();
-}
-
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
@@ -565,11 +572,20 @@ async function sendAgreement(){
   try{
     await saveRoom(false);
     await apiPost({action:"send", room, data});
-    document.getElementById("sendStatus").textContent = "Sent! Check the inboxes for everyone listed above.";
+    document.getElementById("sendStatus").textContent = "Sent! Check the inboxes for everyone listed above. If the email does not appear in your inbox, check your \"junk\" folder and mark as \"not junk\".";
   } catch(err){
     document.getElementById("sendStatus").textContent = "Something went wrong sending — try again.";
   }
 }
+
+/* ---------- START ---------- */
+populateRoomDropdown();
+renderAll();
+document.getElementById("roomSelect").addEventListener("change", ()=> loadRoom(true));
+document.getElementById("loadBtn").addEventListener("click", ()=> loadRoom(false));
+document.getElementById("saveBtn").addEventListener("click", ()=> saveRoom(true));
+document.getElementById("addRoommateBtn").addEventListener("click", addRoommate);
+document.getElementById("sendBtn").addEventListener("click", sendAgreement);
 </script>
 </body>
 </html>
