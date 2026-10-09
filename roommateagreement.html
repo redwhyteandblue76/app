@@ -70,9 +70,9 @@
   <p class="sub">Fill this out together, all on one device &mdash; personal sections get one answer per roommate, community sections get one answer for the whole room.</p>
 
   <div class="card topbar">
-    <div class="field" style="max-width:140px;">
-      <label for="roomSelect">Room</label>
-      <select id="roomSelect"></select>
+    <div class="field" style="max-width:160px;">
+      <label for="roomInput">Room number</label>
+      <input type="text" id="roomInput" placeholder="e.g. 025-101" autocomplete="off">
     </div>
     <button id="loadBtn" class="secondary">Load saved answers</button>
     <button id="saveBtn">Save</button>
@@ -289,15 +289,11 @@ function emptyRoom(){
 let data = emptyRoom();
 let saveTimer = null;
 
-/* ---------- INIT ---------- */
-function populateRoomDropdown(){
-  const sel = document.getElementById("roomSelect");
-  for(let i=301;i<=324;i++){
-    const opt = document.createElement("option");
-    opt.value = String(i);
-    opt.textContent = String(i);
-    sel.appendChild(opt);
-  }
+/* ---------- ROOM ---------- */
+let currentRoom = "";   // the room the form is currently tied to
+
+function getRoom(){
+  return document.getElementById("roomInput").value.trim();
 }
 
 /* ---------- API ---------- */
@@ -311,16 +307,29 @@ async function apiPost(body){
   return res.json();
 }
 
-async function loadRoom(quiet){
-  const room = document.getElementById("roomSelect").value;
+async function loadRoom(){
+  const room = getRoom();
+  if(!room){
+    setStatus("Enter your room number first.", false, true);
+    return;
+  }
   setStatus("Loading...");
   try{
     const res = await apiGet({action:"get", room});
-    data = (res && res.roommates) ? res : emptyRoom();
+    if(res && res.roommates){
+      data = res;                       // saved answers found: load them
+      setStatus("Loaded saved answers for " + room, true);
+    } else {
+      // Nothing saved for this room yet.
+      // If they were already working in a different room, start fresh;
+      // otherwise keep what they've typed so far (they may have filled things in before entering a room).
+      if(currentRoom && currentRoom !== room) data = emptyRoom();
+      setStatus("New room " + room + " \u2014 nothing saved yet", true);
+    }
+    currentRoom = room;
     renderAll();
-    setStatus("Loaded " + room, true);
   } catch(err){
-    setStatus("Couldn't load — check API_URL is set.", false, true);
+    setStatus("Couldn't load \u2014 check API_URL is set.", false, true);
   }
 }
 
@@ -330,13 +339,20 @@ function scheduleAutosave(){
 }
 
 async function saveRoom(manual){
-  const room = document.getElementById("roomSelect").value;
-  setStatus(manual ? "Saving..." : "Saving...");
+  const room = getRoom();
+  if(!room){
+    setStatus("Enter your room number to start saving.", false, true);
+    return false;
+  }
+  setStatus("Saving...");
   try{
     await apiPost({action:"save", room, data});
+    currentRoom = room;
     setStatus("Saved", true);
+    return true;
   } catch(err){
-    setStatus("Save failed — check connection.", false, true);
+    setStatus("Save failed \u2014 check connection.", false, true);
+    return false;
   }
 }
 
@@ -567,10 +583,18 @@ function escapeHtml(s){
 
 /* ---------- SEND ---------- */
 async function sendAgreement(){
+  const room = getRoom();
+  if(!room){
+    document.getElementById("sendStatus").textContent = "Enter your room number at the top before sending.";
+    return;
+  }
   document.getElementById("sendStatus").textContent = "Sending...";
-  const room = document.getElementById("roomSelect").value;
   try{
-    await saveRoom(false);
+    const saved = await saveRoom(false);
+    if(!saved){
+      document.getElementById("sendStatus").textContent = "Couldn't save before sending \u2014 try again.";
+      return;
+    }
     await apiPost({action:"send", room, data});
     document.getElementById("sendStatus").textContent = "Sent! Check the inboxes for everyone listed above. If the email does not appear in your inbox, check your \"junk\" folder and mark as \"not junk\".";
   } catch(err){
@@ -579,9 +603,9 @@ async function sendAgreement(){
 }
 
 /* ---------- START ---------- */
-populateRoomDropdown();
 renderAll();
-document.getElementById("roomSelect").addEventListener("change", ()=> loadRoom(true));
+document.getElementById("roomInput").addEventListener("change", ()=> loadRoom());
+document.getElementById("roomInput").addEventListener("keydown", (e)=>{ if(e.key === "Enter"){ e.preventDefault(); e.target.blur(); } });
 document.getElementById("loadBtn").addEventListener("click", ()=> loadRoom(false));
 document.getElementById("saveBtn").addEventListener("click", ()=> saveRoom(true));
 document.getElementById("addRoommateBtn").addEventListener("click", addRoommate);
