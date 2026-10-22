@@ -692,8 +692,11 @@ async function renderAdminPanel() {
         </select>
       </td>
       <td><span class="stamp ${pl.status==='active'?'active':'eliminated'}" style="font-size:9px; padding:2px 6px;">${pl.status==='active'?'Active':'Out'}</span></td>
-      <td><button class="secondary" style="width:auto; padding:4px 10px;" onclick="savePlayer('${pl.codename}')">Save</button></td>
-    </tr>`).join('');
+      <td style="white-space:nowrap;">
+        <button class="secondary" style="width:auto; padding:4px 10px;" onclick="savePlayer('${pl.codename}')">Save</button>
+        <button class="secondary" style="width:auto; padding:4px 10px; margin-top:6px; border-color:var(--danger); color:#e88;" onclick="removePlayer('${pl.codename}')">Remove</button>
+      </td>
+          </tr>`).join('');
 
   const logRows = data.log.map(l => `<div class="player-list-item"><b>${new Date(l.time).toLocaleString()}</b> — ${l.message}</div>`).join('');
 
@@ -717,7 +720,7 @@ async function renderAdminPanel() {
       <h2>👥 Players</h2>
       <button class="secondary" id="revealPlayersBtn" onclick="revealPlayers()">🙈 Reveal Player List</button>
       <div id="playersHidden" style="display:none; margin-top:12px;">
-        <table><thead><tr><th>Name</th><th>Codename</th><th>Role</th><th>Status</th><th></th><th></th></tr></thead>
+        <table><thead><tr><th>Name</th><th>Codename</th><th>Role</th><th>Status</th><th></th><th></th><th></th></tr></thead>
         <tbody>${playerRows}</tbody></table>
       </div>
       <button class="primary danger" style="margin-top:16px;" onclick="resetGame()">⚠️ Reset Entire Game</button>
@@ -766,6 +769,14 @@ async function savePlayer(codename) {
   await api('adminSetStatus', { adminPassword, codename, status });
   renderAdminPanel();
 }
+
+async function removePlayer(codename) {
+  if (!confirm(`Permanently remove "${codename}" from the game? This deletes them entirely (not just eliminates) and cannot be undone.`)) return;
+  const data = await api('adminRemovePlayer', { adminPassword, codename });
+  if (data.error) { alert(data.error); return; }
+  renderAdminPanel();
+}
+  
 async function resetGame() {
   if (!confirm('This will reset ALL players to active and clear all roles. Are you sure?')) return;
   await api('adminResetGame', { adminPassword });
