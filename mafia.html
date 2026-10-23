@@ -159,6 +159,28 @@
     transform: rotate(-8deg);
     box-shadow: 0 0 0 1px rgba(194,59,59,0.35) inset;
   }
+
+  /* ==== MOBILE: wrap instead of overflow ==== */
+  .player-list-item > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+  .instructions, .output, td, th { overflow-wrap: anywhere; }
+  textarea { max-width: 100%; }
+  @media (max-width: 640px) {
+    main { padding: 20px 10px 40px; }
+    .card { padding: 16px; }
+    header { padding: 12px; }
+    nav button { padding: 7px 10px; }
+    .player-list-item { flex-wrap: wrap; }
+    table.stack, table.stack tbody, table.stack tr, table.stack td { display: block; width: 100%; }
+    table.stack thead { display: none; }
+    table.stack tr { border: 1px solid #2a2a2a; border-radius: 4px; margin-bottom: 10px; padding: 6px; }
+    table.stack td { border: none; padding: 4px 2px; }
+    table.stack td:empty { display: none; }
+    table.stack td[data-label]::before {
+      content: attr(data-label); display: block; font-size: 10px; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px;
+    }
+    table.stack td button { margin-top: 4px; }
+  }
 </style>
 </head>
 <body>
@@ -515,6 +537,19 @@ async function detectiveGuess() {
   scheduleReturnToDashboard(out, 8);
 }
 
+function voteResultBanner(d) {
+  const r = d.lastVoteResult;
+  if (!r) return '';
+  const when = r.time ? new Date(r.time).toLocaleString() : '';
+  const good = r.wasMafia;
+  return `
+    <div class="output show ${good ? 'success' : 'error'}" style="margin-bottom:14px;">
+      ${good ? '🎉 Your vote worked!' : '⚠️ Wrong call.'}
+      The vote against ${r.targetName} went through, and they ${good ? 'WERE a mafia member. Nice work!' : 'were NOT a mafia member. An innocent player was eliminated.'}
+      ${when ? `<div class="small-note">${when}</div>` : ''}
+    </div>`;
+}
+
 function citizenSection(d) {
   if (d.activeVote) {
     return `
@@ -534,6 +569,7 @@ function citizenSection(d) {
     <div class="card">
       <span class="tab citizen">Vote</span>
       <h2>Cast a Vote</h2>
+      ${voteResultBanner(d)}
       ${cooldownLine(d.citizenCooldown)}
       <label>Suspect's real name:</label>
       <input id="c_target">
@@ -675,9 +711,9 @@ async function renderAdminPanel() {
 
   const playerRows = data.players.map(pl => `
     <tr>
-      <td>${pl.official_name}</td>
-      <td class="mono">${pl.codename}</td>
-      <td>
+      <td data-label="Name">${pl.official_name}</td>
+      <td data-label="Codename" class="mono">${pl.codename}</td>
+      <td data-label="Role">
         <select id="role_${pl.codename}">
           <option value="" ${!pl.role?'selected':''}>—</option>
           <option value="citizen" ${pl.role==='citizen'?'selected':''}>citizen</option>
@@ -685,18 +721,18 @@ async function renderAdminPanel() {
           <option value="detective" ${pl.role==='detective'?'selected':''}>detective</option>
         </select>
       </td>
-      <td>
+      <td data-label="Status">
         <select id="status_${pl.codename}">
           <option value="active" ${pl.status==='active'?'selected':''}>active</option>
           <option value="eliminated" ${pl.status==='eliminated'?'selected':''}>eliminated</option>
         </select>
       </td>
       <td><span class="stamp ${pl.status==='active'?'active':'eliminated'}" style="font-size:9px; padding:2px 6px;">${pl.status==='active'?'Active':'Out'}</span></td>
-      <td style="white-space:nowrap;">
+      <td style="white-space:normal;">
         <button class="secondary" style="width:auto; padding:4px 10px;" onclick="savePlayer('${pl.codename}')">Save</button>
         <button class="secondary" style="width:auto; padding:4px 10px; margin-top:6px; border-color:var(--danger); color:#e88;" onclick="removePlayer('${pl.codename}')">Remove</button>
       </td>
-          </tr>`).join('');
+    </tr>`).join('');
 
   const logRows = data.log.map(l => `<div class="player-list-item"><b>${new Date(l.time).toLocaleString()}</b> — ${l.message}</div>`).join('');
 
@@ -714,13 +750,13 @@ async function renderAdminPanel() {
     </div>
     <div class="card" style="max-width:700px;">
       <h2>⚙️ Settings</h2>
-      <table><tbody>${settingsRows}</tbody></table>
+      <table class="stack"><tbody>${settingsRows}</tbody></table>
     </div>
     <div class="card" style="max-width:700px;">
       <h2>👥 Players</h2>
       <button class="secondary" id="revealPlayersBtn" onclick="revealPlayers()">🙈 Reveal Player List</button>
       <div id="playersHidden" style="display:none; margin-top:12px;">
-        <table><thead><tr><th>Name</th><th>Codename</th><th>Role</th><th>Status</th><th></th><th></th><th></th></tr></thead>
+        <table class="stack"><thead><tr><th>Name</th><th>Codename</th><th>Role</th><th>Status</th><th></th><th></th></tr></thead>
         <tbody>${playerRows}</tbody></table>
       </div>
       <button class="primary danger" style="margin-top:16px;" onclick="resetGame()">⚠️ Reset Entire Game</button>
@@ -769,14 +805,13 @@ async function savePlayer(codename) {
   await api('adminSetStatus', { adminPassword, codename, status });
   renderAdminPanel();
 }
-
 async function removePlayer(codename) {
   if (!confirm(`Permanently remove "${codename}" from the game? This deletes them entirely (not just eliminates) and cannot be undone.`)) return;
   const data = await api('adminRemovePlayer', { adminPassword, codename });
   if (data.error) { alert(data.error); return; }
   renderAdminPanel();
 }
-  
+
 async function resetGame() {
   if (!confirm('This will reset ALL players to active and clear all roles. Are you sure?')) return;
   await api('adminResetGame', { adminPassword });
