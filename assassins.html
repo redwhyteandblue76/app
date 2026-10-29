@@ -106,6 +106,8 @@
   #navbar{display:flex;flex-wrap:wrap;justify-content:center;gap:5px;padding:10px}
   #navbar a{margin:0;text-decoration:none}
   #navbar a[aria-current="page"]{background:#fff;color:#000}
+  #navbar button{width:auto;margin:0;padding:8px 12px;border:1px solid #777;font-size:13px;background:#333}
+  #navbar button:hover{background:#555}
   /* Readable text links against the dark background; keep navigation buttons unchanged. */
   #container a:not(.action-links a){color:#fff;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
   #container a:not(.action-links a):hover,#container a:not(.action-links a):focus-visible{color:#ddd;text-decoration-thickness:2px}
@@ -126,14 +128,7 @@
 <script src="site-footer.js" defer></script>
 </head>
 <body>
-<div id="navbar">
-  <a href="assassins.html">Home</a>
-  <a href="?view=dashboard">Dashboard</a>
-  <a href="?view=signup">Sign Up</a>
-  <a href="?view=rules">Rules</a>
-  <a href="?view=feed">Elimination Feed</a>
-  <a href="?view=admin">Admin</a>
-</div>
+<div id="navbar" aria-label="Assassins navigation"></div>
 <div id="container">
   <div id="app"></div>
 </div>
@@ -167,24 +162,55 @@ function setLoading(loadingEl, isLoading) {
   loadingEl.style.display = isLoading ? 'block' : 'none';
 }
 
-// ---- router ----
+// ---- Mafia-style navigation and initial routing ----
 const params = new URLSearchParams(window.location.search);
 const view = params.get('view');
 const app = document.getElementById('app');
 const CODENAME_KEY = 'assassins_remembered_codename';
 const rememberedCodename = () => localStorage.getItem(CODENAME_KEY) || '';
-document.querySelectorAll('#navbar a').forEach(a => {
-  const target = new URL(a.href, location.href);
-  const current = view || '';
-  if ((target.searchParams.get('view') || '') === current) a.setAttribute('aria-current','page');
-});
+let publicStatus = null;
+const isEnabled = key => publicStatus && publicStatus.masterLock !== 'TRUE' && publicStatus[key] === 'TRUE';
 
-if (view === 'signup') renderSignup();
-else if (view === 'dashboard') renderDashboard();
-else if (view === 'feed') renderFeed();
-else if (view === 'rules') renderRules();
-else if (view === 'admin') renderAdmin();
-else renderLanding();
+function renderNav(activeView) {
+  const nav = document.getElementById('navbar');
+  const items = [{name:'Home',view:''}];
+  if (isEnabled('dashboardEnabled')) items.push({name:rememberedCodename()?'My Dashboard':'Sign In',view:'dashboard'});
+  if (isEnabled('signupEnabled') && !rememberedCodename()) items.push({name:'Sign Up',view:'signup'});
+  items.push({name:'Rules',view:'rules'},{name:'Elimination Feed',view:'feed'},{name:'Admin',view:'admin'});
+  nav.innerHTML = items.map(item =>
+    '<a href="' + (item.view ? '?view='+item.view : 'assassins.html') + '"' +
+    (item.view === activeView ? ' aria-current="page"' : '') + '>' + item.name + '</a>'
+  ).join('') + (rememberedCodename() ? '<button type="button" id="topLogout">Log Out</button>' : '');
+  const logout = document.getElementById('topLogout');
+  if (logout) logout.addEventListener('click', () => {
+    localStorage.removeItem(CODENAME_KEY);
+    window.location.href = 'assassins.html';
+  });
+}
+
+async function initialize() {
+  app.innerHTML = '<div class="form-section" style="text-align:center;">Loading game status…</div>';
+  try { publicStatus = await callBackend('getPublicStatus'); }
+  catch(e) {
+    renderNav(view || '');
+    app.innerHTML = '<div class="form-section">Unable to load game settings. Please refresh and try again.</div>';
+    return;
+  }
+  // If a saved codename exists, the root URL opens the dashboard when enabled.
+  const selected = view || (rememberedCodename() && isEnabled('dashboardEnabled') ? 'dashboard' : '');
+  renderNav(selected);
+  if (selected === 'signup' && !isEnabled('signupEnabled')) {
+    app.innerHTML = '<div class="form-section">Sign-ups are currently closed. <a href="assassins.html">Return home</a>.</div>';
+  } else if (selected === 'dashboard' && !isEnabled('dashboardEnabled')) {
+    app.innerHTML = '<div class="form-section">The player dashboard is currently unavailable. <a href="assassins.html">Return home</a>.</div>';
+  } else if (selected === 'signup') renderSignup();
+  else if (selected === 'dashboard') renderDashboard();
+  else if (selected === 'feed') renderFeed();
+  else if (selected === 'rules') renderRules();
+  else if (selected === 'admin') renderAdmin();
+  else renderLanding();
+}
+initialize();
 
 async function renderLanding() {
   app.innerHTML = `
@@ -193,15 +219,15 @@ async function renderLanding() {
       <p style="text-align:center;">Find your target. Tag them with a sock. Confirm the elimination using their codename.</p>
       <div class="status-line" id="gameStatus">Checking game status…</div>
       <div class="action-links">
-        <a href="?view=dashboard">Player Dashboard / Sign In</a>
-        <a href="?view=signup">Sign Up</a>
+        ${isEnabled('dashboardEnabled') ? '<a href="?view=dashboard">Player Dashboard / Sign In</a>' : ''}
+        ${isEnabled('signupEnabled') && !rememberedCodename() ? '<a href="?view=signup">Sign Up</a>' : ''}
         <a href="?view=rules">How to Play</a>
       </div>
       <p class="subtle" style="text-align:center;">${rememberedCodename() ? 'Codename saved on this device. Open the dashboard to continue.' : 'Already registered? Enter your codename on the dashboard.'}</p>
     </div>`;
   const status = document.getElementById('gameStatus');
   try {
-    const d = await callBackend('getPublicStatus');
+    const d = publicStatus;
     const names = {not_started:'Not started',live:'Game active',paused:'Game paused',ended:'Game ended'};
     status.textContent = d.masterLock === 'TRUE' ? 'Game temporarily unavailable' :
       (names[d.gameStatus] || 'Game status unavailable') +
@@ -234,7 +260,7 @@ async function renderRules() {
       <div class="rule-block"><h3>Administrator Instructions</h3><div id="adminRules" style="white-space:pre-wrap;">Loading current instructions…</div></div>
     </div>`;
   try {
-    const d = await callBackend('getPublicStatus');
+    const d = publicStatus;
     document.getElementById('adminRules').textContent =
       d.instructionsEnabled === 'TRUE' && d.instructionsText ? d.instructionsText :
       'No additional instructions are currently posted.';
@@ -254,7 +280,7 @@ async function renderSignup() {
   let instructionVerificationEnabled = false;
   let instructionsText = '';
   try {
-    const status = await callBackend('getPublicStatus');
+    const status = publicStatus;
     if (status.masterLock === 'TRUE') {
       document.getElementById('signupLoadingBox').innerHTML = `<p style="text-align:center;">The game is temporarily down. Check back soon.</p>`;
       return;
@@ -302,7 +328,6 @@ async function renderSignup() {
     <div class="form-section">
       <label>Codename (letters and numbers only, no spaces):</label>
       <input type="text" id="codename" autocapitalize="off" autocomplete="off" required>
-      <button id="forgetCodenameBtn" type="button" style="background:#333;">Log Out / Forget Codename</button>
       <label>First and Last Name:</label>
       <input type="text" id="real_name" required>
       ${phoneFieldHtml}
@@ -406,14 +431,6 @@ function renderDashboard() {
 
   const codeInput = document.getElementById('codename');
   codeInput.value = rememberedCodename();
-  document.getElementById('forgetCodenameBtn').addEventListener('click', () => {
-    localStorage.removeItem(CODENAME_KEY);
-    codeInput.value = '';
-    document.getElementById('actionSection').style.display = 'none';
-    document.getElementById('eliminateSection').style.display = 'none';
-    document.getElementById('verifyOutput').style.display = 'none';
-    codeInput.focus();
-  });
   const getCodename = () => normalizeCodenameInput(codeInput.value);
 
   document.getElementById('verifyBtn').addEventListener('click', async () => {
@@ -434,6 +451,7 @@ function renderDashboard() {
       showOutput(output, data.message, data.success ? 'success' : 'error');
       if (data.success) {
         localStorage.setItem(CODENAME_KEY, codename);
+        renderNav('dashboard');
         document.getElementById('actionSection').style.display = 'block';
       } else {
         document.getElementById('actionSection').style.display = 'none';
