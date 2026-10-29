@@ -13,7 +13,7 @@
 <p class="note">Your contact details are used to handle your inquiry. Please don't submit passwords or other sensitive information. See <a href="copyright.html">Copyright &amp; Usage</a> for privacy information.</p>
 </form><iframe name="contactResponse" id="contactResponse" title="Contact form response" hidden></iframe></main><script src="site-footer.js" defer></script><script>
 (function(){
-const ENDPOINT=''; // Paste your deployed Google Apps Script /exec URL here after setup.
+const ENDPOINT='https://script.google.com/macros/s/AKfycbxf2xb2hhg27_szcr9KhQSKsEu7uadPEzmkfESR77qwzb40_0hfu7B-h4o3Wa1p1xB_/exec'; // Paste your deployed Google Apps Script /exec URL here after setup.
 const form=document.getElementById('contactForm'),button=document.getElementById('sendButton'),status=document.getElementById('status'),frame=document.getElementById('contactResponse');
 document.getElementById('formStarted').value=String(Date.now());
 if(ENDPOINT){form.action=ENDPOINT;button.disabled=false}else{status.textContent='Contact form setup is in progress. Please check back soon.'}
