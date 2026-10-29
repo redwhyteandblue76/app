@@ -102,16 +102,33 @@
     background-color: #333;
   }
 
+  /* Restrained improvements: same monochrome look, better spacing and navigation. */
+  #navbar{display:flex;flex-wrap:wrap;justify-content:center;gap:5px;padding:10px}
+  #navbar a{margin:0;text-decoration:none}
+  #navbar a[aria-current="page"]{background:#fff;color:#000}
+  #navbar button{width:auto;margin:0;padding:8px 12px;border:1px solid #777;font-size:13px;background:#333}
+  #navbar button:hover{background:#555}
+  /* Readable text links against the dark background; keep navigation buttons unchanged. */
+  #container a:not(.action-links a){color:#fff;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+  #container a:not(.action-links a):hover,#container a:not(.action-links a):focus-visible{color:#ddd;text-decoration-thickness:2px}
+  .rule-block{border-bottom:1px solid #444;padding:12px 0}
+  .rule-block:last-child{border-bottom:0}
+  .rule-block h3{margin:0 0 9px}
+  .rule-block p,.rule-block li{line-height:1.65}
+  .rule-block ul,.rule-block ol{padding-left:22px}
+  .subtle{color:#bbb;font-size:14px;line-height:1.6}
+  .status-line{border:1px solid #555;padding:12px;margin:14px 0;text-align:center}
+  .action-links{display:flex;flex-wrap:wrap;gap:8px}
+  .action-links a{flex:1;min-width:125px;display:block;text-align:center;padding:12px 8px;border:1px solid #777;color:#fff;text-decoration:none}
+  .action-links a:hover{background:#333}
+  .admin-group{border-top:1px solid #555;margin-top:20px;padding-top:12px}
+  @media(max-width:480px){#container{padding:0 12px}#navbar a{font-size:12px;padding:7px}}
 </style>
 <link rel="stylesheet" href="site-footer.css">
 <script src="site-footer.js" defer></script>
 </head>
 <body>
-<div id="navbar">
-  <a href="?view=signup">Sign Up</a>
-  <a href="?view=dashboard">Dashboard</a>
-  <a href="?view=feed">Elimination List</a>
-</div>
+<div id="navbar" aria-label="Assassins navigation"></div>
 <div id="container">
   <div id="app"></div>
 </div>
@@ -145,63 +162,109 @@ function setLoading(loadingEl, isLoading) {
   loadingEl.style.display = isLoading ? 'block' : 'none';
 }
 
-// ---- router ----
+// ---- Mafia-style navigation and initial routing ----
 const params = new URLSearchParams(window.location.search);
 const view = params.get('view');
 const app = document.getElementById('app');
+const CODENAME_KEY = 'assassins_remembered_codename';
+const rememberedCodename = () => localStorage.getItem(CODENAME_KEY) || '';
+let publicStatus = null;
+const isEnabled = key => publicStatus && publicStatus.masterLock !== 'TRUE' && publicStatus[key] === 'TRUE';
 
-if (view === 'signup') renderSignup();
-else if (view === 'dashboard') renderDashboard();
-else if (view === 'feed') renderFeed();
-else if (view === 'admin') renderAdmin();
-else renderLanding();
+function renderNav(activeView) {
+  const nav = document.getElementById('navbar');
+  const items = [{name:'Home',view:''}];
+  if (isEnabled('dashboardEnabled')) items.push({name:rememberedCodename()?'My Dashboard':'Sign In',view:'dashboard'});
+  if (isEnabled('signupEnabled') && !rememberedCodename()) items.push({name:'Sign Up',view:'signup'});
+  items.push({name:'Rules',view:'rules'},{name:'Elimination Feed',view:'feed'},{name:'Admin',view:'admin'});
+  nav.innerHTML = items.map(item =>
+    '<a href="' + (item.view ? '?view='+item.view : 'assassins.html') + '"' +
+    (item.view === activeView ? ' aria-current="page"' : '') + '>' + item.name + '</a>'
+  ).join('') + (rememberedCodename() ? '<button type="button" id="topLogout">Log Out</button>' : '');
+  const logout = document.getElementById('topLogout');
+  if (logout) logout.addEventListener('click', () => {
+    localStorage.removeItem(CODENAME_KEY);
+    window.location.href = 'assassins.html';
+  });
+}
+
+async function initialize() {
+  app.innerHTML = '<div class="form-section" style="text-align:center;">Loading game status…</div>';
+  try { publicStatus = await callBackend('getPublicStatus'); }
+  catch(e) {
+    renderNav(view || '');
+    app.innerHTML = '<div class="form-section">Unable to load game settings. Please refresh and try again.</div>';
+    return;
+  }
+  // If a saved codename exists, the root URL opens the dashboard when enabled.
+  const selected = view || (rememberedCodename() && isEnabled('dashboardEnabled') ? 'dashboard' : '');
+  renderNav(selected);
+  if (selected === 'signup' && !isEnabled('signupEnabled')) {
+    app.innerHTML = '<div class="form-section">Sign-ups are currently closed. <a href="assassins.html">Return home</a>.</div>';
+  } else if (selected === 'dashboard' && !isEnabled('dashboardEnabled')) {
+    app.innerHTML = '<div class="form-section">The player dashboard is currently unavailable. <a href="assassins.html">Return home</a>.</div>';
+  } else if (selected === 'signup') renderSignup();
+  else if (selected === 'dashboard') renderDashboard();
+  else if (selected === 'feed') renderFeed();
+  else if (selected === 'rules') renderRules();
+  else if (selected === 'admin') renderAdmin();
+  else renderLanding();
+}
+initialize();
 
 async function renderLanding() {
-  app.innerHTML = `<div class="form-section" id="landingBox"><p style="text-align:center;">Loading...</p></div>`;
-  const box = document.getElementById('landingBox');
+  app.innerHTML = `
+    <h2>Welcome to Assassins</h2>
+    <div class="form-section" id="landingBox">
+      <p style="text-align:center;">Find your target. Tag them with a sock. Confirm the elimination using their codename.</p>
+      <div class="status-line" id="gameStatus">Checking game status…</div>
+      <div class="action-links">
+        ${isEnabled('dashboardEnabled') ? '<a href="?view=dashboard">Player Dashboard / Sign In</a>' : ''}
+        ${isEnabled('signupEnabled') && !rememberedCodename() ? '<a href="?view=signup">Sign Up</a>' : ''}
+        <a href="?view=rules">How to Play</a>
+      </div>
+      <p class="subtle" style="text-align:center;">${rememberedCodename() ? 'Codename saved on this device. Open the dashboard to continue.' : 'Already registered? Enter your codename on the dashboard.'}</p>
+    </div>`;
+  const status = document.getElementById('gameStatus');
   try {
-    const data = await callBackend('getPublicStatus');
+    const d = publicStatus;
+    const names = {not_started:'Not started',live:'Game active',paused:'Game paused',ended:'Game ended'};
+    status.textContent = d.masterLock === 'TRUE' ? 'Game temporarily unavailable' :
+      (names[d.gameStatus] || 'Game status unavailable') +
+      ' · Sign-ups ' + (d.signupEnabled === 'TRUE' ? 'open' : 'closed') +
+      ' · Dashboard ' + (d.dashboardEnabled === 'TRUE' ? 'open' : 'closed');
+  } catch(e) { status.textContent = 'Unable to load game status. Please try again later.'; }
+}
 
-    if (data.masterLock === 'TRUE') {
-      box.innerHTML = `<p style="text-align:center;">The game is temporarily down. Check back soon.</p>`;
-      return;
-    }
-
-    const signupOn = data.signupEnabled === 'TRUE';
-    const dashboardOn = data.dashboardEnabled === 'TRUE';
-
-    // Only one is on -> skip the landing page entirely and go straight there.
-    if (signupOn && !dashboardOn) {
-      window.location.href = '?view=signup';
-      return;
-    }
-    if (dashboardOn && !signupOn) {
-      window.location.href = '?view=dashboard';
-      return;
-    }
-
-    // Neither on
-    if (!signupOn && !dashboardOn) {
-      box.innerHTML = `<p style="text-align:center;">The game isn't accepting signups or dashboard activity right now. Check back soon.</p>`;
-      return;
-    }
-
-    // Both on -> show a real choice
-    let statusMsg = '';
-    if (data.gameStatus === 'not_started') statusMsg = 'Signups are open — the game hasn\'t started yet.';
-    else if (data.gameStatus === 'live') statusMsg = 'The game is live!';
-    else if (data.gameStatus === 'paused') statusMsg = 'The game is currently paused.';
-    else if (data.gameStatus === 'ended') statusMsg = 'The game has ended.';
-
-    box.innerHTML = `
-      <h2>Assassin Game</h2>
-      <p style="text-align:center;">${statusMsg}</p>
-      <button onclick="window.location.href='?view=signup'">Sign Up</button>
-      <button onclick="window.location.href='?view=dashboard'">I already have a codename</button>
-    `;
-  } catch (err) {
-    box.innerHTML = `<p style="text-align:center; color:#ff8888;">Error loading — please try again.</p>`;
-  }
+async function renderRules() {
+  app.innerHTML = `
+    <h2>Rules &amp; Instructions</h2>
+    <div class="form-section">
+      <p class="subtle">Read these rules before playing. The administrator may post additional instructions below.</p>
+      <div class="rule-block"><h3>The Overview</h3><p>Your mission is to find your assigned target and tag them with a sock. When you successfully tag your target, they must reveal their codename. Enter that codename in the Player Dashboard to confirm the elimination and receive your next target.</p></div>
+      <div class="rule-block"><h3>How to Join</h3><p><a href="?view=signup">Sign up here</a> while registration is open. Choose a codename and keep it private.</p></div>
+      <div class="rule-block"><h3>Once the Game Begins</h3><ol>
+        <li>Do not reveal your codename except to the player who successfully eliminates you.</li>
+        <li>Open the <a href="?view=dashboard">Player Dashboard</a>, enter your codename, and select <strong>Find My Target</strong>.</li>
+        <li>Find your assigned target and tag them with a sock in a permitted location.</li>
+        <li>Ask the eliminated player for their codename. They must provide it after a valid elimination.</li>
+        <li>Return to the dashboard, choose <strong>Eliminate a Player</strong>, enter their codename, and confirm.</li>
+        <li>Receive your next target and continue playing.</li></ol></div>
+      <div class="rule-block"><h3>Safe Zones</h3><p>Neither eliminations nor attempts are permitted:</p><ul>
+        <li>During class</li><li>During Campus Community</li><li>During Convocation</li>
+        <li>On a dorm hall</li><li>At work</li>
+        <li>During leadership responsibilities, including RA/RS/CGL connect classes and RHLMs</li></ul></div>
+      <div class="rule-block"><h3>Safe Items</h3><p>The designated safe item protects you only while it is <strong>IN YOUR HAND</strong>. Safe items may change frequently; check the group chat for the latest item.</p></div>
+      <div class="rule-block"><h3>How to Win</h3><p>There are two winners: the final surviving player and the player with the most confirmed eliminations.</p></div>
+      <div class="rule-block"><h3>Play Safely</h3><p>Use only soft socks, avoid the face, respect personal boundaries, and do not chase anyone into unsafe or restricted areas. If an elimination is disputed, contact the game administrator.</p></div>
+      <div class="rule-block"><h3>Administrator Instructions</h3><div id="adminRules" style="white-space:pre-wrap;">Loading current instructions…</div></div>
+    </div>`;
+  try {
+    const d = publicStatus;
+    document.getElementById('adminRules').textContent =
+      d.instructionsEnabled === 'TRUE' && d.instructionsText ? d.instructionsText :
+      'No additional instructions are currently posted.';
+  } catch(e) { document.getElementById('adminRules').textContent='Unable to load administrator instructions right now.'; }
 }
 
 // ============================================================
@@ -217,7 +280,7 @@ async function renderSignup() {
   let instructionVerificationEnabled = false;
   let instructionsText = '';
   try {
-    const status = await callBackend('getPublicStatus');
+    const status = publicStatus;
     if (status.masterLock === 'TRUE') {
       document.getElementById('signupLoadingBox').innerHTML = `<p style="text-align:center;">The game is temporarily down. Check back soon.</p>`;
       return;
@@ -346,6 +409,7 @@ function renderDashboard() {
       <div class="output" id="verifyOutput"></div>
     </div>
     <div class="form-section" id="actionSection" style="display:none;">
+      <p class="subtle">Your codename is verified. Find your target or report a confirmed elimination.</p>
       <button id="findTargetBtn">Find My Target</button>
       <button id="eliminateBtn">Eliminate a Player</button>
       <div class="loading" id="actionLoading"><div class="spinner"></div>Loading...</div>
@@ -365,7 +429,9 @@ function renderDashboard() {
     </div>
   `;
 
-  const getCodename = () => normalizeCodenameInput(document.getElementById('codename').value);
+  const codeInput = document.getElementById('codename');
+  codeInput.value = rememberedCodename();
+  const getCodename = () => normalizeCodenameInput(codeInput.value);
 
   document.getElementById('verifyBtn').addEventListener('click', async () => {
     const btn = document.getElementById('verifyBtn');
@@ -383,7 +449,13 @@ function renderDashboard() {
       setLoading(loading, false);
       btn.disabled = false;
       showOutput(output, data.message, data.success ? 'success' : 'error');
-      if (data.success) document.getElementById('actionSection').style.display = 'block';
+      if (data.success) {
+        localStorage.setItem(CODENAME_KEY, codename);
+        renderNav('dashboard');
+        document.getElementById('actionSection').style.display = 'block';
+      } else {
+        document.getElementById('actionSection').style.display = 'none';
+      }
     } catch (err) {
       setLoading(loading, false);
       btn.disabled = false;
@@ -477,7 +549,7 @@ function renderFeed() {
         return;
       }
       list.innerHTML = data.feed.map(row =>
-        `<div class="output" style="display:block;">${row.details}</div>`
+        `<div class="output" style="display:block;">${escapeHtml(row.details || '')}</div>`
       ).join('');
     } catch (err) {
       setLoading(loading, false);
