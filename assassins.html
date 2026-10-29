@@ -106,6 +106,9 @@
   #navbar{display:flex;flex-wrap:wrap;justify-content:center;gap:5px;padding:10px}
   #navbar a{margin:0;text-decoration:none}
   #navbar a[aria-current="page"]{background:#fff;color:#000}
+  /* Readable text links against the dark background; keep navigation buttons unchanged. */
+  #container a:not(.action-links a){color:#fff;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+  #container a:not(.action-links a):hover,#container a:not(.action-links a):focus-visible{color:#ddd;text-decoration-thickness:2px}
   .rule-block{border-bottom:1px solid #444;padding:12px 0}
   .rule-block:last-child{border-bottom:0}
   .rule-block h3{margin:0 0 9px}
