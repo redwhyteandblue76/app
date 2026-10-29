@@ -122,6 +122,21 @@
   .action-links a{flex:1;min-width:125px;display:block;text-align:center;padding:12px 8px;border:1px solid #777;color:#fff;text-decoration:none}
   .action-links a:hover{background:#333}
   .admin-group{border-top:1px solid #555;margin-top:20px;padding-top:12px}
+  .admin-tabs{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 16px}
+  .admin-tabs button{width:auto;flex:1;min-width:90px;border:1px solid #777}
+  .admin-tabs button[aria-pressed="true"]{background:#fff;color:#111}
+  .admin-panel[hidden]{display:none!important}
+  .admin-stat{border:1px solid #555;padding:10px;flex:1;min-width:85px;text-align:center}
+  .admin-stats{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+  .admin-stat strong{display:block;font-size:20px}
+  .admin-table-wrap{overflow-x:auto}
+  .admin-table{min-width:520px}
+  .admin-table td{vertical-align:middle}
+  .admin-table button{width:auto;padding:6px 9px;font-size:12px;margin:3px}
+  .admin-table .remove-player{border:1px solid #b55;color:#ffaaaa;background:#421b1b}
+  .admin-table .remove-player:disabled{opacity:.5}
+  .admin-search{margin-top:8px}
+  .admin-help{color:#bbb;font-size:12px;line-height:1.5}
   @media(max-width:480px){#container{padding:0 12px}#navbar a{font-size:12px;padding:7px}}
 </style>
 <link rel="stylesheet" href="site-footer.css">
@@ -598,12 +613,23 @@ function renderAdmin() {
     const content = document.getElementById('adminContent');
     content.style.display = 'block';
     content.innerHTML = `
-      <div class="form-section">
-        <h3 style="margin-top:0;">Settings</h3>
+      <div class="admin-tabs" role="group" aria-label="Admin sections">
+        <button type="button" data-admin-tab="players" aria-pressed="true">Players</button>
+        <button type="button" data-admin-tab="settings" aria-pressed="false">Settings</button>
+        <button type="button" data-admin-tab="activity" aria-pressed="false">Activity</button>
+        <button type="button" data-admin-tab="danger" aria-pressed="false">Danger Zone</button>
+      </div>
+      <div class="form-section admin-panel" data-admin-panel="settings" hidden>
+        <h3 style="margin-top:0;">Game Settings</h3>
         <div id="settingsList">Loading...</div>
       </div>
-      <div class="form-section">
-        <h3 style="margin-top:0;">Players</h3>
+      <div class="form-section admin-panel" data-admin-panel="players">
+        <h3 style="margin-top:0;">Player Management</h3>
+        <p class="admin-help">Review registrations, search players, and change their game status. Removing a player is different from eliminating them.</p>
+        <div id="playerStats" class="admin-stats">Loading player totals…</div>
+        <label for="playerSearch">Search players</label>
+        <input id="playerSearch" class="admin-search" type="search" placeholder="Search by name, codename, hall, or status">
+        <div id="playerFilterInfo" class="admin-help"></div>
         <button id="shuffleHallsBtn" style="background-color:#2a4d3a;">🎲 Shuffle Order (Alternate Halls)</button>
         <div class="output" id="shuffleOutput"></div>
         <button id="revealPlayersBtn" style="margin-top:10px;">🙈 Reveal Player List</button>
@@ -613,14 +639,14 @@ function renderAdmin() {
           <div id="playersList">Loading...</div>
         </div>
       </div>
-      <div class="form-section">
-        <h3 style="margin-top:0;">Recent Log</h3>
+      <div class="form-section admin-panel" data-admin-panel="activity" hidden>
+        <h3 style="margin-top:0;">Activity Log</h3>
         <button id="revealLogBtn">👁️ Reveal Log</button>
         <div id="logHidden" style="display:none; margin-top:12px;">
           <div id="logList">Loading...</div>
         </div>
       </div>
-      <div class="form-section" style="border-color:#ff5555; margin-top:40px;">
+      <div class="form-section admin-panel" data-admin-panel="danger" hidden style="border-color:#ff5555;">
         <h3 style="margin-top:0; color:#ff8888;">⚠️ Danger Zone</h3>
         <label>Reset password:</label>
         <input type="password" id="resetPasswordInput" autocomplete="off">
@@ -629,6 +655,14 @@ function renderAdmin() {
         <div class="output" id="resetOutput"></div>
       </div>
     `;
+
+    const selectAdminTab = name => {
+      content.querySelectorAll('[data-admin-panel]').forEach(panel => { panel.hidden = panel.dataset.adminPanel !== name; });
+      content.querySelectorAll('[data-admin-tab]').forEach(btn => { btn.setAttribute('aria-pressed', String(btn.dataset.adminTab === name)); });
+    };
+    content.querySelectorAll('[data-admin-tab]').forEach(btn => btn.addEventListener('click', () => selectAdminTab(btn.dataset.adminTab)));
+    selectAdminTab(window.assassinsAdminTab || 'players');
+    content.querySelectorAll('[data-admin-tab]').forEach(btn => btn.addEventListener('click', () => { window.assassinsAdminTab = btn.dataset.adminTab; }));
 
     const SELECT_SETTINGS = {
       game_status: ['not_started', 'live', 'paused', 'ended'],
@@ -732,36 +766,64 @@ function renderAdmin() {
 
     const playersData = await callBackend('adminGetPlayers', { password });
     const playersList = document.getElementById('playersList');
-    playersList.innerHTML = `
-      <table>
-        <tr><th>Codename</th><th>Name</th><th>Hall</th><th>Status</th><th>Action</th></tr>
-        ${playersData.players.map(p => `
-          <tr>
-            <td>${p.codename}</td>
-            <td>${p.name}</td>
-            <td>${p.hall || ''}</td>
-            <td class="status-${p.status}">${p.status}</td>
-            <td>
-              <button style="width:auto; padding:4px 8px; font-size:12px;" data-toggle="${p.codename}" data-newstatus="${p.status === 'active' ? 'eliminated' : 'active'}">
-                Mark ${p.status === 'active' ? 'eliminated' : 'active'}
-              </button>
-            </td>
-          </tr>
-        `).join('')}
-      </table>
-    `;
-    playersList.querySelectorAll('button[data-toggle]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        btn.disabled = true;
-        await callBackend('adminSetPlayerStatus', {
-          password,
-          codename: btn.dataset.toggle,
-          status: btn.dataset.newstatus,
-          eliminatedBy: 'admin'
-        });
-        loadAdminContent();
+    const players = Array.isArray(playersData.players) ? playersData.players : [];
+    const activeCount = players.filter(p => p.status === 'active').length;
+    document.getElementById('playerStats').innerHTML =
+      '<div class="admin-stat"><strong>'+players.length+'</strong>Total</div>' +
+      '<div class="admin-stat"><strong>'+activeCount+'</strong>Active</div>' +
+      '<div class="admin-stat"><strong>'+(players.length-activeCount)+'</strong>Other</div>';
+    playersList.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Name</th><th>Codename</th><th>Hall</th><th>Status</th><th>Actions</th></tr></thead><tbody>' +
+      players.map((p,i) => '<tr data-player-row="'+i+'"><td>'+escapeHtml(p.name || '')+'</td><td>'+escapeHtml(p.codename || '')+
+      '</td><td>'+escapeHtml(p.hall || '—')+'</td><td class="status-'+(p.status === 'active' ? 'active' : 'eliminated')+'">'+escapeHtml(p.status || 'unknown')+
+      '</td><td><button type="button" data-toggle-index="'+i+'">'+(p.status === 'active' ? 'Eliminate' : 'Reactivate')+
+      '</button><button type="button" class="remove-player" data-remove-index="'+i+'" title="Requires backend support">Remove</button></td></tr>').join('') +
+      '</tbody></table></div><div class="output" id="playerActionOutput"></div>';
+    const search = document.getElementById('playerSearch');
+    const updateSearch = () => {
+      const term = search.value.trim().toLowerCase();
+      let visible = 0;
+      playersList.querySelectorAll('[data-player-row]').forEach(row => {
+        const p = players[Number(row.dataset.playerRow)];
+        const matches = [p.name,p.codename,p.hall,p.status].some(v => String(v || '').toLowerCase().includes(term));
+        row.hidden = !matches;
+        if(matches) visible++;
       });
-    });
+      document.getElementById('playerFilterInfo').textContent = 'Showing '+visible+' of '+players.length+' players';
+    };
+    search.addEventListener('input',updateSearch);
+    updateSearch();
+    playersList.querySelectorAll('[data-toggle-index]').forEach(btn => btn.addEventListener('click',async () => {
+      const p = players[Number(btn.dataset.toggleIndex)];
+      const status = p.status === 'active' ? 'eliminated' : 'active';
+      if(!confirm('Mark '+p.codename+' as '+status+'?')) return;
+      btn.disabled = true;
+      try {
+        const data = await callBackend('adminSetPlayerStatus',{password,codename:p.codename,status,eliminatedBy:'admin'});
+        if(data.success === false) throw new Error(data.message || 'Unable to update player');
+        window.assassinsAdminTab = 'players';
+        await loadAdminContent();
+      } catch(e) {
+        btn.disabled = false;
+        showOutput(document.getElementById('playerActionOutput'),e.message || 'Unable to update player.','error');
+      }
+    }));
+    playersList.querySelectorAll('[data-remove-index]').forEach(btn => btn.addEventListener('click', async () => {
+      const p = players[Number(btn.dataset.removeIndex)];
+      if(!confirm('Permanently remove '+p.name+' ('+p.codename+') from the game? This is NOT an elimination and cannot be undone.')) return;
+      // The Assassins backend must implement adminRemovePlayer before this works.
+      btn.disabled = true;
+      const out = document.getElementById('playerActionOutput');
+      showOutput(out,'Requesting player removal…','');
+      try {
+        const data = await callBackend('adminRemovePlayer',{password,codename:p.codename});
+        if(!data || data.success !== true) throw new Error((data && (data.message || data.error)) || 'Player removal is not supported by the current backend.');
+        window.assassinsAdminTab = 'players';
+        await loadAdminContent();
+      } catch(e) {
+        btn.disabled = false;
+        showOutput(out,e.message || 'Unable to remove player. The Apps Script backend may need updating.','error');
+      }
+    }));
 
     const logData = await callBackend('adminGetLog', { password });
     const logList = document.getElementById('logList');
