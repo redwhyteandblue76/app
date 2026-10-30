@@ -43,6 +43,17 @@ for(const name of ['011_settings_parity.sql','012_mafia_settings_parity.sql']){
  const source=read('12one-games/sql/'+name);
  assert(source.length>100,name+' must not be empty');
 }
+const assassinsPage=read('assassins2.html');
+const mafiaPage=read('mafia2.html');
+for(const [file,source] of [['assassins2.html',assassinsPage],['mafia2.html',mafiaPage]]){
+ assert(source.includes('game_recover'),'Missing recovery redemption: '+file);
+ assert(source.includes('game_issue_recovery'),'Missing recovery issuance: '+file);
+ assert(source.includes('crypto.getRandomValues'),'Recovery codes must be randomly generated: '+file);
+ assert(source.includes('storageKey:'),'Game must isolate browser sessions: '+file);
+}
+assert(mafiaPage.includes('renderMafiaRecoveryPanel'), 'Mafia recovery renewal UI missing');
+assert(assassinsPage.includes('newRecoveryCodeBtn'), 'Assassins recovery renewal UI missing');
+assert(read('12one-games/platform.js').includes('12one_host_auth'),'Host login must use independent browser session');
 const assassinsSettings=['master_lock','game_status','signup_enabled','dashboard_enabled','eliminate_enabled','signup_off_message','dashboard_off_message','eliminate_off_message','master_lock_message','admin_password','last_updated','reset_password','hall_field_enabled','hall_options','phone_field_enabled','instructions_enabled','instruction_verification_enabled','instructions_text'];
 const assConfig=read('12one-games/sql/011_settings_parity.sql');
 for(const setting of assassinsSettings)assert(assConfig.includes(setting),'Missing Assassins host setting '+setting);
