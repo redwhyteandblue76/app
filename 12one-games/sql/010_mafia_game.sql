@@ -130,7 +130,7 @@ end $$;
 create or replace function public.mafia_action(p_game_id uuid,p_action text,p_codename text default '',p_password text default '',p_target text default '')
 returns jsonb language plpgsql security definer set search_path='' as $$
 declare g public.games%rowtype; c public.mafia_config%rowtype; me public.game_memberships%rowtype;
-p public.mafia_players%rowtype; target_id uuid; target_role text; target_name text; votes integer; eligible boolean;
+p public.mafia_players%rowtype; v_target uuid; target_role text; target_name text; votes integer; eligible boolean;
 begin
  select * into g from public.games where id=p_game_id for update;
  if not found or g.game_type<>'mafia' or g.status<>'active' then raise exception 'Game is not active'; end if;
@@ -148,17 +148,17 @@ begin
  if p_action='mafia' then
   if p.role<>'mafia' then raise exception 'Mafia role required'; end if;
   if p.mafia_last_at+make_interval(hours=>c.mafia_cooldown_hours)>now() then raise exception 'Mafia cooldown active'; end if;
-  select m.id,m.real_name,q.role into target_id,target_name,target_role from public.game_memberships m
+  select m.id,m.real_name,q.role into v_target,target_name,target_role from public.game_memberships m
   join public.mafia_players q on q.member_id=m.id and q.game_id=p_game_id and q.alive
   where m.game_id=p_game_id and lower(m.codename)=lower(trim(p_target));
-  if target_id is null or target_id=me.id or target_role='mafia' then raise exception 'Invalid Mafia target'; end if;
-  update public.mafia_players set alive=false where game_id=p_game_id and member_id=target_id;
+  if v_target is null or v_target=me.id or target_role='mafia' then raise exception 'Invalid Mafia target'; end if;
+  update public.mafia_players set alive=false where game_id=p_game_id and member_id=v_target;
   update public.mafia_players set mafia_last_at=now() where game_id=p_game_id and member_id=me.id;
  elsif p_action in ('detective','vote') then
-  select m.id,m.real_name,q.role into target_id,target_name,target_role from public.game_memberships m
+  select m.id,m.real_name,q.role into v_target,target_name,target_role from public.game_memberships m
   join public.mafia_players q on q.member_id=m.id and q.game_id=p_game_id and q.alive
   where m.game_id=p_game_id and lower(m.real_name)=lower(trim(p_target));
-  if target_id is null or target_id=me.id then raise exception 'Invalid target name'; end if;
+  if v_target is null or v_target=me.id then raise exception 'Invalid target name'; end if;
   if p_action='detective' then
    if p.role<>'detective' then raise exception 'Detective role required'; end if;
    if p.detective_last_at+make_interval(hours=>c.detective_cooldown_hours)>now() then raise exception 'Detective cooldown active'; end if;
@@ -170,17 +170,17 @@ begin
   if not eligible then raise exception 'You cannot cast citizen votes'; end if;
   if p.citizen_last_at+make_interval(hours=>c.citizen_cooldown_hours)>now() then raise exception 'Voting cooldown active'; end if;
   delete from public.mafia_votes where game_id=p_game_id and created_at<=now()-make_interval(hours=>c.vote_expiry_hours);
-  insert into public.mafia_votes(game_id,voter_id,target_id) values(p_game_id,me.id,target_id)
+  insert into public.mafia_votes(game_id,voter_id,target_id) values(p_game_id,me.id,v_target)
    on conflict(game_id,voter_id) do update set target_id=excluded.target_id,created_at=now();
   -- Explicitly match the scoped target, not the column name (avoids accidental all-target aggregation).
-  select count(*) into votes from public.mafia_votes v where v.game_id=p_game_id and v.target_id=target_id;
+  select count(*) into votes from public.mafia_votes v where v.game_id=p_game_id and v.target_id=v_target;
   if votes < c.votes_required then
    return jsonb_build_object('success','Vote recorded','votesSoFar',votes,'votesRequired',c.votes_required);
   end if;
-  update public.mafia_players set alive=false where game_id=p_game_id and member_id=target_id;
+  update public.mafia_players set alive=false where game_id=p_game_id and member_id=v_target;
   update public.mafia_players set citizen_last_at=now() where game_id=p_game_id and member_id in
-   (select voter_id from public.mafia_votes where game_id=p_game_id and target_id=target_id);
-  delete from public.mafia_votes where game_id=p_game_id and target_id=target_id;
+   (select voter_id from public.mafia_votes where game_id=p_game_id and target_id=v_target);
+  delete from public.mafia_votes where game_id=p_game_id and target_id=v_target;
  else
   raise exception 'Unsupported Mafia action';
  end if;
@@ -243,9 +243,70 @@ begin
    when 'citizenCooldownHours' then 'citizen_cooldown_hours' when 'votesRequired' then 'votes_required'
    when 'voteExpiryHours' then 'vote_expiry_hours' else null end;
   if setting_col is null or length(coalesce(v,''))>5000 then raise exception 'Invalid setting'; end if;
-  execute format('update public.mafia_config set %I=$1 where game_id=$2',setting_col) using
-  case when setting_col in ('setup_enabled','dashboard_enabled','game_active','hall_field_enabled','allow_mafia_votes','allow_detective_votes')
-       then (lower(v)='true')::text else v end,p_game_id;
+  if setting_col in ('setup_enabled','dashboard_enabled','game_active','hall_field_enabled','allow_mafia_votes','allow_detective_votes') then
+   if lower(v) not in ('true','false') then raise exception 'Expected true or false'; end if;
+   execute format('update public.mafia_config set %I=$1::boolean where game_id=$2',setting_col) using v,p_game_id;
+  elsif setting_col in ('mafia_cooldown_hours','detective_cooldown_hours','citizen_cooldown_hours','votes_required','vote_expiry_hours') then
+   if v !~ '^[0-9]{1,3}
+ else
+  if p_action<>'read' then raise exception 'Unsupported host command'; end if;
+ end if;
+ select * into c from public.mafia_config where game_id=p_game_id;
+ select coalesce(jsonb_agg(jsonb_build_object('id',m.id,'official_name',m.real_name,'codename',m.codename,'role',p.role,
+ 'status',case when p.alive then 'active' else 'eliminated' end) order by m.joined_at),'[]'::jsonb)
+ into players from public.mafia_players p join public.game_memberships m on m.id=p.member_id where p.game_id=p_game_id;
+ select coalesce(jsonb_agg(jsonb_build_object('time',l.created_at,'message',l.message) order by l.created_at desc),'[]'::jsonb)
+ into logs from (select * from public.mafia_log where game_id=p_game_id order by created_at desc limit 200) l;
+ return jsonb_build_object('players',players,'log',logs,'status',(select status from public.games where id=p_game_id),
+ 'settings',jsonb_build_object('setupEnabled',c.setup_enabled,'dashboardEnabled',c.dashboard_enabled,'gameActive',c.game_active,
+ 'hallFieldEnabled',c.hall_field_enabled,'hallOptions',c.hall_options,
+ 'allowMafiaInCitizenVotes',c.allow_mafia_votes,'allowDetectiveInCitizenVotes',c.allow_detective_votes,
+ 'mafiaCooldownHours',c.mafia_cooldown_hours,'detectiveCooldownHours',c.detective_cooldown_hours,
+ 'citizenCooldownHours',c.citizen_cooldown_hours,'votesRequired',c.votes_required,'voteExpiryHours',c.vote_expiry_hours,
+ 'mafiaInstructions',c.mafia_instructions,'detectiveInstructions',c.detective_instructions,
+ 'citizenInstructions',c.citizen_instructions,'gameInstructions',c.game_instructions,'announcementMessage',c.announcement));
+end $$;
+
+
+-- Login requires ownership of the anonymous session AND the selected PIN.
+create or replace function public.mafia_login(p_game_id uuid,p_codename text,p_password text)
+returns boolean language plpgsql stable security definer set search_path='' as $$
+declare hash text;
+begin
+ select p.pin_hash into hash from public.game_memberships m
+ join public.mafia_players p on p.game_id=m.game_id and p.member_id=m.id
+ where m.game_id=p_game_id and m.user_id=(select auth.uid()) and lower(m.codename)=lower(trim(p_codename));
+ if hash is null then return false; end if;
+ return hash=public.crypt(p_password,hash);
+end $$;
+
+-- Verification returns only validity; never exposes secret codenames or roles.
+create or replace function public.mafia_verify(p_game_id uuid,p_type text,p_target text)
+returns boolean language plpgsql stable security definer set search_path='' as $$
+declare me uuid; target uuid;
+begin
+ select id into me from public.game_memberships where game_id=p_game_id and user_id=(select auth.uid());
+ if me is null then raise exception 'Not registered'; end if;
+ if p_type='mafia' then
+  if not exists(select 1 from public.mafia_players where game_id=p_game_id and member_id=me and role='mafia' and alive) then return false; end if;
+  select m.id into target from public.game_memberships m join public.mafia_players p on p.member_id=m.id and p.game_id=p_game_id and p.alive
+  where m.game_id=p_game_id and lower(m.codename)=lower(trim(p_target)) and p.role<>'mafia' and m.id<>me;
+ elsif p_type='detective' or p_type='vote' then
+  select m.id into target from public.game_memberships m join public.mafia_players p on p.member_id=m.id and p.game_id=p_game_id and p.alive
+  where m.game_id=p_game_id and lower(m.real_name)=lower(trim(p_target)) and m.id<>me;
+ else raise exception 'Unknown verification type'; end if;
+ return target is not null;
+end $$;
+revoke all on function public.mafia_public(text),public.mafia_join(text,text,text,text,text,text),
+ public.mafia_state(uuid),public.mafia_action(uuid,text,text,text,text),public.mafia_host(uuid,text,jsonb),public.mafia_login(uuid,text,text),public.mafia_verify(uuid,text,text) from public,anon;
+grant execute on function public.mafia_public(text) to anon,authenticated;
+grant execute on function public.mafia_join(text,text,text,text,text,text),public.mafia_state(uuid),
+ public.mafia_action(uuid,text,text,text,text),public.mafia_host(uuid,text,jsonb),public.mafia_login(uuid,text,text),public.mafia_verify(uuid,text,text) to authenticated;
+ then raise exception 'Enter a valid number'; end if;
+   execute format('update public.mafia_config set %I=$1::integer where game_id=$2',setting_col) using v,p_game_id;
+  else
+   execute format('update public.mafia_config set %I=$1 where game_id=$2',setting_col) using v,p_game_id;
+  end if;
  else
   if p_action<>'read' then raise exception 'Unsupported host command'; end if;
  end if;
