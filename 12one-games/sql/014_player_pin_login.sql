@@ -54,7 +54,7 @@ begin
    insert into public.player_pin_credentials(game_id,member_id,pin_hash,failed_attempts,locked_until)
    values(v_game.id,v_member,v_hash,1,null)
    on conflict(game_id,member_id) do update
-     set failed_attempts=case when public.player_pin_credentials.locked_until<=now()
+     set failed_attempts=case when public.player_pin_credentials.locked_until is not null and public.player_pin_credentials.locked_until<=now()
                                then 1 else public.player_pin_credentials.failed_attempts+1 end,
          locked_until=case when public.player_pin_credentials.failed_attempts>=4
                               then now()+interval '15 minutes'
@@ -72,3 +72,28 @@ revoke all on function public.assassins_join_with_pin(text,text,text,text,text,t
  public.game_player_sign_in(text,text,text) from public,anon;
 grant execute on function public.assassins_join_with_pin(text,text,text,text,text,text,boolean),
  public.game_player_sign_in(text,text,text) to authenticated;
+
+-- Existing Assassins registrations can assign a PIN while signed into their
+-- original browser session, without deleting players or restarting the game.
+create or replace function public.assassins_set_my_pin(p_game_id uuid,p_pin text)
+returns boolean language plpgsql security definer set search_path='' as $$
+declare v_member uuid;
+begin
+ if (select auth.uid()) is null then raise exception 'Player session required'; end if;
+ if p_pin !~ '^[0-9]{4}$' then raise exception 'Use a four-digit PIN'; end if;
+ if not exists(select 1 from public.games where id=p_game_id and game_type='assassins') then raise exception 'Assassins game not found'; end if;
+ select id into v_member from public.game_memberships
+ where game_id=p_game_id and user_id=(select auth.uid());
+ if v_member is null then raise exception 'You must sign in from your original registered browser'; end if;
+ insert into public.player_pin_credentials(game_id,member_id,pin_hash)
+ values(p_game_id,v_member,extensions.crypt(p_pin,extensions.gen_salt('bf')))
+ on conflict(game_id,member_id) do update set pin_hash=excluded.pin_hash,
+ failed_attempts=0,locked_until=null;
+ return true;
+end $$;
+revoke all on function public.assassins_set_my_pin(uuid,text) from public,anon;
+grant execute on function public.assassins_set_my_pin(uuid,text) to authenticated;
+
+-- The old public registration RPC has no PIN argument. Disable direct
+-- Assassins enrollment through it; only the wrapper records a hashed PIN.
+revoke execute on function public.assassins_join(text,text,text,text,text,boolean) from authenticated;
