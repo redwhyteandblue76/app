@@ -97,3 +97,8 @@ grant execute on function public.assassins_set_my_pin(uuid,text) to authenticate
 -- The old public registration RPC has no PIN argument. Disable direct
 -- Assassins enrollment through it; only the wrapper records a hashed PIN.
 revoke execute on function public.assassins_join(text,text,text,text,text,boolean) from authenticated;
+
+-- Obsolete recovery functions and token storage are not required for PIN login.
+drop function if exists public.game_issue_recovery(uuid,text);
+drop function if exists public.game_recover(text,text,text);
+drop table if exists public.game_recovery_tokens;
