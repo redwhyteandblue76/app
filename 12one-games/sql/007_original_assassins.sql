@@ -236,3 +236,18 @@ end $$;
 -- The older host removal RPC remains available for compatibility.
 revoke all on function public.assassins_join(text,text,text,text,text,boolean),public.assassins_confirm(uuid,text),public.assassins_host_players(uuid),public.assassins_host_setting(uuid,text,text),public.assassins_host_status(uuid,uuid,boolean),public.assassins_host_reset(uuid,boolean),public.assassins_host_shuffle(uuid),public.assassins_host_no_first_elimination(uuid) from public,anon;
 grant execute on function public.assassins_join(text,text,text,text,text,boolean),public.assassins_confirm(uuid,text),public.assassins_host_players(uuid),public.assassins_host_setting(uuid,text,text),public.assassins_host_status(uuid,uuid,boolean),public.assassins_host_reset(uuid,boolean),public.assassins_host_shuffle(uuid),public.assassins_host_no_first_elimination(uuid) to authenticated;
+
+-- Public registration options are scoped to the supplied game code.
+create or replace function public.assassins_public_config(p_code text)
+returns jsonb language plpgsql stable security definer set search_path='' as $$
+declare c public.assassins_config%rowtype; g uuid;
+begin
+ select id into g from public.games where game_code=upper(trim(p_code)) and game_type='assassins' and status='registration';
+ if g is null then raise exception 'Registration closed'; end if;
+ select * into c from public.assassins_config where game_id=g;
+ return jsonb_build_object('phone_enabled',coalesce(c.phone_enabled,false),'hall_enabled',coalesce(c.hall_enabled,false),
+ 'hall_options',coalesce(c.hall_options,''),'instructions_enabled',coalesce(c.instructions_enabled,false),
+ 'instruction_verification_enabled',coalesce(c.instruction_verification_enabled,false),'instructions_text',coalesce(c.instructions_text,''));
+end $$;
+revoke all on function public.assassins_public_config(text) from public;
+grant execute on function public.assassins_public_config(text) to anon,authenticated;
