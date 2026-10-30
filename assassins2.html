@@ -183,6 +183,10 @@ async function callBackend(action, params = {}) {
     return result.error?{success:false,message:result.error.message}:{success:true,message:'Registration complete'};
   }
   if (['verifyCitizen1','findMyTarget','eliminateTarget','getPublicFeed'].includes(action)) {
+    if (action === 'getPublicFeed') {
+      const {data,error}=await v2db.rpc('assassins_v2_public',{p_code:GAME_CODE});
+      return error?{success:false,feed:[],message:error.message}:{success:true,feed:data.feed||[]};
+    }
     const state = await v2db.rpc('assassins_state',{p_game_id:gameContext.id});
     if (state.error) {
       if (action === 'getPublicFeed') {
@@ -263,9 +267,9 @@ async function initialize() {
   const selected = view || (rememberedCodename() && isEnabled('dashboardEnabled') ? 'dashboard' : (isEnabled('signupEnabled') ? 'signup' : ''));
   renderNav(selected);
   if (selected === 'signup' && !isEnabled('signupEnabled')) {
-    app.innerHTML = '<div class="form-section">Sign-ups are currently closed. <a href="${GAME_PAGE}">Return home</a>.</div>';
+    app.innerHTML = '<div class="form-section">Sign-ups are currently closed. <a href="' + GAME_PAGE + '">Return home</a>.</div>';
   } else if (selected === 'dashboard' && !isEnabled('dashboardEnabled')) {
-    app.innerHTML = '<div class="form-section">The player dashboard is currently unavailable. <a href="${GAME_PAGE}">Return home</a>.</div>';
+    app.innerHTML = '<div class="form-section">The player dashboard is currently unavailable. <a href="' + GAME_PAGE + '">Return home</a>.</div>';
   } else if (selected === 'signup') renderSignup();
   else if (selected === 'dashboard') renderDashboard();
   else if (selected === 'feed') renderFeed();
@@ -282,9 +286,9 @@ async function renderLanding() {
       <p style="text-align:center;">Find your target. Tag them with a sock. Confirm the elimination using their codename.</p>
       <div class="status-line" id="gameStatus">Checking game status…</div>
       <div class="action-links">
-        ${isEnabled('dashboardEnabled') ? '<a href="?view=dashboard">Player Dashboard / Sign In</a>' : ''}
-        ${isEnabled('signupEnabled') && !rememberedCodename() ? '<a href="?view=signup">Sign Up</a>' : ''}
-        <a href="?view=rules">How to Play</a>
+        ${isEnabled('dashboardEnabled') ? '<a href="${GAME_PAGE}&view=dashboard">Player Dashboard / Sign In</a>' : ''}
+        ${isEnabled('signupEnabled') && !rememberedCodename() ? '<a href="${GAME_PAGE}&view=signup">Sign Up</a>' : ''}
+        <a href="${GAME_PAGE}&view=rules">How to Play</a>
       </div>
       <p class="subtle" style="text-align:center;">${rememberedCodename() ? 'Codename saved on this device. Open the dashboard to continue.' : 'Already registered? Enter your codename on the dashboard.'}</p>
     </div>`;
@@ -305,10 +309,10 @@ async function renderRules() {
     <div class="form-section">
       <p class="subtle">Read these rules before playing. The administrator may post additional instructions below.</p>
       <div class="rule-block"><h3>The Overview</h3><p>Your mission is to find your assigned target and tag them with a sock. When you successfully tag your target, they must reveal their codename. Enter that codename in the Player Dashboard to confirm the elimination and receive your next target.</p></div>
-      <div class="rule-block"><h3>How to Join</h3><p><a href="?view=signup">Sign up here</a> while registration is open. Choose a codename and keep it private.</p></div>
+      <div class="rule-block"><h3>How to Join</h3><p><a href="${GAME_PAGE}&view=signup">Sign up here</a> while registration is open. Choose a codename and keep it private.</p></div>
       <div class="rule-block"><h3>Once the Game Begins</h3><ol>
         <li>Do not reveal your codename except to the player who successfully eliminates you.</li>
-        <li>Open the <a href="?view=dashboard">Player Dashboard</a>, enter your codename, and select <strong>Find My Target</strong>.</li>
+        <li>Open the <a href="${GAME_PAGE}&view=dashboard">Player Dashboard</a>, enter your codename, and select <strong>Find My Target</strong>.</li>
         <li>Find your assigned target and tag them with a sock in a permitted location.</li>
         <li>Ask the eliminated player for their codename. They must provide it after a valid elimination.</li>
         <li>Return to the dashboard, choose <strong>Eliminate a Player</strong>, enter their codename, and confirm.</li>
@@ -624,287 +628,6 @@ function renderFeed() {
   load();
 }
 
-// ============================================================
-// ADMIN VIEW
-// ============================================================
-function renderAdmin() {
-  app.innerHTML = `
-    <h2>Admin Panel</h2>
-    <div class="form-section" id="loginSection">
-      <label>Admin password:</label>
-      <input type="password" id="adminPassword" autocomplete="off">
-      <button id="loginBtn">Log In</button>
-      <div class="output" id="loginOutput"></div>
-    </div>
-    <div id="adminContent" style="display:none;"></div>
-  `;
-
-  let password = '';
-
-  document.getElementById('loginBtn').addEventListener('click', async () => {
-    const output = document.getElementById('loginOutput');
-    password = document.getElementById('adminPassword').value;
-    try {
-      const data = await callBackend('adminLogin', { password });
-      if (data.success) {
-        document.getElementById('loginSection').style.display = 'none';
-        loadAdminContent();
-      } else {
-        showOutput(output, data.message, 'error');
-      }
-    } catch (err) {
-      showOutput(output, 'Network error.', 'error');
-    }
-  });
-
-  async function loadAdminContent() {
-    const content = document.getElementById('adminContent');
-    content.style.display = 'block';
-    content.innerHTML = `
-      <div class="admin-tabs" role="group" aria-label="Admin sections">
-        <button type="button" data-admin-tab="players" aria-pressed="true">Players</button>
-        <button type="button" data-admin-tab="settings" aria-pressed="false">Settings</button>
-        <button type="button" data-admin-tab="activity" aria-pressed="false">Activity</button>
-        <button type="button" data-admin-tab="danger" aria-pressed="false">Danger Zone</button>
-      </div>
-      <div class="form-section admin-panel" data-admin-panel="settings" hidden>
-        <h3 style="margin-top:0;">Game Settings</h3>
-        <div id="settingsList">Loading...</div>
-      </div>
-      <div class="form-section admin-panel" data-admin-panel="players">
-        <h3 style="margin-top:0;">Player Management</h3>
-        <p class="admin-help">Review registrations, search players, and change their game status. Removing a player is different from eliminating them.</p>
-        <div id="playerStats" class="admin-stats">Loading player totals…</div>
-        <label for="playerSearch">Search players</label>
-        <input id="playerSearch" class="admin-search" type="search" placeholder="Search by name, codename, hall, or status">
-        <div id="playerFilterInfo" class="admin-help"></div>
-        <button id="shuffleHallsBtn" style="background-color:#2a4d3a;">🎲 Shuffle Order (Alternate Halls)</button>
-        <div class="output" id="shuffleOutput"></div>
-        <button id="revealPlayersBtn" style="margin-top:10px;">🙈 Reveal Player List</button>
-        <button id="eliminateNoFirstKillBtn" style="background-color:#663333; margin-top:10px;">⚡ Eliminate All Without a First Kill</button>
-        <div class="output" id="eliminateNoFirstKillOutput"></div>
-        <div id="playersHidden" style="display:none; margin-top:12px;">
-          <div id="playersList">Loading...</div>
-        </div>
-      </div>
-      <div class="form-section admin-panel" data-admin-panel="activity" hidden>
-        <h3 style="margin-top:0;">Activity Log</h3>
-        <button id="revealLogBtn">👁️ Reveal Log</button>
-        <div id="logHidden" style="display:none; margin-top:12px;">
-          <div id="logList">Loading...</div>
-        </div>
-      </div>
-      <div class="form-section admin-panel" data-admin-panel="danger" hidden style="border-color:#ff5555;">
-        <h3 style="margin-top:0; color:#ff8888;">⚠️ Danger Zone</h3>
-        <label>Reset password:</label>
-        <input type="password" id="resetPasswordInput" autocomplete="off">
-        <button id="resetKeepBtn" style="background-color:#663333;">Reset Game (keep players, clear eliminations)</button>
-        <button id="resetWipeBtn" style="background-color:#663333; margin-top:10px;">Full Wipe (permanently delete all players)</button>
-        <div class="output" id="resetOutput"></div>
-      </div>
-    `;
-
-    const selectAdminTab = name => {
-      content.querySelectorAll('[data-admin-panel]').forEach(panel => { panel.hidden = panel.dataset.adminPanel !== name; });
-      content.querySelectorAll('[data-admin-tab]').forEach(btn => { btn.setAttribute('aria-pressed', String(btn.dataset.adminTab === name)); });
-    };
-    content.querySelectorAll('[data-admin-tab]').forEach(btn => btn.addEventListener('click', () => selectAdminTab(btn.dataset.adminTab)));
-    selectAdminTab(window.assassinsAdminTab || 'players');
-    content.querySelectorAll('[data-admin-tab]').forEach(btn => btn.addEventListener('click', () => { window.assassinsAdminTab = btn.dataset.adminTab; }));
-
-    const SELECT_SETTINGS = {
-      game_status: ['not_started', 'live', 'paused', 'ended'],
-      signup_enabled: ['TRUE', 'FALSE'],
-      dashboard_enabled: ['TRUE', 'FALSE'],
-      eliminate_enabled: ['TRUE', 'FALSE'],
-      hall_field_enabled: ['TRUE', 'FALSE'],
-      phone_field_enabled: ['TRUE', 'FALSE'],
-      instructions_enabled: ['TRUE', 'FALSE'],
-      instruction_verification_enabled: ['TRUE', 'FALSE']
-    };
-    
-    const TEXTAREA_KEYS = ['signup_off_message','dashboard_off_message','eliminate_off_message','master_lock_message','instructions_text'];
-    
-    const settingsData = await callBackend('adminGetSettings', { password });
-    const settingsList = document.getElementById('settingsList');
-    const editableKeys = ['game_status','signup_enabled','dashboard_enabled','eliminate_enabled',
-      'hall_field_enabled','hall_options','phone_field_enabled',
-      'instructions_enabled','instruction_verification_enabled','instructions_text',
-      'signup_off_message','dashboard_off_message','eliminate_off_message','master_lock_message'];
-    
-    settingsList.innerHTML = editableKeys.map(key => {
-      const currentValue = settingsData.settings[key] || '';
-      if (SELECT_SETTINGS[key]) {
-        const buttons = SELECT_SETTINGS[key].map(opt => {
-          const isActive = opt === currentValue;
-          const style = isActive
-            ? 'background-color:#0a7a3a; border:2px solid #fff;'
-            : '';
-          return `<button type="button" style="width:auto; padding:8px 12px; ${style}" data-select-key="${key}" data-select-value="${opt}">${opt}</button>`;
-        }).join('');
-        return `<label>${key}</label><div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px;">${buttons}</div>`;
-      } else if (TEXTAREA_KEYS.includes(key)) {
-        const helpText = key === 'instructions_text' ? '<p style="font-size:11px; opacity:0.7; margin:0 0 8px;">Shown on the sign-up page when Instructions is enabled.</p>' : '';
-        return `<label>${key}</label>${helpText}<div style="display:flex; flex-direction:column; gap:6px; margin-bottom:14px;">
-          <textarea id="setting_${key}" rows="5" style="width:100%; padding:8px; font-family:'Courier New',monospace; background-color:#444; color:#fff; border:2px solid #fff; border-radius:4px; box-sizing:border-box;">${currentValue.replace(/</g,'&lt;')}</textarea>
-          <button style="width:auto; padding:10px 14px; align-self:flex-start;" data-key="${key}">Save</button>
-        </div>`;
-      } else {
-        const helpText = key === 'hall_options' ? '<p style="font-size:11px; opacity:0.7; margin:0 0 8px;">Comma-separated list, e.g. 25-3,27-3</p>' : '';
-        return `<label>${key}</label>${helpText}<div style="display:flex; gap:6px; margin-bottom:14px;">
-          <input type="text" value="${currentValue.replace(/"/g,'&quot;')}" id="setting_${key}" style="flex:1;">
-          <button style="width:auto; padding:10px 14px;" data-key="${key}">Save</button>
-        </div>`;
-      }
-    }).join('') + `<p style="font-size:12px; opacity:0.7; text-align:center; margin-top:8px;">master_lock is currently: <b>${settingsData.settings.master_lock}</b> (edit the Sheet directly to change)</p>`;
-    
-    settingsList.querySelectorAll('button[data-select-key]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        btn.disabled = true;
-        await callBackend('adminUpdateSetting', { password, key: btn.dataset.selectKey, value: btn.dataset.selectValue });
-        loadAdminContent();
-      });
-    });
-
-    settingsList.querySelectorAll('button[data-key]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const key = btn.dataset.key;
-        const value = document.getElementById(`setting_${key}`).value;
-        btn.disabled = true;
-        btn.textContent = 'Saving...';
-        await callBackend('adminUpdateSetting', { password, key, value });
-        btn.textContent = 'Saved!';
-        setTimeout(() => { btn.textContent = 'Save'; btn.disabled = false; }, 1200);
-      });
-    });
-
-    document.getElementById('revealLogBtn').addEventListener('click', () => {
-      document.getElementById('logHidden').style.display = 'block';
-      document.getElementById('revealLogBtn').style.display = 'none';
-    });
-
-    document.getElementById('eliminateNoFirstKillBtn').addEventListener('click', async () => {
-      const out = document.getElementById('eliminateNoFirstKillOutput');
-      if (!confirm('This eliminates every currently active player who has not yet successfully eliminated anyone. This cannot be undone (though you can manually mark someone active again below). Continue?')) return;
-      const btn = document.getElementById('eliminateNoFirstKillBtn');
-      btn.disabled = true;
-      showOutput(out, 'Working...', '');
-      const data = await callBackend('adminEliminateNoFirstKill', { password });
-      btn.disabled = false;
-      showOutput(out, data.message, data.success ? 'success' : 'error');
-      if (data.success) loadAdminContent();
-    });
-
-    document.getElementById('revealPlayersBtn').addEventListener('click', () => {
-      document.getElementById('playersHidden').style.display = 'block';
-      document.getElementById('revealPlayersBtn').style.display = 'none';
-    });
-
-    document.getElementById('shuffleHallsBtn').addEventListener('click', async () => {
-      const shuffleOutput = document.getElementById('shuffleOutput');
-      if (!confirm('This rearranges the row order of ALL players to alternate halls as evenly as possible. This changes everyone\'s target chain — only do this at the start of a game, before anyone has a target. Continue?')) return;
-      const btn = document.getElementById('shuffleHallsBtn');
-      btn.disabled = true;
-      showOutput(shuffleOutput, 'Shuffling...', '');
-      const data = await callBackend('adminRandomizeHalls', { password });
-      btn.disabled = false;
-      showOutput(shuffleOutput, data.message, data.success ? 'success' : 'error');
-      if (data.success) loadAdminContent();
-    });
-
-    const playersData = await callBackend('adminGetPlayers', { password });
-    const playersList = document.getElementById('playersList');
-    const players = Array.isArray(playersData.players) ? playersData.players : [];
-    const activeCount = players.filter(p => p.status === 'active').length;
-    document.getElementById('playerStats').innerHTML =
-      '<div class="admin-stat"><strong>'+players.length+'</strong>Total</div>' +
-      '<div class="admin-stat"><strong>'+activeCount+'</strong>Active</div>' +
-      '<div class="admin-stat"><strong>'+(players.length-activeCount)+'</strong>Other</div>';
-    playersList.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Name</th><th>Codename</th><th>Hall</th><th>Status</th><th>Actions</th></tr></thead><tbody>' +
-      players.map((p,i) => '<tr data-player-row="'+i+'"><td>'+escapeHtml(p.name || '')+'</td><td>'+escapeHtml(p.codename || '')+
-      '</td><td>'+escapeHtml(p.hall || '—')+'</td><td class="status-'+(p.status === 'active' ? 'active' : 'eliminated')+'">'+escapeHtml(p.status || 'unknown')+
-      '</td><td><button type="button" data-toggle-index="'+i+'">'+(p.status === 'active' ? 'Eliminate' : 'Reactivate')+
-      '</button><button type="button" class="remove-player" data-remove-index="'+i+'" title="Requires backend support">Remove</button></td></tr>').join('') +
-      '</tbody></table></div><div class="output" id="playerActionOutput"></div>';
-    const search = document.getElementById('playerSearch');
-    const updateSearch = () => {
-      const term = search.value.trim().toLowerCase();
-      let visible = 0;
-      playersList.querySelectorAll('[data-player-row]').forEach(row => {
-        const p = players[Number(row.dataset.playerRow)];
-        const matches = [p.name,p.codename,p.hall,p.status].some(v => String(v || '').toLowerCase().includes(term));
-        row.hidden = !matches;
-        if(matches) visible++;
-      });
-      document.getElementById('playerFilterInfo').textContent = 'Showing '+visible+' of '+players.length+' players';
-    };
-    search.addEventListener('input',updateSearch);
-    updateSearch();
-    playersList.querySelectorAll('[data-toggle-index]').forEach(btn => btn.addEventListener('click',async () => {
-      const p = players[Number(btn.dataset.toggleIndex)];
-      const status = p.status === 'active' ? 'eliminated' : 'active';
-      if(!confirm('Mark '+p.codename+' as '+status+'?')) return;
-      btn.disabled = true;
-      try {
-        const data = await callBackend('adminSetPlayerStatus',{password,codename:p.codename,status,eliminatedBy:'admin'});
-        if(data.success === false) throw new Error(data.message || 'Unable to update player');
-        window.assassinsAdminTab = 'players';
-        await loadAdminContent();
-      } catch(e) {
-        btn.disabled = false;
-        showOutput(document.getElementById('playerActionOutput'),e.message || 'Unable to update player.','error');
-      }
-    }));
-    playersList.querySelectorAll('[data-remove-index]').forEach(btn => btn.addEventListener('click', async () => {
-      const p = players[Number(btn.dataset.removeIndex)];
-      if(!confirm('Permanently remove '+p.name+' ('+p.codename+') from the game? This is NOT an elimination and cannot be undone.')) return;
-      // The Assassins backend must implement adminRemovePlayer before this works.
-      btn.disabled = true;
-      const out = document.getElementById('playerActionOutput');
-      showOutput(out,'Requesting player removal…','');
-      try {
-        const data = await callBackend('adminRemovePlayer',{password,codename:p.codename});
-        if(!data || data.success !== true) throw new Error((data && (data.message || data.error)) || 'Player removal is not supported by the current backend.');
-        window.assassinsAdminTab = 'players';
-        await loadAdminContent();
-      } catch(e) {
-        btn.disabled = false;
-        showOutput(out,e.message || 'Unable to remove player. The Apps Script backend may need updating.','error');
-      }
-    }));
-
-    const logData = await callBackend('adminGetLog', { password });
-    const logList = document.getElementById('logList');
-    logList.innerHTML = `
-      <table>
-        <tr><th>Time</th><th>Type</th><th>Who</th><th>Details</th></tr>
-        ${logData.log.slice(0, 30).map(r => `
-          <tr><td>${r.timestamp}</td><td>${r.eventType}</td><td>${r.codename}</td><td>${r.details}</td></tr>
-        `).join('')}
-      </table>
-    `;
-
-    document.getElementById('resetKeepBtn').addEventListener('click', async () => {
-      const resetOutput = document.getElementById('resetOutput');
-      const resetPassword = document.getElementById('resetPasswordInput').value;
-      if (!resetPassword) { showOutput(resetOutput, 'Enter the reset password first.', 'error'); return; }
-      if (!confirm('Are you sure? This will set ALL players back to active and permanently clear elimination history. This cannot be undone.')) return;
-      const data = await callBackend('adminResetKeepPlayers', { password, resetPassword });
-      showOutput(resetOutput, data.message, data.success ? 'success' : 'error');
-      if (data.success) loadAdminContent();
-    });
-
-    document.getElementById('resetWipeBtn').addEventListener('click', async () => {
-      const resetOutput = document.getElementById('resetOutput');
-      const resetPassword = document.getElementById('resetPasswordInput').value;
-      if (!resetPassword) { showOutput(resetOutput, 'Enter the reset password first.', 'error'); return; }
-      if (!confirm('Are you sure? This will PERMANENTLY DELETE all players. Everyone will need to sign up again. This cannot be undone.')) return;
-      const data = await callBackend('adminResetFullWipe', { password, resetPassword });
-      showOutput(resetOutput, data.message, data.success ? 'success' : 'error');
-      if (data.success) loadAdminContent();
-    });
-  }
-}
 </script>
 </body>
 </html>
