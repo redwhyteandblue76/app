@@ -33,7 +33,7 @@ function notice(msg){$('notice').textContent=msg||''}
 function error(e){notice(e?.message||String(e))}
 function busy(form,on){form.querySelectorAll('button').forEach(b=>b.disabled=on)}
 function gameNode(g){const el=document.createElement('div');el.className='game';const strong=document.createElement('strong');strong.textContent=g.name;el.append(strong);const p=document.createElement('p');p.textContent=g.game_type.toUpperCase()+' · '+g.status+' · Code: '+g.game_code;el.append(p);return el}
-async function refresh(){const {data:{user},error:ue}=await client.auth.getUser();if(ue)throw ue;
+async function refresh(){const {data:{session},error:se}=await client.auth.getSession();if(se)throw se;const user=session?.user||null;
 $('auth').classList.toggle('hidden',!!user);$('dashboard').classList.toggle('hidden',!user);$('owner').classList.add('hidden');if(!user)return;
 $('identity').textContent='Signed in as '+(user.email||'guest');
 const [credits,games,admin]=await Promise.all([
@@ -50,7 +50,7 @@ if(!admin.error&&admin.data===true)$('owner').classList.remove('hidden');
 async function run(form,fn){busy(form,true);notice('');try{await fn();await refresh()}catch(e){error(e)}finally{busy(form,false)}}
 $('authForm').addEventListener('submit',e=>{e.preventDefault();run(e.currentTarget,async()=>{const {error}=await client.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;notice('Signed in.')})});
 $('signup').addEventListener('click',()=>run($('authForm'),async()=>{const {data,error}=await client.auth.signUp({email:$('email').value.trim(),password:$('password').value});if(error)throw error;notice(data.session?'Account created.':'Account created. Check your email to confirm your address before signing in.')}));
-$('signout').addEventListener('click',async()=>{const {error}=await client.auth.signOut();if(error)error(error);else{notice('Signed out.');await refresh()}});
+$('signout').addEventListener('click',async()=>{const {error:signoutError}=await client.auth.signOut();if(signoutError)error(signoutError);else{notice('Signed out.');await refresh()}});
 $('redeemForm').addEventListener('submit',e=>{e.preventDefault();run(e.currentTarget,async()=>{const {error}=await client.rpc('redeem_game_invite',{p_code:$('invite').value.trim()});if(error)throw error;$('invite').value='';notice('One game credit added.')})});
 $('createForm').addEventListener('submit',e=>{e.preventDefault();run(e.currentTarget,async()=>{const {data,error}=await client.rpc('create_hosted_game',{p_game_type:$('gameType').value,p_name:$('gameName').value.trim()});if(error)throw error;$('gameName').value='';notice('Game created! Join code: '+data[0].join_code+'\nGameplay and joining are not enabled yet.')})});
 $('issueForm').addEventListener('submit',e=>{e.preventDefault();run(e.currentTarget,async()=>{const date=$('expiry').value;const {data,error}=await client.rpc('admin_issue_game_invite',{p_expires_at:date?new Date(date+'T23:59:59').toISOString():null});if(error)throw error;$('issuedCode').textContent='NEW INVITATION CODE (copy now): '+data;notice('Invitation generated. Save the code before leaving this page.')})});
