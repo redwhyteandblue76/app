@@ -27,13 +27,13 @@ end $$;
 
 create or replace function public.game_recover(p_code text,p_codename text,p_token text)
 returns boolean language plpgsql security definer set search_path='' as $$
-declare g public.games%rowtype; target_member uuid; user_id uuid:=(select auth.uid());
+declare g public.games%rowtype; target_member uuid; v_user uuid:=(select auth.uid());
 begin
- if user_id is null then raise exception 'Guest session required'; end if;
+ if v_user is null then raise exception 'Guest session required'; end if;
  if p_token !~ '^[a-f0-9]{32}$' then raise exception 'Invalid recovery code'; end if;
  select * into g from public.games where game_code=upper(trim(p_code));
  if not found then raise exception 'Invalid game'; end if;
- if exists(select 1 from public.game_memberships where game_id=g.id and user_id=user_id) then
+ if exists(select 1 from public.game_memberships where game_id=g.id and user_id=v_user) then
   raise exception 'Already registered in this game';
  end if;
  select m.id into target_member from public.game_memberships m
@@ -41,7 +41,7 @@ begin
  where m.game_id=g.id and lower(m.codename)=lower(trim(p_codename))
  and t.token_hash=encode(public.digest(p_token,'sha256'),'hex') for update of m,t;
  if target_member is null then raise exception 'Invalid codename or recovery code'; end if;
- update public.game_memberships set user_id=user_id where game_id=g.id and id=target_member;
+ update public.game_memberships set user_id=v_user where game_id=g.id and id=target_member;
  delete from public.game_recovery_tokens where game_id=g.id and member_id=target_member;
  return true;
 end $$;
