@@ -513,6 +513,8 @@ function renderDashboard() {
       <label>One-time recovery code:</label><input id="recoverCode" type="text" autocomplete="off">
       <button id="recoverBtn" type="button">Recover this account</button>
       <div id="recoverStatus" role="status"></div>
+      <button id="newRecoveryCodeBtn" type="button">Generate a new private recovery code</button>
+      <div id="newRecoveryCodeStatus" role="status"></div>
     </details>
     <div class="form-section" id="actionSection" style="display:none;">
       <p class="subtle">Your codename is verified. Find your target or report a confirmed elimination.</p>
@@ -535,6 +537,13 @@ function renderDashboard() {
     </div>
   `;
 
+  document.getElementById('newRecoveryCodeBtn').addEventListener('click',async()=>{
+   const out=document.getElementById('newRecoveryCodeStatus');
+   try{
+    const code=await createGameRecoveryCode();
+    out.textContent='Keep this new private recovery code: '+code+' — previous recovery codes no longer work.';
+   }catch(e){out.textContent=e.message||String(e)}
+  });
   document.getElementById('recoverBtn').addEventListener('click',()=>recoverAssassinsPlayer().catch(e=>{document.getElementById('recoverStatus').textContent=e.message}));
   const codeInput = document.getElementById('codename');
   codeInput.value = rememberedCodename();
