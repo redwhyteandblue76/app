@@ -204,6 +204,24 @@ async function callBackend(action, params = {}) {
   throw Error('This original game feature is being migrated to game-specific Supabase storage: '+action);
 }
 
+async function createGameRecoveryCode() {
+ const bytes=new Uint8Array(16);crypto.getRandomValues(bytes);
+ const code=Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
+ const {error}=await v2db.rpc('game_issue_recovery',{p_game_id:gameContext.id,p_token:code});
+ if(error)throw error;
+ return code;
+}
+async function recoverAssassinsPlayer(){
+ const code=document.getElementById('recoverCode').value.trim().toLowerCase();
+ const codename=normalizeCodenameInput(document.getElementById('recoverCodename').value);
+ const status=document.getElementById('recoverStatus');
+ if(!codename||!code){status.textContent='Enter your codename and recovery code.';return}
+ const {error}=await v2db.rpc('game_recover',{p_code:GAME_CODE,p_codename:codename,p_token:code});
+ if(error){status.textContent=error.message;return}
+ localStorage.setItem(CODENAME_KEY,codename);
+ location.href=GAME_PAGE+'&view=dashboard';
+}
+
 function normalizeCodenameInput(value) {
   return value.trim().toLowerCase();
 }
@@ -448,6 +466,16 @@ async function renderSignup() {
         if (instructionsCheckbox) instructionsCheckbox.checked = false;
         localStorage.setItem(CODENAME_KEY, codename);
         renderNav('signup');
+        try{
+         const recovery=await createGameRecoveryCode();
+         const notice=document.createElement('p');
+         notice.textContent='IMPORTANT: Save this private one-time account recovery code to regain access if you switch devices: '+recovery;
+         output.appendChild(notice);
+        }catch(recoveryError){
+         const warn=document.createElement('p');
+         warn.textContent='Registration succeeded, but a recovery code could not be created: '+recoveryError.message;
+         output.appendChild(warn);
+        }
         const next = document.createElement('a');
         next.href = GAME_PAGE + '&view=dashboard';
         next.textContent = 'Open your player dashboard';
@@ -478,6 +506,14 @@ function renderDashboard() {
       <div class="loading" id="verifyLoading"><div class="spinner"></div>Loading...</div>
       <div class="output" id="verifyOutput"></div>
     </div>
+    <details class="form-section">
+      <summary>Changed device or lost your player session? Recover access</summary>
+      <p>A private recovery code is provided when you register. Codenames alone cannot recover someone else's player account.</p>
+      <label>Codename:</label><input id="recoverCodename" type="text">
+      <label>One-time recovery code:</label><input id="recoverCode" type="text" autocomplete="off">
+      <button id="recoverBtn" type="button">Recover this account</button>
+      <div id="recoverStatus" role="status"></div>
+    </details>
     <div class="form-section" id="actionSection" style="display:none;">
       <p class="subtle">Your codename is verified. Find your target or report a confirmed elimination.</p>
       <button id="findTargetBtn">Find My Target</button>
@@ -499,6 +535,7 @@ function renderDashboard() {
     </div>
   `;
 
+  document.getElementById('recoverBtn').addEventListener('click',()=>recoverAssassinsPlayer().catch(e=>{document.getElementById('recoverStatus').textContent=e.message}));
   const codeInput = document.getElementById('codename');
   codeInput.value = rememberedCodename();
   const getCodename = () => normalizeCodenameInput(codeInput.value);
