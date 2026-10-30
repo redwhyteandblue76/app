@@ -168,19 +168,40 @@ async function initializeGameContext() {
     const guest = await v2db.auth.signInAnonymously();
     if (guest.error) throw guest.error;
   }
+  const game = await v2db.from('games').select('id').eq('game_code',GAME_CODE).eq('game_type','assassins').maybeSingle();
+  if (game.error) throw game.error;
+  if (!game.data) throw Error('Game not accessible. Contact the host.');
+  gameContext.id = game.data.id;
 }
 // Until each original action is mapped and tested, fail closed rather than mixing game data.
 async function callBackend(action, params = {}) {
   if (!gameContext || !v2db) throw Error('Game not initialized');
   if (action === 'getPublicStatus') {
+    const state = await v2db.rpc('assassins_state',{p_game_id:gameContext.id});
+    const c = state.error ? null : state.data;
     const config = await v2db.rpc('assassins_public_config',{p_code:GAME_CODE});
-    const c = config.error ? null : config.data;
+    const p = config.error ? {} : config.data;
     const registration = gameContext.game_status === 'registration';
-    return {masterLock:'FALSE',signupEnabled:registration?'TRUE':'FALSE',dashboardEnabled:'TRUE',eliminateEnabled:'TRUE',signup_enabled:registration?'TRUE':'FALSE',signup_enabled_message:'Registration is closed',phone_field_enabled:c?.phone_enabled?'TRUE':'FALSE',hall_field_enabled:c?.hall_enabled?'TRUE':'FALSE',hall_options:c?.hall_options||'',instructions_enabled:c?.instructions_enabled?'TRUE':'FALSE',instruction_verification_enabled:c?.instruction_verification_enabled?'TRUE':'FALSE',instructions_text:c?.instructions_text||'',game_status:gameContext.game_status};
+    return {masterLock:'FALSE',signupEnabled:registration?'TRUE':'FALSE',dashboardEnabled:c?.dashboard_enabled===false?'FALSE':'TRUE',eliminateEnabled:c?.eliminate_enabled===false?'FALSE':'TRUE',hallFieldEnabled:p.hall_enabled?'TRUE':'FALSE',hallOptions:p.hall_options||'',phoneFieldEnabled:p.phone_enabled?'TRUE':'FALSE',instructionsEnabled:p.instructions_enabled?'TRUE':'FALSE',instructionVerificationEnabled:p.instruction_verification_enabled?'TRUE':'FALSE',instructionsText:p.instructions_text||'',gameStatus:gameContext.game_status};
   }
   if (action === 'submitForm') {
     const result = await v2db.rpc('assassins_join',{p_code:GAME_CODE,p_codename:params.codename,p_real_name:params.real_name,p_phone:params.phone||'',p_hall:params.hall||'',p_accepted:params.instructionsAccepted==='true'});
     return result.error?{success:false,message:result.error.message}:{success:true,message:'Registration complete'};
+  }
+  if (['verifyCitizen1','findMyTarget','eliminateTarget','getPublicFeed'].includes(action)) {
+    const state = await v2db.rpc('assassins_state',{p_game_id:gameContext.id});
+    if (state.error) return {success:false,message:state.error.message,feed:[]};
+    const st = state.data;
+    if (action === 'getPublicFeed') return {success:true,feed:st.feed||[]};
+    // Codenames are never authentication credentials: only the current user's own membership works.
+    if (!st.my_codename || st.my_codename.toLowerCase() !== String(params.codename||'').toLowerCase()) return {success:false,message:'This codename is not registered to your current session.'};
+    if (action === 'verifyCitizen1') return {success:true,message:'Codename verified for this session.'};
+    if (!st.my_alive) return {success:false,message:'You have been eliminated.'};
+    if (action === 'findMyTarget') return {success:true,message:st.my_target?'Your target is '+st.my_target+'.':'No active target available.'};
+    if (action === 'eliminateTarget') {
+      const result = await v2db.rpc('assassins_confirm',{p_game_id:gameContext.id,p_target_codename:params.targetCodename});
+      return result.error?{success:false,message:result.error.message}:{success:true,message:'Elimination confirmed. '+(result.data?.next_target?'Next target: '+result.data.next_target:'')};
+    }
   }
   throw Error('This original game feature is being migrated to game-specific Supabase storage: '+action);
 }
@@ -217,9 +238,9 @@ function renderNav(activeView) {
   const items = [{name:'Home',view:''}];
   if (isEnabled('dashboardEnabled')) items.push({name:rememberedCodename()?'My Dashboard':'Sign In',view:'dashboard'});
   if (isEnabled('signupEnabled') && !rememberedCodename()) items.push({name:'Sign Up',view:'signup'});
-  items.push({name:'Rules',view:'rules'},{name:'Elimination Feed',view:'feed'},{name:'Admin',view:'admin'});
+  items.push({name:'Rules',view:'rules'},{name:'Elimination Feed',view:'feed'});
   nav.innerHTML = items.map(item =>
-    '<a href="' + (item.view ? '?view='+item.view : GAME_PAGE) + '"' +
+    '<a href="' + (item.view ? GAME_PAGE+'&view='+item.view : GAME_PAGE) + '"' +
     (item.view === activeView ? ' aria-current="page"' : '') + '>' + item.name + '</a>'
   ).join('') + (rememberedCodename() ? '<button type="button" id="topLogout">Log Out</button>' : '');
   const logout = document.getElementById('topLogout');
@@ -238,7 +259,7 @@ async function initialize() {
     return;
   }
   // If a saved codename exists, the root URL opens the dashboard when enabled.
-  const selected = view || (rememberedCodename() && isEnabled('dashboardEnabled') ? 'dashboard' : '');
+  const selected = view || (rememberedCodename() && isEnabled('dashboardEnabled') ? 'dashboard' : (isEnabled('signupEnabled') ? 'signup' : ''));
   renderNav(selected);
   if (selected === 'signup' && !isEnabled('signupEnabled')) {
     app.innerHTML = '<div class="form-section">Sign-ups are currently closed. <a href="${GAME_PAGE}">Return home</a>.</div>';
@@ -248,7 +269,7 @@ async function initialize() {
   else if (selected === 'dashboard') renderDashboard();
   else if (selected === 'feed') renderFeed();
   else if (selected === 'rules') renderRules();
-  else if (selected === 'admin') renderAdmin();
+  else if (selected === 'admin') { app.textContent='Administration is available through the host dashboard.'; }
   else renderLanding();
 }
 initializeGameContext().then(initialize).catch(err => { document.getElementById('app').textContent = err.message; });
