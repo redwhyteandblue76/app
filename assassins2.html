@@ -148,6 +148,7 @@
   <div id="app"></div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 // 12ONE v2: game-code isolation. Never call the original shared Apps Script backend.
 const GAME_CODE = new URLSearchParams(location.search).get('game')?.trim().toUpperCase() || '';
@@ -443,6 +444,14 @@ async function renderSignup() {
         if (phoneField) phoneField.value = '';
         if (hallField) hallField.selectedIndex = 0;
         if (instructionsCheckbox) instructionsCheckbox.checked = false;
+        localStorage.setItem(CODENAME_KEY, codename);
+        renderNav('signup');
+        const next = document.createElement('a');
+        next.href = GAME_PAGE + '&view=dashboard';
+        next.textContent = 'Open your player dashboard';
+        next.style.display = 'block';
+        next.style.marginTop = '12px';
+        output.appendChild(next);
       } else {
         showOutput(output, data.message, 'error');
       }
