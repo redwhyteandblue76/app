@@ -44,25 +44,9 @@ async function lookup(){
  const code=$('joinCode').value.trim().toUpperCase();
  const {data,error}=await db.rpc('lookup_joinable_game',{p_code:code});if(error)throw error;
  const g=data?.[0];if(!g)throw Error('No game found for that code.');
- $('foundGame').textContent=g.game_name+' · '+g.game_type+' · '+g.game_status;
- $('joinForm').classList.add('hidden');
- const destination=linkFor(code,g.game_type);
- const link=node('a','Open '+g.game_name+' player page');link.href=destination;$('foundGame').append(' · ',link);
- $('joinForm').dataset.code=code;
- $('joinForm').dataset.gameType=g.game_type;
- show('assassinsSignupFields',g.game_type==='assassins');
- if(g.game_type==='assassins'){
- const {data:config,error:ce}=await db.rpc('assassins_public_config',{p_code:code});if(ce)throw ce;
- show('playerPhoneLabel',config.phone_enabled);$('playerPhone').required=config.phone_enabled;
- show('playerHallLabel',config.hall_enabled);$('playerHall').required=config.hall_enabled;
- $('instructionsText').textContent=config.instructions_enabled?config.instructions_text:'';
- show('instructionsArea',config.instructions_enabled);
- show('acceptInstructionsLabel',config.instructions_enabled&&config.instruction_verification_enabled);
- $('instructionsAccepted').required=config.instructions_enabled&&config.instruction_verification_enabled;
- const sel=$('playerHall');sel.replaceChildren(node('option','Choose hall'));
- for(const h of config.hall_options.split(',').map(x=>x.trim()).filter(Boolean)){const opt=node('option',h);opt.value=h;sel.append(opt)}
- }
- if(g.game_status!=='registration')msg('Registration is not open; existing players can use the game link.');
+ const target=linkFor(code,g.game_type);
+ $('foundGame').replaceChildren(node('span',g.game_name+' · '+g.game_type+' · '+g.game_status+' · '));
+ const a=node('a','Open game');a.href=target;$('foundGame').append(a);
 }
 async function loadLobby(id){
  const {data,error}=await db.rpc('list_game_lobby',{p_game_id:id});if(error)throw error;
@@ -72,14 +56,11 @@ async function loadLobby(id){
 }
 $('authForm').onsubmit=e=>{e.preventDefault();task(e.currentTarget,async()=>{const {error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;msg('Signed in.')})};
 $('signup').onclick=()=>task($('authForm'),async()=>{const {data,error}=await db.auth.signUp({email:$('email').value.trim(),password:$('password').value});if(error)throw error;msg(data.session?'Account created.':'Check your email to confirm your account.')});
-$('guestStart').onclick=()=>task($('guestActions'),async()=>{const {error}=await db.auth.signInAnonymously();if(error)throw error;msg('Guest session ready. Keep this browser session to return to your game.')});
 $('signout').onclick=$('guestSignout').onclick=async()=>{const {error}=await db.auth.signOut();if(error)fail(error);else{currentGame=null;msg('Signed out.');await refresh()}};
 $('redeemForm').onsubmit=e=>{e.preventDefault();task(e.currentTarget,async()=>{const {error}=await db.rpc('redeem_game_invite',{p_code:$('invite').value.trim()});if(error)throw error;$('invite').value='';msg('Game credit added.')})};
 $('createForm').onsubmit=e=>{e.preventDefault();task(e.currentTarget,async()=>{const {data,error}=await db.rpc('create_hosted_game',{p_game_type:$('gameType').value,p_name:$('gameName').value.trim()});if(error)throw error;$('gameName').value='';msg('Game created: '+data[0].join_code+'. Open registration to accept players.')})};
 $('issueForm').onsubmit=e=>{e.preventDefault();task(e.currentTarget,async()=>{const date=$('expiry').value;const {data,error}=await db.rpc('admin_issue_game_invite',{p_expires_at:date?new Date(date+'T23:59:59').toISOString():null});if(error)throw error;$('issuedCode').textContent='Copy this invitation code now: '+data;msg('Invitation generated.')})};
 $('lookupForm').onsubmit=e=>{e.preventDefault();task(e.currentTarget,lookup)};
-$('joinForm').onsubmit=e=>{e.preventDefault();task(e.currentTarget,async()=>{if(!currentUser)throw Error('Sign in or continue as guest first.');const gameType=$('joinForm').dataset.gameType;
- const {data,error}=gameType==='assassins'?await db.rpc('assassins_join',{p_code:$('joinForm').dataset.code,p_codename:$('codename').value.trim(),p_real_name:$('realName').value.trim(),p_phone:$('playerPhone').value.trim(),p_hall:$('playerHall').value.trim(),p_accepted:$('instructionsAccepted').checked}):await db.rpc('join_game',{p_code:$('joinForm').dataset.code,p_codename:$('codename').value.trim()});if(error)throw error;currentGame=data;msg('Joined successfully!')})};
 const queryCode=new URL(location.href).searchParams.get('join');if(queryCode)$('joinCode').value=queryCode;
 db.auth.onAuthStateChange(()=>setTimeout(()=>refresh().catch(fail),0));
 refresh().then(()=>{if(queryCode)return lookup().catch(fail)}).catch(fail);
