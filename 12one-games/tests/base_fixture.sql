@@ -1,6 +1,7 @@
 -- Disposable PostgreSQL fixture representing the database immediately after migration 007.
 -- Never run this fixture against production.
-create extension if not exists pgcrypto with schema public;
+create schema if not exists extensions;
+create extension if not exists pgcrypto with schema extensions;
 create schema if not exists auth;
 create role anon nologin;
 create role authenticated nologin;
