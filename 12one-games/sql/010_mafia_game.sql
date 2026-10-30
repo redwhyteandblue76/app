@@ -185,7 +185,7 @@ begin
   insert into public.mafia_votes(game_id,voter_id,target_id) values(p_game_id,me.id,v_target)
    on conflict(game_id,voter_id) do update set target_id=excluded.target_id,created_at=now();
   -- Explicitly match the scoped target, not the column name (avoids accidental all-target aggregation).
-  select count(*) into votes from public.mafia_votes v where v.game_id=p_game_id and v.target_id=v_target;
+  select count(*) into votes from public.mafia_votes v join public.mafia_players voter on voter.game_id=v.game_id and voter.member_id=v.voter_id and voter.alive where v.game_id=p_game_id and v.target_id=v_target;
   if votes < c.votes_required then
    return jsonb_build_object('success','Vote recorded','votesSoFar',votes,'votesRequired',c.votes_required);
   end if;
@@ -252,6 +252,10 @@ begin
   if coalesce(p_payload->>'role','') not in ('','citizen','mafia','detective') then raise exception 'Invalid role'; end if;
   if coalesce(p_payload->>'status','') not in ('active','eliminated') then raise exception 'Invalid status'; end if;
   update public.mafia_players set role=nullif(p_payload->>'role',''),alive=(p_payload->>'status'='active') where game_id=p_game_id and member_id=target;
+  if p_payload->>'status'='eliminated' then
+   delete from public.mafia_votes where game_id=p_game_id and (target_id=target or voter_id=target);
+  end if;
+  insert into public.mafia_log(game_id,event_type,message) values(p_game_id,'host_player','Host updated '||(select coalesce(real_name,'player') from public.game_memberships where id=target));
   if g.status in ('active','finished') then
    update public.games set status=case
     when not exists(select 1 from public.mafia_players where game_id=p_game_id and alive and role='mafia')
