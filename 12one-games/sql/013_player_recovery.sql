@@ -20,7 +20,7 @@ begin
  select id into v_member from public.game_memberships where game_id=p_game_id and user_id=(select auth.uid());
  if v_member is null then raise exception 'Not registered in this game'; end if;
  insert into public.game_recovery_tokens(game_id,member_id,token_hash)
- values(p_game_id,v_member,encode(public.digest(p_token,'sha256'),'hex'))
+ values(p_game_id,v_member,encode(extensions.digest(p_token,'sha256'),'hex'))
  on conflict(game_id,member_id) do update set token_hash=excluded.token_hash,created_at=now();
  return true;
 end $$;
@@ -39,7 +39,7 @@ begin
  select m.id into target_member from public.game_memberships m
  join public.game_recovery_tokens t on t.game_id=m.game_id and t.member_id=m.id
  where m.game_id=g.id and lower(m.codename)=lower(trim(p_codename))
- and t.token_hash=encode(public.digest(p_token,'sha256'),'hex') for update of m,t;
+ and t.token_hash=encode(extensions.digest(p_token,'sha256'),'hex') for update of m,t;
  if target_member is null then raise exception 'Invalid codename or recovery code'; end if;
  update public.game_memberships set user_id=v_user where game_id=g.id and id=target_member;
  delete from public.game_recovery_tokens where game_id=g.id and member_id=target_member;
