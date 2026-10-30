@@ -293,6 +293,16 @@ async function issueMafiaRecovery(){
  await mafiaRpc('game_issue_recovery',{p_game_id:mafiaGame.id,p_token:code});
  return code;
 }
+async function renderMafiaRecoveryPanel(){
+ document.getElementById('main').innerHTML='<div class="card"><h2>Refresh my recovery code</h2><p>Your current recovery code will stop working when you create a new one. Keep the new code private.</p><button id="reissueMafiaCode" class="primary">Generate new recovery code</button><div id="reissueMafiaOutput" class="output" role="status"></div></div>';
+ document.getElementById('reissueMafiaCode').onclick=async()=>{
+   const b=document.getElementById('reissueMafiaCode'),o=document.getElementById('reissueMafiaOutput');
+   b.disabled=true;
+   try{const code=await issueMafiaRecovery();o.textContent='Save this private new recovery code: '+code;o.className='output show success'}
+   catch(e){o.textContent=e.message||String(e);o.className='output show error'}
+   finally{b.disabled=false}
+ };
+}
 async function recoverMafia(){
  const codename=document.getElementById('recoveryCodename').value.trim();
  const code=document.getElementById('recoveryCode').value.trim().toLowerCase();
@@ -316,6 +326,7 @@ function renderNav() {
       <button class="${state.view==='dashboard'?'active':''}" onclick="goTo('dashboard')">My Dashboard</button>
       <button class="${state.view==='playerlist'?'active':''}" onclick="goTo('playerlist')">Player List</button>
       <button class="${state.view==='instructions'?'active':''}" onclick="goTo('instructions')">Instructions</button>
+      <button onclick="renderMafiaRecoveryPanel()">Recovery Code</button>
       <button onclick="logout()">Log Out</button>
     `;
   } else {
