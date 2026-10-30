@@ -16,21 +16,21 @@ async function refresh(){
  show('auth',!currentUser);show('dashboard',!!currentUser&&!guest);show('guestPanel',guest);show('owner',false);
  $('identity').textContent=currentUser?(guest?'Guest session (this browser)':'Signed in as '+currentUser.email):'';
  if(!currentUser){show('lobby',false);show('assassinsPanel',false);return}
- const {data:games,error:ge}=await db.from('games').select('id,name,game_type,game_code,status,owner_user_id').order('created_at',{ascending:false});if(ge)throw ge;
+ const {data:games,error:ge}=await db.from('games').select('id,name,game_type,game_code,status,owner_user_id').eq('owner_user_id',currentUser.id).order('created_at',{ascending:false});if(ge)throw ge;
  $('gamesList').replaceChildren();
  if(!games.length)$('gamesList').append(node('p','No games yet.'));
  for(const g of games){
  const el=node('div','');el.className='game';el.append(node('strong',g.name),node('p',g.game_type.toUpperCase()+' · '+g.status+' · '+g.game_code));
  const a=node('a','Share join link');a.href=linkFor(g.game_code,g.game_type);el.append(a);const go=node('button','Open game page');go.onclick=()=>location.assign(linkFor(g.game_code,g.game_type));el.append(go);
  const open=node('button','View lobby');open.className='secondary';open.onclick=()=>loadLobby(g.id).catch(fail);el.append(open);
- if(g.game_type==='assassins'){const play=node('button','Assassins game');play.onclick=()=>window.openAssassins(g.id).catch(fail);el.append(play)}
+ if(g.game_type==='assassins'&&g.owner_user_id===currentUser.id){const manage=node('button','Manage Assassins');manage.onclick=()=>window.openAssassins(g.id).catch(fail);el.append(manage)}
  if(g.owner_user_id===currentUser.id&&['draft','registration'].includes(g.status)){
  const b=node('button',g.status==='registration'?'Close registration':'Open registration');
  b.onclick=async()=>{try{const {error}=await db.rpc('set_game_registration',{p_game_id:g.id,p_open:g.status==='draft'});if(error)throw error;await refresh()}catch(e){fail(e)}};el.append(b);
  }
  $('gamesList').append(el);
  }
- if(guest){show('guestGames',true);$('guestGames').replaceChildren();for(const g of games){if(g.game_type==='assassins'){const b=node('button','Open '+g.name);b.onclick=()=>window.openAssassins(g.id).catch(fail);$('guestGames').append(b)}}}else show('guestGames',false);
+
  if(!guest){
  const [credits,admin]=await Promise.all([db.from('game_credits').select('id').is('consumed_at',null),db.rpc('is_platform_admin')]);
  if(credits.error)throw credits.error;
@@ -45,7 +45,9 @@ async function lookup(){
  const {data,error}=await db.rpc('lookup_joinable_game',{p_code:code});if(error)throw error;
  const g=data?.[0];if(!g)throw Error('No game found for that code.');
  $('foundGame').textContent=g.game_name+' · '+g.game_type+' · '+g.game_status;
- $('joinForm').classList.toggle('hidden',g.game_status!=='registration');
+ $('joinForm').classList.add('hidden');
+ const destination=linkFor(code,g.game_type);
+ const link=node('a','Open '+g.game_name+' player page');link.href=destination;$('foundGame').append(' · ',link);
  $('joinForm').dataset.code=code;
  $('joinForm').dataset.gameType=g.game_type;
  show('assassinsSignupFields',g.game_type==='assassins');
@@ -60,7 +62,7 @@ async function lookup(){
  const sel=$('playerHall');sel.replaceChildren(node('option','Choose hall'));
  for(const h of config.hall_options.split(',').map(x=>x.trim()).filter(Boolean)){const opt=node('option',h);opt.value=h;sel.append(opt)}
  }
- if(g.game_status!=='registration')msg('Registration is not open for this game.');
+ if(g.game_status!=='registration')msg('Registration is not open; existing players can use the game link.');
 }
 async function loadLobby(id){
  const {data,error}=await db.rpc('list_game_lobby',{p_game_id:id});if(error)throw error;
