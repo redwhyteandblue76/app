@@ -12,7 +12,7 @@
  const section=title=>{const details=el('details');details.append(el('summary',title));details.style.margin='16px 0';return details};
  const boolSettings=[['setupEnabled','Registration enabled'],['dashboardEnabled','Player dashboards'],['gameActive','Game actions enabled'],['allowMafiaInCitizenVotes','Mafia members can cast citizen votes'],['allowDetectiveInCitizenVotes','Detectives can cast citizen votes'],['hallFieldEnabled','Require hall at registration']];
  const textSettings=[['hallOptions','Hall options (comma-separated)'],['announcementMessage','Announcement'],['gameInstructions','Game instructions'],['mafiaInstructions','Mafia instructions'],['detectiveInstructions','Detective instructions'],['citizenInstructions','Citizen instructions']];
- const numericSettings=[['mafiaCooldownHours','Mafia cooldown (hours)'],['detectiveCooldownHours','Detective cooldown (hours)'],['citizenCooldownHours','Citizen cooldown (hours)'],['votesRequired','Votes needed to eliminate'],['voteExpiryHours','Vote expiration (hours)']];
+ const numericSettings=[['mafiaCooldownHours','Mafia cooldown (hours)'],['detectiveCooldownHours','Detective cooldown (hours)'],['citizenCooldownHours','Citizen cooldown (hours)'],['citizenVotesRequired','Citizen votes required'],['voteExpirationMinutes','Vote expiration (minutes)'],['minActiveForGameEnd','Minimum active players before game ends']];
  async function render(){
   if(!gameId)return;
   const s=await rpc('read');
@@ -43,6 +43,8 @@
    const field=input('number',s.settings[key]);field.min=key==='voteExpiryHours'||key==='votesRequired'?1:0;
    settings.append(label(title,field),button('Save '+title,async()=>{await rpc('setting',{key,value:field.value});notice(title+' saved.');await render()}));
   }
+  settings.append(el('p','adminPassword: replaced with host-account authentication. No shared game password is stored.'));
+  settings.append(el('p','Original Mafia settings not listed here are supported above. Player signup also requires real names and game-specific PINs.'));
   area.append(settings);
   const players=section('Private player management — real names, codenames, roles');
   for(const pl of s.players){
