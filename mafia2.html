@@ -195,6 +195,7 @@
 
 <main id="main"></main>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 /* ================= CONFIG ================= */
 // Mafia v2 is isolated while its per-game backend and roles are implemented.
@@ -227,18 +228,70 @@ function scheduleReturnToDashboard(outEl, seconds) {
 }
 
 /* ================= API HELPER ================= */
-async function api(action, params) {
-  throw new Error('Mafia 2.0 is not released yet. This page is intentionally disconnected from the original game backend.');
+let mafiaDB=null, mafiaGame=null;
+async function bootstrapMafia(){
+ if(!GAME_CODE) throw Error('Missing game code. Use the link from your host.');
+ if(!window.supabase) throw Error('The game service could not load.');
+ mafiaDB=window.supabase.createClient('https://kzhrcwptyyyqodqlwngg.supabase.co','sb_publishable_37UbHH_v8-RyRFsEwril4A_oaEjDecl');
+ const {data:session,error:sessionError}=await mafiaDB.auth.getSession();
+ if(sessionError) throw sessionError;
+ if(!session.session){
+  const {error}=await mafiaDB.auth.signInAnonymously();
+  if(error) throw error;
+ }
+ const {data,error}=await mafiaDB.rpc('mafia_public',{p_code:GAME_CODE});
+ if(error) throw error;
+ mafiaGame=data;
 }
+async function mafiaRpc(name,args){
+ const {data,error}=await mafiaDB.rpc(name,args);
+ if(error) throw error;
+ return data;
+}
+// All player operations use the current authenticated session and its specific game id.
+// No Mafia 2.0 operation reaches the original game's Google Apps Script.
+async function api(action,params={}){
+ try{
+  if(!mafiaDB||!mafiaGame) throw Error('Game connection not established.');
+  const id=mafiaGame.id;
+  if(action==='getPublicSettings'||action==='getPlayerList'){
+   const data=await mafiaRpc('mafia_public',{p_code:GAME_CODE});
+   mafiaGame=data;
+   return action==='getPlayerList'?{players:data.players||[]}:data;
+  }
+  if(action==='signup'){
+   await mafiaRpc('mafia_join',{p_code:GAME_CODE,p_real_name:params.officialName,p_codename:params.codename,p_password:params.password,p_phone:params.phone||'',p_hall:params.hall||''});
+   return {success:'Registered'};
+  }
+  if(action==='login'){
+   const ok=await mafiaRpc('mafia_login',{p_game_id:id,p_codename:params.codename,p_password:params.password});
+   return ok?{success:true}:{error:'Incorrect codename, PIN, or player session. Use the same browser used to register.'};
+  }
+  if(action==='getDashboard'){
+   const data=await mafiaRpc('mafia_state',{p_game_id:id});
+   if(!data.codename||data.codename.toLowerCase()!==String(params.codename||'').toLowerCase())return{error:'Session does not match this player.'};
+   return data;
+  }
+  const verification={verifyMafiaTarget:['mafia','targetCodename'],verifyDetectiveTarget:['detective','targetOfficialName'],verifyCitizenTarget:['vote','targetOfficialName']};
+  if(verification[action]){
+   const [type,key]=verification[action];
+   const valid=await mafiaRpc('mafia_verify',{p_game_id:id,p_type:type,p_target:params[key]||''});
+   return valid?{success:true}:{error:'Target could not be verified.'};
+  }
+  const actions={mafiaEliminate:['mafia','targetCodename'],detectiveGuess:['detective','targetOfficialName'],citizenVote:['vote','targetOfficialName'],citizenRetractVote:['retract',null]};
+  if(actions[action]){
+   const [type,key]=actions[action];
+   return await mafiaRpc('mafia_action',{p_game_id:id,p_action:type,p_codename:params.codename,p_password:params.password,p_target:key?params[key]:''});
+  }
+  throw Error('Unsupported game operation: '+action);
+ }catch(e){return{error:e.message||String(e)}}
+}
+function escapeMafia(value){return String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 
 /* ================= NAV / ROUTING ================= */
 function renderNav() {
   const nav = document.getElementById('navBar');
   nav.innerHTML = '';
-  if (state.isAdminMode) {
-    nav.innerHTML = `<button onclick="location.search=''">Exit Admin</button>`;
-    return;
-  }
   if (state.codename) {
     nav.innerHTML = `
       <button class="${state.view==='dashboard'?'active':''}" onclick="goTo('dashboard')">My Dashboard</button>
@@ -279,7 +332,7 @@ async function renderInstructions() {
   document.getElementById('main').innerHTML = `
     <div class="card" style="max-width:600px;">
       <h2>How to Play</h2>
-      <div class="instructions" style="margin-bottom:0;">${(s.gameInstructions || 'No instructions have been set yet.').replace(/\n/g, '<br>')}</div>
+      <div class="instructions" style="margin-bottom:0;">${escapeMafia(s.gameInstructions || 'No instructions have been set yet.').replace(/\n/g, '<br>')}</div>
     </div>`;
 }
 
@@ -289,7 +342,7 @@ async function renderPlayerList() {
   const items = (data.players || []).map(line => {
     const eliminated = line.includes('eliminated');
     const name = line.split(' is currently active.')[0].split(' was eliminated')[0];
-    return `<div class="player-list-item"><span>${name}</span><span class="stamp ${eliminated ? 'eliminated' : 'active'}">${eliminated ? 'Eliminated' : 'Active'}</span></div>`;
+    return `<div class="player-list-item"><span>${escapeMafia(name)}</span><span class="stamp ${eliminated ? 'eliminated' : 'active'}">${eliminated ? 'Eliminated' : 'Active'}</span></div>`;
   }).join('');
   document.getElementById('main').innerHTML = `
     <div class="card">
@@ -307,11 +360,6 @@ async function init() {
     el.textContent = '📣 ' + s.announcement;
     el.style.display = 'block';
   }
-  if (state.isAdminMode) {
-    renderNav();
-    renderAdminLogin();
-    return;
-  }
   renderNav();
   if (state.codename) goTo('dashboard');
   else goTo(s.setupEnabled ? 'setup' : 'login');
@@ -320,7 +368,7 @@ async function init() {
 /* ================= SETUP ================= */
 async function renderSetup() {
   const hallEnabled = state.publicSettings.hallFieldEnabled;
-  const halls = (state.publicSettings.hallOptions || []).map(h => `<option value="${h}">${h}</option>`).join('');
+  const halls = (state.publicSettings.hallOptions || []).map(h => `<option value="${escapeMafia(h.trim())}">${escapeMafia(h.trim())}</option>`).join('');
   const enabled = state.publicSettings.setupEnabled;
   document.getElementById('main').innerHTML = `
     <div class="card">
@@ -418,7 +466,7 @@ function cooldownLine(cd) {
 
 function renderDashboardBody() {
   const d = state.dashboard;
-  let html = `<div class="card"><h2>Welcome, ${d.official_name}</h2>`;
+  let html = `<div class="card"><h2>Welcome, ${escapeMafia(d.official_name)}</h2>`;
 
   if (!d.gameActive) {
     html += `<div class="output show">The game has ended. Thanks for playing!</div></div>`;
@@ -441,12 +489,12 @@ function renderDashboardBody() {
     return;
   }
 
-  html += `<div class="instructions">${d.roleInstructions || ''}</div></div>`;
+  html += `<div class="instructions">${escapeMafia(d.roleInstructions || '').replace(/\n/g,'<br>')}</div></div>`;
 
   if (d.role === 'mafia') html += mafiaSection(d);
   if (d.role === 'detective') html += detectiveSection(d);
 
-  const canVote = d.role === 'citizen' || d.citizenCooldown !== undefined;
+  const canVote = !!d.allowCitizenVotes;
   if (canVote) html += citizenSection(d);
 
   document.getElementById('main').innerHTML = html;
@@ -455,7 +503,7 @@ function renderDashboardBody() {
 function mafiaSection(d) {
   const team = (d.mafiaTeam || []).map(m => {
     const eliminated = m.status !== 'active';
-    return `<div class="player-list-item"><span>${m.official_name}</span><span class="stamp ${eliminated ? 'eliminated' : 'active'}">${eliminated ? 'Eliminated' : 'Active'}</span></div>`;
+    return `<div class="player-list-item"><span>${escapeMafia(m.official_name)}</span><span class="stamp ${eliminated ? 'eliminated' : 'active'}">${eliminated ? 'Eliminated' : 'Active'}</span></div>`;
   }).join('');
   return `
     <div class="card">
@@ -545,7 +593,7 @@ function voteResultBanner(d) {
   return `
     <div class="output show ${good ? 'success' : 'error'}" style="margin-bottom:14px;">
       ${good ? '🎉 Your vote worked!' : '⚠️ Wrong call.'}
-      The vote against ${r.targetName} went through, and they ${good ? 'WERE a mafia member. Nice work!' : 'were NOT a mafia member. An innocent player was eliminated.'}
+      The vote against ${escapeMafia(r.targetName)} went through, and they ${good ? 'WERE a mafia member. Nice work!' : 'were NOT a mafia member. An innocent player was eliminated.'}
       ${when ? `<div class="small-note">${when}</div>` : ''}
     </div>`;
 }
@@ -556,7 +604,7 @@ function citizenSection(d) {
       <div class="card">
         <span class="tab citizen">Vote</span>
         <h2>Your Active Vote</h2>
-        <div class="status-line">Voting against: <b>${d.activeVote.targetOfficialName}</b></div>
+        <div class="status-line">Voting against: <b>${escapeMafia(d.activeVote.targetOfficialName)}</b></div>
         <div class="status-line">Votes so far: ${d.activeVote.votesSoFar} / ${d.activeVote.votesRequired}</div>
         <div class="small-note">Votes expire automatically after a while if the threshold isn't reached.</div>
         <label>Your password (to retract):</label>
@@ -613,213 +661,8 @@ async function citizenRetract() {
   scheduleReturnToDashboard(out, 5);
 }
 
-/* ================= ADMIN ================= */
-let adminPassword = null;
-
-function renderAdminLogin() {
-  document.getElementById('main').innerHTML = `
-    <div class="card">
-      <h2>🔒 Admin Login</h2>
-      <label>Admin Password:</label>
-      <input id="admin_pw" type="password">
-      <button class="primary" onclick="submitAdminLogin()">Enter</button>
-      <div id="admin_login_out" class="output"></div>
-    </div>`;
-}
-async function submitAdminLogin() {
-  const pw = document.getElementById('admin_pw').value.trim();
-  const out = document.getElementById('admin_login_out');
-  out.className = 'output show'; out.textContent = 'Checking...';
-  const data = await api('adminLogin', { adminPassword: pw });
-  if (data.error) { out.className = 'output show error'; out.textContent = data.error; return; }
-  adminPassword = pw;
-  renderAdminPanel();
-}
-
-const BOOLEAN_SETTING_KEYS = ['setupEnabled', 'dashboardEnabled', 'gameActive', 'allowMafiaInCitizenVotes', 'allowDetectiveInCitizenVotes', 'hallFieldEnabled'];
-const TEXTAREA_SETTING_KEYS = ['mafiaInstructions', 'detectiveInstructions', 'citizenInstructions', 'gameInstructions', 'announcementMessage'];
-const DEFAULT_INSTRUCTIONS = {
-  mafiaInstructions: `MAFIA: Get a player alone, reveal you're mafia, get their codename, tell them they're eliminated and must stay silent, then carry on as normal. Officially eliminate them below. Blend in as a citizen when helpful — your codename also works in the citizen voting section.`,
-  detectiveInstructions: `DETECTIVE: Keep your role secret! You get one guess per cooldown period. If your guess is correct, subtly tip off citizens to vote that player out — don't reveal you're the detective.`,
-  citizenInstructions: `CITIZEN: Talk to other players to figure out who the mafia are. Vote against someone you suspect below — you need others to also vote before they're eliminated. Be careful, you might vote out a teammate! Casting a vote uses your cooldown once it actually results in an elimination.`,
-  gameInstructions: `WELCOME TO CONTINUOUS MAFIA!
-
-Once everyone signs up, each player is assigned a role: mafia, detective, or citizen.
-
-MAFIA get to eliminate one player periodically. Find a player alone, reveal you are mafia, get their codename, tell them they are eliminated and must stay silent about it, then carry on as normal. Officially eliminate them on your dashboard.
-
-The DETECTIVE gets a periodic guess. Go to your dashboard, enter the real name of who you suspect is mafia. If correct, subtly tip off citizens to vote that player out without revealing you are the detective.
-
-CITIZENS discuss amongst themselves to figure out who the mafia are, and vote against suspects on their dashboard. A vote only takes effect once enough citizens vote the same target — so recruit others to vote with you. Be careful: guessing wrong eliminates a teammate.
-
-The game ends when all mafia are eliminated, or when only a couple of non-mafia players remain.
-
-IMPORTANT RULES:
-1. You may never show anyone your player dashboard, no exceptions.
-2. If you are eliminated, you may NOT discuss gameplay with anyone still active — do not even reveal that you were eliminated. Just say "check the website."
-3. Use the Player List page to check exact spelling of names and who is still active before submitting any action.
-4. You will not be told how many mafia remain in total, but you will be told when your own elimination guess was correct.
-
-Have fun, and don't take it too seriously!`
-};
-let lastAdminData = null;
-
-async function renderAdminPanel() {
-  document.getElementById('main').innerHTML = `<div class="card"><div class="output show">Loading admin data...</div></div>`;
-  const data = await api('adminGetAll', { adminPassword });
-  if (data.error) { renderAdminLogin(); return; }
-  lastAdminData = data;
-
-  const settingsRows = Object.keys(data.settings).map(k => {
-    if (BOOLEAN_SETTING_KEYS.includes(k)) {
-      const isTrue = String(data.settings[k]).toUpperCase() === 'TRUE' || data.settings[k] === true;
-      return `
-        <tr>
-          <td>${k}</td>
-          <td>
-            <button class="secondary" style="width:auto; padding:4px 12px; ${isTrue?'background:var(--accent); color:#08181e; border-color:var(--accent);':''}" onclick="saveSetting('${k}', 'TRUE')">TRUE</button>
-            <button class="secondary" style="width:auto; padding:4px 12px; ${!isTrue?'background:var(--danger); color:#fff; border-color:var(--danger);':''}" onclick="saveSetting('${k}', 'FALSE')">FALSE</button>
-          </td>
-          <td></td>
-        </tr>`;
-    }
-    if (TEXTAREA_SETTING_KEYS.includes(k)) {
-      const hasDefault = DEFAULT_INSTRUCTIONS.hasOwnProperty(k);
-      return `
-        <tr>
-          <td style="vertical-align:top;">${k}</td>
-          <td><textarea style="width:100%; padding:6px; min-height:80px; font-family:'Inter',sans-serif; font-size:12.5px; background:#0d0d0d; color:var(--text); border:1px solid #333; border-radius:3px;" id="set_${k}">${String(data.settings[k]).replace(/</g,'&lt;')}</textarea></td>
-          <td style="vertical-align:top; white-space:nowrap;">
-            <button class="secondary" style="width:auto; padding:4px 10px;" onclick="saveSetting('${k}')">Save</button>
-            ${hasDefault ? `<button class="secondary" style="width:auto; padding:4px 10px; margin-top:6px;" onclick="restoreDefaultInstruction('${k}')">Restore Default</button>` : ''}
-          </td>
-        </tr>`;
-    }
-    return `
-      <tr>
-        <td>${k}</td>
-        <td><input style="width:100%; padding:4px;" id="set_${k}" value="${String(data.settings[k]).replace(/"/g,'&quot;')}"></td>
-        <td><button class="secondary" style="width:auto; padding:4px 10px;" onclick="saveSetting('${k}')">Save</button></td>
-      </tr>`;
-  }).join('');
-
-  const totalPlayers = data.players.length;
-  const unassigned = data.players.filter(pl => !pl.role).length;
-  const mafiaCount = data.players.filter(pl => pl.role === 'mafia').length;
-  const detectiveCount = data.players.filter(pl => pl.role === 'detective').length;
-  const citizenCount = data.players.filter(pl => pl.role === 'citizen').length;
-
-  const playerRows = data.players.map(pl => `
-    <tr>
-      <td data-label="Name">${pl.official_name}</td>
-      <td data-label="Codename" class="mono">${pl.codename}</td>
-      <td data-label="Role">
-        <select id="role_${pl.codename}">
-          <option value="" ${!pl.role?'selected':''}>—</option>
-          <option value="citizen" ${pl.role==='citizen'?'selected':''}>citizen</option>
-          <option value="mafia" ${pl.role==='mafia'?'selected':''}>mafia</option>
-          <option value="detective" ${pl.role==='detective'?'selected':''}>detective</option>
-        </select>
-      </td>
-      <td data-label="Status">
-        <select id="status_${pl.codename}">
-          <option value="active" ${pl.status==='active'?'selected':''}>active</option>
-          <option value="eliminated" ${pl.status==='eliminated'?'selected':''}>eliminated</option>
-        </select>
-      </td>
-      <td><span class="stamp ${pl.status==='active'?'active':'eliminated'}" style="font-size:9px; padding:2px 6px;">${pl.status==='active'?'Active':'Out'}</span></td>
-      <td style="white-space:normal;">
-        <button class="secondary" style="width:auto; padding:4px 10px;" onclick="savePlayer('${pl.codename}')">Save</button>
-        <button class="secondary" style="width:auto; padding:4px 10px; margin-top:6px; border-color:var(--danger); color:#e88;" onclick="removePlayer('${pl.codename}')">Remove</button>
-      </td>
-    </tr>`).join('');
-
-  const logRows = data.log.map(l => `<div class="player-list-item"><b>${new Date(l.time).toLocaleString()}</b> — ${l.message}</div>`).join('');
-
-  document.getElementById('main').innerHTML = `
-    <div class="card" style="max-width:700px;">
-      <h2>🎲 Game Setup</h2>
-      <div class="status-line">${totalPlayers} player(s) signed up — ${unassigned} unassigned, ${mafiaCount} mafia, ${detectiveCount} detective(s), ${citizenCount} citizen(s).</div>
-      <label>Number of mafia:</label>
-      <input id="setup_numMafia" type="number" min="0" value="1">
-      <label>Number of detectives:</label>
-      <input id="setup_numDetectives" type="number" min="0" value="1">
-      <button class="primary" onclick="randomizeRoles()">Randomize Roles &amp; Start Game</button>
-      <div class="small-note">This resets everyone to active, clears cooldowns/votes, randomly assigns mafia + detective roles among ALL signed-up players, and makes the rest citizens.</div>
-      <div id="setup_out" class="output"></div>
-    </div>
-    <div class="card" style="max-width:700px;">
-      <h2>⚙️ Settings</h2>
-      <table class="stack"><tbody>${settingsRows}</tbody></table>
-    </div>
-    <div class="card" style="max-width:700px;">
-      <h2>👥 Players</h2>
-      <button class="secondary" id="revealPlayersBtn" onclick="revealPlayers()">🙈 Reveal Player List</button>
-      <div id="playersHidden" style="display:none; margin-top:12px;">
-        <table class="stack"><thead><tr><th>Name</th><th>Codename</th><th>Role</th><th>Status</th><th></th><th></th></tr></thead>
-        <tbody>${playerRows}</tbody></table>
-      </div>
-      <button class="primary danger" style="margin-top:16px;" onclick="resetGame()">⚠️ Reset Entire Game</button>
-    </div>
-    <div class="card" style="max-width:700px;">
-      <h2>📜 Game Log (latest 200)</h2>
-      <div style="max-height:300px; overflow-y:auto;">${logRows || 'No log entries yet.'}</div>
-    </div>
-  `;
-}
-
-function revealPlayers() {
-  document.getElementById('playersHidden').style.display = 'block';
-  document.getElementById('revealPlayersBtn').style.display = 'none';
-}
-
-async function randomizeRoles() {
-  const numMafia = document.getElementById('setup_numMafia').value;
-  const numDetectives = document.getElementById('setup_numDetectives').value;
-  const out = document.getElementById('setup_out');
-  if (!confirm(`This resets ALL players to active and randomly assigns ${numMafia} mafia + ${numDetectives} detective(s), rest citizens. Continue?`)) return;
-  out.className = 'output show'; out.textContent = 'Assigning roles...';
-  const data = await api('adminRandomizeRoles', { adminPassword, numMafia, numDetectives });
-  if (data.error) { out.className = 'output show error'; out.textContent = data.error; return; }
-  out.className = 'output show success';
-  out.textContent = `Done! ${data.mafia} mafia, ${data.detectives} detective(s), ${data.citizens} citizen(s) out of ${data.total} players.`;
-  setTimeout(renderAdminPanel, 2500);
-}
-
-async function saveSetting(key, chipValue) {
-  const value = chipValue !== undefined ? chipValue : document.getElementById('set_' + key).value;
-  await api('adminUpdateSetting', { adminPassword, key, value });
-  renderAdminPanel();
-}
-
-async function restoreDefaultInstruction(key) {
-  if (!DEFAULT_INSTRUCTIONS[key]) return;
-  if (!confirm('Restore the built-in default text for ' + key + '? This overwrites your current edit.')) return;
-  await api('adminUpdateSetting', { adminPassword, key, value: DEFAULT_INSTRUCTIONS[key] });
-  renderAdminPanel();
-}
-async function savePlayer(codename) {
-  const role = document.getElementById('role_' + codename).value;
-  const status = document.getElementById('status_' + codename).value;
-  await api('adminSetRole', { adminPassword, codename, role });
-  await api('adminSetStatus', { adminPassword, codename, status });
-  renderAdminPanel();
-}
-async function removePlayer(codename) {
-  if (!confirm(`Permanently remove "${codename}" from the game? This deletes them entirely (not just eliminates) and cannot be undone.`)) return;
-  const data = await api('adminRemovePlayer', { adminPassword, codename });
-  if (data.error) { alert(data.error); return; }
-  renderAdminPanel();
-}
-
-async function resetGame() {
-  if (!confirm('This will reset ALL players to active and clear all roles. Are you sure?')) return;
-  await api('adminResetGame', { adminPassword });
-  renderAdminPanel();
-}
-
 /* ================= BOOT ================= */
-document.getElementById('main').textContent = 'Mafia 2.0 is being migrated to independent game storage. Registration and gameplay are temporarily disabled; the original Mafia game is unaffected.';
+bootstrapMafia().then(init).catch(e=>{document.getElementById('main').textContent=e.message||String(e)});
 
 </script>
 </body>
