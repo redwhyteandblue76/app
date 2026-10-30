@@ -101,7 +101,7 @@ begin
  if exists(select 1 from public.game_memberships where game_id=g.id and lower(real_name)=lower(v_name)) then raise exception 'That real name is already registered'; end if;
  insert into public.game_memberships(game_id,user_id,codename,real_name,phone,hall)
  values(g.id,(select auth.uid()),v_code,v_name,left(trim(p_phone),40),nullif(trim(p_hall),'')) returning id into v_id;
- insert into public.mafia_players(game_id,member_id,pin_hash) values(g.id,v_id,public.crypt(p_password,public.gen_salt('bf')));
+ insert into public.mafia_players(game_id,member_id,pin_hash) values(g.id,v_id,extensions.crypt(p_password,extensions.gen_salt('bf')));
  return g.id;
 end $$;
 
@@ -151,7 +151,7 @@ begin
  if not found then raise exception 'Player session or codename does not match'; end if;
  select * into p from public.mafia_players where game_id=p_game_id and member_id=me.id for update;
  if not found or not p.alive then raise exception 'You have been eliminated'; end if;
- if p_password !~ '^[0-9]{4}$' or p.pin_hash<>public.crypt(p_password,p.pin_hash) then raise exception 'Incorrect PIN'; end if;
+ if p_password !~ '^[0-9]{4}$' or p.pin_hash<>extensions.crypt(p_password,p.pin_hash) then raise exception 'Incorrect PIN'; end if;
  if p_action='retract' then
   delete from public.mafia_votes where game_id=p_game_id and voter_id=me.id;
   return jsonb_build_object('success','Vote retracted');
@@ -314,7 +314,7 @@ begin
  join public.mafia_players p on p.game_id=m.game_id and p.member_id=m.id
  where m.game_id=p_game_id and m.user_id=(select auth.uid()) and lower(m.codename)=lower(trim(p_codename));
  if hash is null then return false; end if;
- return hash=public.crypt(p_password,hash);
+ return hash=extensions.crypt(p_password,hash);
 end $$;
 
 -- Verification returns only validity; never exposes secret codenames or roles.
