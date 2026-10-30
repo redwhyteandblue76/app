@@ -23,6 +23,7 @@ async function refresh(){
  const el=node('div','');el.className='game';el.append(node('strong',g.name),node('p',g.game_type.toUpperCase()+' · '+g.status+' · '+g.game_code));
  const a=node('a','Share join link');a.href=linkFor(g.game_code);el.append(a);
  const open=node('button','View lobby');open.className='secondary';open.onclick=()=>loadLobby(g.id).catch(fail);el.append(open);
+ if(g.game_type==='assassins'){const play=node('button','Assassins game');play.onclick=()=>window.openAssassins(g.id).catch(fail);el.append(play)}
  if(g.owner_user_id===currentUser.id&&['draft','registration'].includes(g.status)){
  const b=node('button',g.status==='registration'?'Close registration':'Open registration');
  b.onclick=async()=>{try{const {error}=await db.rpc('set_game_registration',{p_game_id:g.id,p_open:g.status==='draft'});if(error)throw error;await refresh()}catch(e){fail(e)}};el.append(b);
@@ -36,6 +37,7 @@ async function refresh(){
  show('owner',!admin.error&&admin.data===true);
  }
  if(currentGame)await loadLobby(currentGame);
+ if(window.refreshAssassins)await window.refreshAssassins();
 }
 async function lookup(){
  const code=$('joinCode').value.trim().toUpperCase();
