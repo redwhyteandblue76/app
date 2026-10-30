@@ -407,7 +407,15 @@ async function submitSignup() {
     out.className = 'output show error'; out.textContent = data.error;
   } else {
     out.className = 'output show success';
-    out.textContent = 'Welcome to the game! Remember your codename and password — screenshot this if needed, then head to Login.';
+    out.textContent = 'Registration complete. Your codename is saved in this browser. Keep your 4-digit game PIN for future actions.';
+    localStorage.setItem(LS_KEY, params.codename);
+    state.codename = params.codename;
+    renderNav();
+    const continueBtn=document.createElement('button');
+    continueBtn.className='primary';
+    continueBtn.textContent='Open My Dashboard';
+    continueBtn.addEventListener('click',()=>goTo('dashboard'));
+    out.after(continueBtn);
   }
 }
 
