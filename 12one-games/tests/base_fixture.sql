@@ -2,6 +2,8 @@
 -- Never run this fixture against production.
 create extension if not exists pgcrypto with schema public;
 create schema if not exists auth;
+create role anon nologin;
+create role authenticated nologin;
 create or replace function auth.uid() returns uuid language sql stable as $$
  select nullif(current_setting('test.user_id',true),'')::uuid $$;
 create table public.games(
