@@ -46,6 +46,9 @@ begin
   if sqlerrm='SECURITY FAILURE: a player was able to reset Mafia' then raise; end if;
  end;
 end $$;
+-- Explicitly lower the early-end threshold to exercise both elimination actions in a four-player fixture.
+select set_config('test.user_id','00000000-0000-4000-8000-000000000001',false);
+select public.mafia_host((select id from public.games where game_code='MAF100'),'setting','{"key":"minActiveForGameEnd","value":"2"}'::jsonb);
 -- Exercise a real Mafia elimination and assert that the victim is removed from active play.
 select set_config('test.user_id',(select m.user_id::text from public.game_memberships m join public.mafia_players p on p.member_id=m.id where p.role='mafia' and p.game_id=(select id from public.games where game_code='MAF100') limit 1),false);
 do $$
