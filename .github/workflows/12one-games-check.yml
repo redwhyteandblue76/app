@@ -1,0 +1,30 @@
+name: 12ONE Games validation
+on:
+  push:
+    branches: [host-original-game-pages-foundation]
+  pull_request:
+    paths:
+      - 'assassins2.html'
+      - 'mafia2.html'
+      - 'host.html'
+      - '12one-games/**'
+      - '.github/workflows/12one-games-check.yml'
+jobs:
+  static-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check JavaScript and integration references
+        run: node 12one-games/tests/validate.cjs
+      - name: Install PostgreSQL SQL parser
+        run: python -m pip install pglast
+      - name: Parse new SQL migrations
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from pglast import parse_sql
+          for name in ['008_assassins_v2_public.sql','009_assassins_host_parity.sql','010_mafia_game.sql']:
+              file=Path('12one-games/sql')/name
+              parse_sql(file.read_text())
+              print('PASS', file)
+          PY
