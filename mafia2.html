@@ -197,14 +197,16 @@
 
 <script>
 /* ================= CONFIG ================= */
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyV3h7k1OfBfiyKVWEac3YEu3SAN692_Ndg4UutB8zy4uQw-8L7520nB2EcI3vZyd8yZw/exec';
-const LS_KEY = 'mafia_codename';
+// Mafia v2 is isolated while its per-game backend and roles are implemented.
+// Never connect the new player page to the original shared Google Apps Script.
+const GAME_CODE = new URLSearchParams(location.search).get('game')?.trim().toUpperCase() || '';
+const LS_KEY = 'mafia2_codename_' + GAME_CODE;
 
 /* ================= STATE ================= */
 let state = {
   view: null,
   codename: localStorage.getItem(LS_KEY) || null,
-  isAdminMode: new URLSearchParams(location.search).get('admin') === '1',
+  isAdminMode: false,
   dashboard: null,
   publicSettings: null
 };
@@ -226,11 +228,7 @@ function scheduleReturnToDashboard(outEl, seconds) {
 
 /* ================= API HELPER ================= */
 async function api(action, params) {
-  const url = new URL(SCRIPT_URL);
-  url.searchParams.set('action', action);
-  for (const k in (params || {})) url.searchParams.set(k, params[k]);
-  const res = await fetch(url.toString());
-  return res.json();
+  throw new Error('Mafia 2.0 is not released yet. This page is intentionally disconnected from the original game backend.');
 }
 
 /* ================= NAV / ROUTING ================= */
@@ -821,7 +819,8 @@ async function resetGame() {
 }
 
 /* ================= BOOT ================= */
-init();
+document.getElementById('main').textContent = 'Mafia 2.0 is being migrated to independent game storage. Registration and gameplay are temporarily disabled; the original Mafia game is unaffected.';
+
 </script>
 </body>
 </html>
