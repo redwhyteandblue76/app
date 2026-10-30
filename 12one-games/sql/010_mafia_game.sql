@@ -224,6 +224,7 @@ begin
   if n<3 or n_mafia<1 or n_detectives<0 or n_mafia+n_detectives>=n then raise exception 'Invalid role counts'; end if;
   delete from public.mafia_votes where game_id=p_game_id;
   delete from public.mafia_vote_results where game_id=p_game_id;
+  delete from public.mafia_log where game_id=p_game_id;
   with numbered as (select member_id,row_number() over(order by random()) as rn from public.mafia_players where game_id=p_game_id)
   update public.mafia_players p set role=case when numbered.rn<=n_mafia then 'mafia' when numbered.rn<=n_mafia+n_detectives then 'detective' else 'citizen' end,
   alive=true,mafia_last_at=null,detective_last_at=null,citizen_last_at=null
@@ -251,6 +252,13 @@ begin
   if coalesce(p_payload->>'role','') not in ('','citizen','mafia','detective') then raise exception 'Invalid role'; end if;
   if coalesce(p_payload->>'status','') not in ('active','eliminated') then raise exception 'Invalid status'; end if;
   update public.mafia_players set role=nullif(p_payload->>'role',''),alive=(p_payload->>'status'='active') where game_id=p_game_id and member_id=target;
+  if g.status in ('active','finished') then
+   update public.games set status=case
+    when not exists(select 1 from public.mafia_players where game_id=p_game_id and alive and role='mafia')
+      or (select count(*) from public.mafia_players where game_id=p_game_id and alive and role='mafia') >=
+         (select count(*) from public.mafia_players where game_id=p_game_id and alive and role<>'mafia')
+    then 'finished' else 'active' end where id=p_game_id;
+  end if;
  elsif p_action='setting' then
   setting:=p_payload->>'key'; v:=p_payload->>'value';
   setting_col:=case setting
