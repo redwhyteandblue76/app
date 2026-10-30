@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assassins</title>
+<style>
+  body {
+    font-family: 'Courier New', monospace;
+    background-color: #000;
+    color: #fff;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+  }
+  #container { width: 100%; max-width: 500px; margin: 0 auto; padding: 0 20px; box-sizing: border-box; }
+  h2 { text-align: center; }
+  .form-section {
+    background-color: #222;
+    padding: 20px;
+    border: 2px solid #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    width: 100%;
+    margin-bottom: 20px;
+    box-sizing: border-box;
+  }
+  label { display: block; width: 100%; margin-bottom: 6px; }
+  input, select {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #fff;
+    border-radius: 4px;
+    background-color: #444;
+    color: #fff;
+    margin-bottom: 12px;
+    box-sizing: border-box;
+    font-family: 'Courier New', monospace;
+  }
+  button {
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    background-color: #555;
+    color: #fff;
+    cursor: pointer;
+    width: 100%;
+    font-family: 'Courier New', monospace;
+    margin-top: 6px;
+  }
+  button:hover { background-color: #444; }
+  button:disabled { background-color: #333; cursor: not-allowed; opacity: 0.6; }
+  .output {
+    margin-top: 12px;
+    padding: 10px;
+    border: 1px solid #fff;
+    background-color: #333;
+    border-radius: 4px;
+    font-weight: bold;
+    white-space: pre-wrap;
+    text-align: center;
+    display: none;
+  }
+  .output.error { border-color: #ff5555; color: #ff8888; }
+  .output.success { border-color: #55ff55; color: #88ff88; }
+  .loading { display: none; text-align: center; margin-top: 10px; }
+  .spinner {
+    border: 4px solid rgba(255,255,255,0.3);
+    border-top: 4px solid #fff;
+    border-radius: 50%;
+    width: 28px; height: 28px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 8px;
+  }
+  @keyframes spin { 0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);} }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+  th, td { border: 1px solid #555; padding: 6px; text-align: left; }
+  th { background-color: #333; }
+  .status-active { color: #88ff88; }
+  .status-eliminated { color: #ff8888; }
+
+  #navbar {
+    width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+    padding: 10px 0;
+    background-color: #111;
+    border-bottom: 2px solid #fff;
+    margin-bottom: 16px;
+  }
+  #navbar a {
+    display: inline-block;
+    color: #fff;
+    text-decoration: none;
+    padding: 8px 12px;
+    border: 1px solid #555;
+    border-radius: 4px;
+    font-size: 13px;
+    margin: 4px;
+  }
+  #navbar a:hover {
+    background-color: #333;
+  }
+
+  /* Restrained improvements: same monochrome look, better spacing and navigation. */
+  #navbar{display:flex;flex-wrap:wrap;justify-content:center;gap:5px;padding:10px}
+  #navbar a{margin:0;text-decoration:none}
+  #navbar a[aria-current="page"]{background:#fff;color:#000}
+  #navbar button{width:auto;margin:0;padding:8px 12px;border:1px solid #777;font-size:13px;background:#333}
+  #navbar button:hover{background:#555}
+  /* Readable text links against the dark background; keep navigation buttons unchanged. */
+  #container a:not(.action-links a){color:#fff;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+  #container a:not(.action-links a):hover,#container a:not(.action-links a):focus-visible{color:#ddd;text-decoration-thickness:2px}
+  .rule-block{border-bottom:1px solid #444;padding:12px 0}
+  .rule-block:last-child{border-bottom:0}
+  .rule-block h3{margin:0 0 9px}
+  .rule-block p,.rule-block li{line-height:1.65}
+  .rule-block ul,.rule-block ol{padding-left:22px}
+  .subtle{color:#bbb;font-size:14px;line-height:1.6}
+  .status-line{border:1px solid #555;padding:12px;margin:14px 0;text-align:center}
+  .action-links{display:flex;flex-wrap:wrap;gap:8px}
+  .action-links a{flex:1;min-width:125px;display:block;text-align:center;padding:12px 8px;border:1px solid #777;color:#fff;text-decoration:none}
+  .action-links a:hover{background:#333}
+  .admin-group{border-top:1px solid #555;margin-top:20px;padding-top:12px}
+  .admin-tabs{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 16px}
+  .admin-tabs button{width:auto;flex:1;min-width:90px;border:1px solid #777}
+  .admin-tabs button[aria-pressed="true"]{background:#fff;color:#111}
+  .admin-panel[hidden]{display:none!important}
+  .admin-stat{border:1px solid #555;padding:10px;flex:1;min-width:85px;text-align:center}
+  .admin-stats{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+  .admin-stat strong{display:block;font-size:20px}
+  .admin-table-wrap{overflow-x:auto}
+  .admin-table{min-width:520px}
+  .admin-table td{vertical-align:middle}
+  .admin-table button{width:auto;padding:6px 9px;font-size:12px;margin:3px}
+  .admin-table .remove-player{border:1px solid #b55;color:#ffaaaa;background:#421b1b}
+  .admin-table .remove-player:disabled{opacity:.5}
+  .admin-search{margin-top:8px}
+  .admin-help{color:#bbb;font-size:12px;line-height:1.5}
+  @media(max-width:480px){#container{padding:0 12px}#navbar a{font-size:12px;padding:7px}}
+</style>
+<link rel="stylesheet" href="site-footer.css">
+<script src="site-footer.js" defer></script>
+</head>
+<body>
+<div id="navbar" aria-label="Assassins navigation"></div>
+<div id="container">
+  <div id="app"></div>
+</div>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw776fmUG5Hd7fKAvF8JMGzFLmKQoxBDVi0j_nQiRSnl7tH1KEikLOEU29Tus6bITs8Xg/exec';
+
+// ---- shared fetch helper ----
+async function callBackend(action, params = {}) {
+  const query = new URLSearchParams({ action, ...params }).toString();
+  const res = await fetch(`${SCRIPT_URL}?${query}`);
+  if (!res.ok) throw new Error(`Server error (${res.status})`);
+  return res.json();
+}
+
+function normalizeCodenameInput(value) {
+  return value.trim().toLowerCase();
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+  
+function showOutput(el, message, type) {
+  el.textContent = message;
+  el.className = 'output ' + (type || '');
+  el.style.display = 'block';
+}
+
+function setLoading(loadingEl, isLoading) {
+  loadingEl.style.display = isLoading ? 'block' : 'none';
+}
+
+// ---- Mafia-style navigation and initial routing ----
+const params = new URLSearchParams(window.location.search);
+const view = params.get('view');
+const app = document.getElementById('app');
+const CODENAME_KEY = 'assassins_remembered_codename';
+const rememberedCodename = () => localStorage.getItem(CODENAME_KEY) || '';
+let publicStatus = null;
+const isEnabled = key => publicStatus && publicStatus.masterLock !== 'TRUE' && publicStatus[key] === 'TRUE';
+
+function renderNav(activeView) {
+  const nav = document.getElementById('navbar');
+  const items = [{name:'Home',view:''}];
+  if (isEnabled('dashboardEnabled')) items.push({name:rememberedCodename()?'My Dashboard':'Sign In',view:'dashboard'});
+  if (isEnabled('signupEnabled') && !rememberedCodename()) items.push({name:'Sign Up',view:'signup'});
+  items.push({name:'Rules',view:'rules'},{name:'Elimination Feed',view:'feed'},{name:'Admin',view:'admin'});
+  nav.innerHTML = items.map(item =>
+    '<a href="' + (item.view ? '?view='+item.view : 'assassins.html') + '"' +
+    (item.view === activeView ? ' aria-current="page"' : '') + '>' + item.name + '</a>'
+  ).join('') + (rememberedCodename() ? '<button type="button" id="topLogout">Log Out</button>' : '');
+  const logout = document.getElementById('topLogout');
+  if (logout) logout.addEventListener('click', () => {
+    localStorage.removeItem(CODENAME_KEY);
+    window.location.href = 'assassins.html';
+  });
+}
+
+async function initialize() {
+  app.innerHTML = '<div class="form-section" style="text-align:center;">Loading game status…</div>';
+  try { publicStatus = await callBackend('getPublicStatus'); }
+  catch(e) {
+    renderNav(view || '');
+    app.innerHTML = '<div class="form-section">Unable to load game settings. Please refresh and try again.</div>';
+    return;
+  }
+  // If a saved codename exists, the root URL opens the dashboard when enabled.
+  const selected = view || (rememberedCodename() && isEnabled('dashboardEnabled') ? 'dashboard' : '');
+  renderNav(selected);
+  if (selected === 'signup' && !isEnabled('signupEnabled')) {
+    app.innerHTML = '<div class="form-section">Sign-ups are currently closed. <a href="assassins.html">Return home</a>.</div>';
+  } else if (selected === 'dashboard' && !isEnabled('dashboardEnabled')) {
+    app.innerHTML = '<div class="form-section">The player dashboard is currently unavailable. <a href="assassins.html">Return home</a>.</div>';
+  } else if (selected === 'signup') renderSignup();
+  else if (selected === 'dashboard') renderDashboard();
+  else if (selected === 'feed') renderFeed();
+  else if (selected === 'rules') renderRules();
+  else if (selected === 'admin') renderAdmin();
+  else renderLanding();
+}
+initialize();
+
+async function renderLanding() {
+  app.innerHTML = `
+    <h2>Welcome to Assassins</h2>
+    <div class="form-section" id="landingBox">
+      <p style="text-align:center;">Find your target. Tag them with a sock. Confirm the elimination using their codename.</p>
+      <div class="status-line" id="gameStatus">Checking game status…</div>
+      <div class="action-links">
+        ${isEnabled('dashboardEnabled') ? '<a href="?view=dashboard">Player Dashboard / Sign In</a>' : ''}
+        ${isEnabled('signupEnabled') && !rememberedCodename() ? '<a href="?view=signup">Sign Up</a>' : ''}
+        <a href="?view=rules">How to Play</a>
+      </div>
+      <p class="subtle" style="text-align:center;">${rememberedCodename() ? 'Codename saved on this device. Open the dashboard to continue.' : 'Already registered? Enter your codename on the dashboard.'}</p>
+    </div>`;
+  const status = document.getElementById('gameStatus');
+  try {
+    const d = publicStatus;
+    const names = {not_started:'Not started',live:'Game active',paused:'Game paused',ended:'Game ended'};
+    status.textContent = d.masterLock === 'TRUE' ? 'Game temporarily unavailable' :
+      (names[d.gameStatus] || 'Game status unavailable') +
+      ' · Sign-ups ' + (d.signupEnabled === 'TRUE' ? 'open' : 'closed') +
+      ' · Dashboard ' + (d.dashboardEnabled === 'TRUE' ? 'open' : 'closed');
+  } catch(e) { status.textContent = 'Unable to load game status. Please try again later.'; }
+}
+
+async function renderRules() {
+  app.innerHTML = `
+    <h2>Rules &amp; Instructions</h2>
+    <div class="form-section">
+      <p class="subtle">Read these rules before playing. The administrator may post additional instructions below.</p>
+      <div class="rule-block"><h3>The Overview</h3><p>Your mission is to find your assigned target and tag them with a sock. When you successfully tag your target, they must reveal their codename. Enter that codename in the Player Dashboard to confirm the elimination and receive your next target.</p></div>
+      <div class="rule-block"><h3>How to Join</h3><p><a href="?view=signup">Sign up here</a> while registration is open. Choose a codename and keep it private.</p></div>
+      <div class="rule-block"><h3>Once the Game Begins</h3><ol>
+        <li>Do not reveal your codename except to the player who successfully eliminates you.</li>
+        <li>Open the <a href="?view=dashboard">Player Dashboard</a>, enter your codename, and select <strong>Find My Target</strong>.</li>
+        <li>Find your assigned target and tag them with a sock in a permitted location.</li>
+        <li>Ask the eliminated player for their codename. They must provide it after a valid elimination.</li>
+        <li>Return to the dashboard, choose <strong>Eliminate a Player</strong>, enter their codename, and confirm.</li>
+        <li>Receive your next target and continue playing.</li></ol></div>
+      <div class="rule-block"><h3>Safe Zones</h3><p>Neither eliminations nor attempts are permitted:</p><ul>
+        <li>During class</li><li>During Campus Community</li><li>During Convocation</li>
+        <li>On a dorm hall</li><li>At work</li>
+        <li>During leadership responsibilities, including RA/RS/CGL connect classes and RHLMs</li></ul></div>
+      <div class="rule-block"><h3>Safe Items</h3><p>The designated safe item protects you only while it is <strong>IN YOUR HAND</strong>. Safe items may change frequently; check the group chat for the latest item.</p></div>
+      <div class="rule-block"><h3>How to Win</h3><p>There are two winners: the final surviving player and the player with the most confirmed eliminations.</p></div>
+      <div class="rule-block"><h3>Play Safely</h3><p>Use only soft socks, avoid the face, respect personal boundaries, and do not chase anyone into unsafe or restricted areas. If an elimination is disputed, contact the game administrator.</p></div>
+      <div class="rule-block"><h3>Administrator Instructions</h3><div id="adminRules" style="white-space:pre-wrap;">Loading current instructions…</div></div>
+    </div>`;
+  try {
+    const d = publicStatus;
+    document.getElementById('adminRules').textContent =
+      d.instructionsEnabled === 'TRUE' && d.instructionsText ? d.instructionsText :
+      'No additional instructions are currently posted.';
+  } catch(e) { document.getElementById('adminRules').textContent='Unable to load administrator instructions right now.'; }
+}
+
+// ============================================================
+// SIGNUP VIEW
+// ============================================================
+async function renderSignup() {
+  app.innerHTML = `<div class="form-section" id="signupLoadingBox"><p style="text-align:center;">Loading...</p></div>`;
+
+  let hallEnabled = false;
+  let hallOptions = [];
+  let phoneEnabled = true;
+  let instructionsEnabled = false;
+  let instructionVerificationEnabled = false;
+  let instructionsText = '';
+  try {
+    const status = publicStatus;
+    if (status.masterLock === 'TRUE') {
+      document.getElementById('signupLoadingBox').innerHTML = `<p style="text-align:center;">The game is temporarily down. Check back soon.</p>`;
+      return;
+    }
+    hallEnabled = status.hallFieldEnabled === 'TRUE';
+    hallOptions = (status.hallOptions || '').split(',').map(h => h.trim()).filter(Boolean);
+    phoneEnabled = status.phoneFieldEnabled !== 'FALSE';
+    instructionsEnabled = status.instructionsEnabled === 'TRUE';
+    instructionVerificationEnabled = status.instructionVerificationEnabled === 'TRUE';
+    instructionsText = status.instructionsText || '';
+  } catch (err) {
+    // If the status check fails, fall through and just show signup without hall/phone/instructions info.
+  }
+
+  const hallFieldHtml = hallEnabled ? `
+      <label>Hall:</label>
+      <select id="hall" required>
+        <option value="" disabled selected>Select your hall...</option>
+        ${hallOptions.map(h => `<option value="${h}">${h}</option>`).join('')}
+      </select>
+  ` : '';
+
+  const phoneFieldHtml = phoneEnabled ? `
+      <label>Phone:</label>
+      <input type="text" id="phone" required>
+  ` : '';
+
+  const instructionsBlockHtml = instructionsEnabled ? `
+    <div class="form-section" style="border-color:#ffcc55;">
+      <h2 style="margin-top:0;">Instructions</h2>
+      <div style="white-space:pre-wrap; font-size:14px; line-height:1.5;">${escapeHtml(instructionsText)}</div>
+    </div>
+  ` : '';
+
+  const checkboxHtml = (instructionsEnabled && instructionVerificationEnabled) ? `
+      <label style="display:flex; align-items:flex-start; gap:8px; font-weight:normal;">
+        <input type="checkbox" id="instructionsAccepted" style="width:auto; margin:4px 0 0;">
+        <span>I have read and understand the instructions above.</span>
+      </label>
+  ` : '';
+
+  app.innerHTML = `
+    <h2>Assassins Sign-Up</h2>
+    ${instructionsBlockHtml}
+    <div class="form-section">
+      <label>Codename (letters and numbers only, no spaces):</label>
+      <input type="text" id="codename" autocapitalize="off" autocomplete="off" required>
+      <label>First and Last Name:</label>
+      <input type="text" id="real_name" required>
+      ${phoneFieldHtml}
+      ${hallFieldHtml}
+      ${checkboxHtml}
+      <button id="submitBtn">Submit</button>
+      <div class="loading" id="loading"><div class="spinner"></div>Submitting...</div>
+      <div class="output" id="output"></div>
+    </div>
+  `;
+
+  document.getElementById('submitBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('submitBtn');
+    const loading = document.getElementById('loading');
+    const output = document.getElementById('output');
+    output.style.display = 'none';
+
+    const codename = normalizeCodenameInput(document.getElementById('codename').value);
+    const real_name = document.getElementById('real_name').value.trim();
+    const phoneField = document.getElementById('phone');
+    const phone = phoneField ? phoneField.value.trim() : '';
+    const hallField = document.getElementById('hall');
+    const hall = hallField ? hallField.value : '';
+    const instructionsCheckbox = document.getElementById('instructionsAccepted');
+    const instructionsAccepted = instructionsCheckbox ? instructionsCheckbox.checked : true;
+
+    if (!codename || !real_name || (phoneEnabled && !phone) || (hallEnabled && !hall)) {
+      showOutput(output, 'Please fill in all fields.', 'error');
+      return;
+    }
+    if (!/^[a-z0-9]+$/.test(codename)) {
+      showOutput(output, 'Codename must contain only letters and numbers, no spaces.', 'error');
+      return;
+    }
+    if (instructionVerificationEnabled && !instructionsAccepted) {
+      showOutput(output, 'Please confirm you have read and understand the instructions.', 'error');
+      return;
+    }
+
+    btn.disabled = true;
+    setLoading(loading, true);
+    try {
+      const submitParams = { codename, real_name };
+      if (phoneEnabled) submitParams.phone = phone;
+      if (hallEnabled) submitParams.hall = hall;
+      if (instructionVerificationEnabled) submitParams.instructionsAccepted = String(instructionsAccepted);
+      const data = await callBackend('submitForm', submitParams);
+      setLoading(loading, false);
+      btn.disabled = false;
+      if (data.success) {
+        showOutput(output, `Welcome, ${real_name}! Your codename is "${codename}". Screenshot this for your records.`, 'success');
+        document.getElementById('codename').value = '';
+        document.getElementById('real_name').value = '';
+        if (phoneField) phoneField.value = '';
+        if (hallField) hallField.selectedIndex = 0;
+        if (instructionsCheckbox) instructionsCheckbox.checked = false;
+      } else {
+        showOutput(output, data.message, 'error');
+      }
+    } catch (err) {
+      setLoading(loading, false);
+      btn.disabled = false;
+      showOutput(output, 'Network error — please try again. (' + err.message + ')', 'error');
+    }
+  });
+}
+
+// ============================================================
+// DASHBOARD VIEW
+// ============================================================
+function renderDashboard() {
+  app.innerHTML = `
+    <h2>Player Dashboard</h2>
+    <div class="form-section" id="codenameSection">
+      <label>Input your codename:</label>
+      <input type="text" id="codename" autocapitalize="off" autocomplete="off" required>
+      <button id="verifyBtn">Verify</button>
+      <div class="loading" id="verifyLoading"><div class="spinner"></div>Loading...</div>
+      <div class="output" id="verifyOutput"></div>
+    </div>
+    <div class="form-section" id="actionSection" style="display:none;">
+      <p class="subtle">Your codename is verified. Find your target or report a confirmed elimination.</p>
+      <button id="findTargetBtn">Find My Target</button>
+      <button id="eliminateBtn">Eliminate a Player</button>
+      <div class="loading" id="actionLoading"><div class="spinner"></div>Loading...</div>
+      <div class="output" id="actionOutput"></div>
+    </div>
+    <div class="form-section" id="eliminateSection" style="display:none;">
+      <label>Input target codename:</label>
+      <input type="text" id="targetCodename" autocapitalize="off" autocomplete="off" required>
+      <button id="confirmStep1Btn">Eliminate</button>
+      <div id="confirmStep2" style="display:none;">
+        <p style="text-align:center;">Are you sure? This cannot be undone.</p>
+        <button id="confirmStep2Btn">Yes, confirm elimination</button>
+        <button id="cancelBtn">Cancel</button>
+      </div>
+      <div class="loading" id="eliminateLoading"><div class="spinner"></div>Processing...</div>
+      <div class="output" id="eliminateOutput"></div>
+    </div>
+  `;
+
+  const codeInput = document.getElementById('codename');
+  codeInput.value = rememberedCodename();
+  const getCodename = () => normalizeCodenameInput(codeInput.value);
+
+  document.getElementById('verifyBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('verifyBtn');
+    const loading = document.getElementById('verifyLoading');
+    const output = document.getElementById('verifyOutput');
+    output.style.display = 'none';
+
+    const codename = getCodename();
+    if (!codename) { showOutput(output, 'Please enter your codename.', 'error'); return; }
+
+    btn.disabled = true;
+    setLoading(loading, true);
+    try {
+      const data = await callBackend('verifyCitizen1', { codename });
+      setLoading(loading, false);
+      btn.disabled = false;
+      showOutput(output, data.message, data.success ? 'success' : 'error');
+      if (data.success) {
+        localStorage.setItem(CODENAME_KEY, codename);
+        renderNav('dashboard');
+        document.getElementById('actionSection').style.display = 'block';
+      } else {
+        document.getElementById('actionSection').style.display = 'none';
+      }
+    } catch (err) {
+      setLoading(loading, false);
+      btn.disabled = false;
+      showOutput(output, 'Network error — please try again.', 'error');
+    }
+  });
+
+  document.getElementById('findTargetBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('findTargetBtn');
+    const loading = document.getElementById('actionLoading');
+    const output = document.getElementById('actionOutput');
+    output.style.display = 'none';
+
+    btn.disabled = true;
+    setLoading(loading, true);
+    try {
+      const data = await callBackend('findMyTarget', { codename: getCodename() });
+      setLoading(loading, false);
+      btn.disabled = false;
+      showOutput(output, data.message, data.success === false ? 'error' : 'success');
+    } catch (err) {
+      setLoading(loading, false);
+      btn.disabled = false;
+      showOutput(output, 'Network error — please try again.', 'error');
+    }
+  });
+
+  document.getElementById('eliminateBtn').addEventListener('click', () => {
+    document.getElementById('eliminateSection').style.display = 'block';
+  });
+
+  document.getElementById('confirmStep1Btn').addEventListener('click', () => {
+    const target = document.getElementById('targetCodename').value.trim();
+    if (!target) return;
+    document.getElementById('confirmStep2').style.display = 'block';
+    document.getElementById('confirmStep1Btn').style.display = 'none';
+  });
+
+  document.getElementById('cancelBtn').addEventListener('click', () => {
+    document.getElementById('confirmStep2').style.display = 'none';
+    document.getElementById('confirmStep1Btn').style.display = 'block';
+  });
+
+  document.getElementById('confirmStep2Btn').addEventListener('click', async () => {
+    const btn = document.getElementById('confirmStep2Btn');
+    const loading = document.getElementById('eliminateLoading');
+    const output = document.getElementById('eliminateOutput');
+    output.style.display = 'none';
+
+    const targetCodename = normalizeCodenameInput(document.getElementById('targetCodename').value);
+    btn.disabled = true;
+    setLoading(loading, true);
+    try {
+      const data = await callBackend('eliminateTarget', { codename: getCodename(), targetCodename });
+      setLoading(loading, false);
+      btn.disabled = false;
+      showOutput(output, data.message, data.success ? 'success' : 'error');
+      document.getElementById('confirmStep2').style.display = 'none';
+      document.getElementById('confirmStep1Btn').style.display = 'block';
+    } catch (err) {
+      setLoading(loading, false);
+      btn.disabled = false;
+      showOutput(output, 'Network error — please try again.', 'error');
+    }
+  });
+}
+
+// ============================================================
+// FEED VIEW (public elimination history)
+// ============================================================
+function renderFeed() {
+  app.innerHTML = `
+    <h2>Elimination Feed</h2>
+    <div class="form-section">
+      <button id="refreshBtn">Refresh</button>
+      <div class="loading" id="feedLoading"><div class="spinner"></div>Loading...</div>
+      <div id="feedList"></div>
+    </div>
+  `;
+
+  async function load() {
+    const loading = document.getElementById('feedLoading');
+    const list = document.getElementById('feedList');
+    setLoading(loading, true);
+    list.innerHTML = '';
+    try {
+      const data = await callBackend('getPublicFeed');
+      setLoading(loading, false);
+      if (!data.feed || data.feed.length === 0) {
+        list.innerHTML = '<p style="text-align:center;">No eliminations yet.</p>';
+        return;
+      }
+      list.innerHTML = data.feed.map(row =>
+        `<div class="output" style="display:block;">${escapeHtml(row.details || '')}</div>`
+      ).join('');
+    } catch (err) {
+      setLoading(loading, false);
+      list.innerHTML = '<p style="text-align:center; color:#ff8888;">Error loading feed.</p>';
+    }
+  }
+
+  document.getElementById('refreshBtn').addEventListener('click', load);
+  load();
+}
+
+// ============================================================
+// ADMIN VIEW
+// ============================================================
+function renderAdmin() {
+  app.innerHTML = `
+    <h2>Admin Panel</h2>
+    <div class="form-section" id="loginSection">
+      <label>Admin password:</label>
+      <input type="password" id="adminPassword" autocomplete="off">
+      <button id="loginBtn">Log In</button>
+      <div class="output" id="loginOutput"></div>
+    </div>
+    <div id="adminContent" style="display:none;"></div>
+  `;
+
+  let password = '';
+
+  document.getElementById('loginBtn').addEventListener('click', async () => {
+    const output = document.getElementById('loginOutput');
+    password = document.getElementById('adminPassword').value;
+    try {
+      const data = await callBackend('adminLogin', { password });
+      if (data.success) {
+        document.getElementById('loginSection').style.display = 'none';
+        loadAdminContent();
+      } else {
+        showOutput(output, data.message, 'error');
+      }
+    } catch (err) {
+      showOutput(output, 'Network error.', 'error');
+    }
+  });
+
+  async function loadAdminContent() {
+    const content = document.getElementById('adminContent');
+    content.style.display = 'block';
+    content.innerHTML = `
+      <div class="admin-tabs" role="group" aria-label="Admin sections">
+        <button type="button" data-admin-tab="players" aria-pressed="true">Players</button>
+        <button type="button" data-admin-tab="settings" aria-pressed="false">Settings</button>
+        <button type="button" data-admin-tab="activity" aria-pressed="false">Activity</button>
+        <button type="button" data-admin-tab="danger" aria-pressed="false">Danger Zone</button>
+      </div>
+      <div class="form-section admin-panel" data-admin-panel="settings" hidden>
+        <h3 style="margin-top:0;">Game Settings</h3>
+        <div id="settingsList">Loading...</div>
+      </div>
+      <div class="form-section admin-panel" data-admin-panel="players">
+        <h3 style="margin-top:0;">Player Management</h3>
+        <p class="admin-help">Review registrations, search players, and change their game status. Removing a player is different from eliminating them.</p>
+        <div id="playerStats" class="admin-stats">Loading player totals…</div>
+        <label for="playerSearch">Search players</label>
+        <input id="playerSearch" class="admin-search" type="search" placeholder="Search by name, codename, hall, or status">
+        <div id="playerFilterInfo" class="admin-help"></div>
+        <button id="shuffleHallsBtn" style="background-color:#2a4d3a;">🎲 Shuffle Order (Alternate Halls)</button>
+        <div class="output" id="shuffleOutput"></div>
+        <button id="revealPlayersBtn" style="margin-top:10px;">🙈 Reveal Player List</button>
+        <button id="eliminateNoFirstKillBtn" style="background-color:#663333; margin-top:10px;">⚡ Eliminate All Without a First Kill</button>
+        <div class="output" id="eliminateNoFirstKillOutput"></div>
+        <div id="playersHidden" style="display:none; margin-top:12px;">
+          <div id="playersList">Loading...</div>
+        </div>
+      </div>
+      <div class="form-section admin-panel" data-admin-panel="activity" hidden>
+        <h3 style="margin-top:0;">Activity Log</h3>
+        <button id="revealLogBtn">👁️ Reveal Log</button>
+        <div id="logHidden" style="display:none; margin-top:12px;">
+          <div id="logList">Loading...</div>
+        </div>
+      </div>
+      <div class="form-section admin-panel" data-admin-panel="danger" hidden style="border-color:#ff5555;">
+        <h3 style="margin-top:0; color:#ff8888;">⚠️ Danger Zone</h3>
+        <label>Reset password:</label>
+        <input type="password" id="resetPasswordInput" autocomplete="off">
+        <button id="resetKeepBtn" style="background-color:#663333;">Reset Game (keep players, clear eliminations)</button>
+        <button id="resetWipeBtn" style="background-color:#663333; margin-top:10px;">Full Wipe (permanently delete all players)</button>
+        <div class="output" id="resetOutput"></div>
+      </div>
+    `;
+
+    const selectAdminTab = name => {
+      content.querySelectorAll('[data-admin-panel]').forEach(panel => { panel.hidden = panel.dataset.adminPanel !== name; });
+      content.querySelectorAll('[data-admin-tab]').forEach(btn => { btn.setAttribute('aria-pressed', String(btn.dataset.adminTab === name)); });
+    };
+    content.querySelectorAll('[data-admin-tab]').forEach(btn => btn.addEventListener('click', () => selectAdminTab(btn.dataset.adminTab)));
+    selectAdminTab(window.assassinsAdminTab || 'players');
+    content.querySelectorAll('[data-admin-tab]').forEach(btn => btn.addEventListener('click', () => { window.assassinsAdminTab = btn.dataset.adminTab; }));
+
+    const SELECT_SETTINGS = {
+      game_status: ['not_started', 'live', 'paused', 'ended'],
+      signup_enabled: ['TRUE', 'FALSE'],
+      dashboard_enabled: ['TRUE', 'FALSE'],
+      eliminate_enabled: ['TRUE', 'FALSE'],
+      hall_field_enabled: ['TRUE', 'FALSE'],
+      phone_field_enabled: ['TRUE', 'FALSE'],
+      instructions_enabled: ['TRUE', 'FALSE'],
+      instruction_verification_enabled: ['TRUE', 'FALSE']
+    };
+    
+    const TEXTAREA_KEYS = ['signup_off_message','dashboard_off_message','eliminate_off_message','master_lock_message','instructions_text'];
+    
+    const settingsData = await callBackend('adminGetSettings', { password });
+    const settingsList = document.getElementById('settingsList');
+    const editableKeys = ['game_status','signup_enabled','dashboard_enabled','eliminate_enabled',
+      'hall_field_enabled','hall_options','phone_field_enabled',
+      'instructions_enabled','instruction_verification_enabled','instructions_text',
+      'signup_off_message','dashboard_off_message','eliminate_off_message','master_lock_message'];
+    
+    settingsList.innerHTML = editableKeys.map(key => {
+      const currentValue = settingsData.settings[key] || '';
+      if (SELECT_SETTINGS[key]) {
+        const buttons = SELECT_SETTINGS[key].map(opt => {
+          const isActive = opt === currentValue;
+          const style = isActive
+            ? 'background-color:#0a7a3a; border:2px solid #fff;'
+            : '';
+          return `<button type="button" style="width:auto; padding:8px 12px; ${style}" data-select-key="${key}" data-select-value="${opt}">${opt}</button>`;
+        }).join('');
+        return `<label>${key}</label><div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px;">${buttons}</div>`;
+      } else if (TEXTAREA_KEYS.includes(key)) {
+        const helpText = key === 'instructions_text' ? '<p style="font-size:11px; opacity:0.7; margin:0 0 8px;">Shown on the sign-up page when Instructions is enabled.</p>' : '';
+        return `<label>${key}</label>${helpText}<div style="display:flex; flex-direction:column; gap:6px; margin-bottom:14px;">
+          <textarea id="setting_${key}" rows="5" style="width:100%; padding:8px; font-family:'Courier New',monospace; background-color:#444; color:#fff; border:2px solid #fff; border-radius:4px; box-sizing:border-box;">${currentValue.replace(/</g,'&lt;')}</textarea>
+          <button style="width:auto; padding:10px 14px; align-self:flex-start;" data-key="${key}">Save</button>
+        </div>`;
+      } else {
+        const helpText = key === 'hall_options' ? '<p style="font-size:11px; opacity:0.7; margin:0 0 8px;">Comma-separated list, e.g. 25-3,27-3</p>' : '';
+        return `<label>${key}</label>${helpText}<div style="display:flex; gap:6px; margin-bottom:14px;">
+          <input type="text" value="${currentValue.replace(/"/g,'&quot;')}" id="setting_${key}" style="flex:1;">
+          <button style="width:auto; padding:10px 14px;" data-key="${key}">Save</button>
+        </div>`;
+      }
+    }).join('') + `<p style="font-size:12px; opacity:0.7; text-align:center; margin-top:8px;">master_lock is currently: <b>${settingsData.settings.master_lock}</b> (edit the Sheet directly to change)</p>`;
+    
+    settingsList.querySelectorAll('button[data-select-key]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        await callBackend('adminUpdateSetting', { password, key: btn.dataset.selectKey, value: btn.dataset.selectValue });
+        loadAdminContent();
+      });
+    });
+
+    settingsList.querySelectorAll('button[data-key]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const key = btn.dataset.key;
+        const value = document.getElementById(`setting_${key}`).value;
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+        await callBackend('adminUpdateSetting', { password, key, value });
+        btn.textContent = 'Saved!';
+        setTimeout(() => { btn.textContent = 'Save'; btn.disabled = false; }, 1200);
+      });
+    });
+
+    document.getElementById('revealLogBtn').addEventListener('click', () => {
+      document.getElementById('logHidden').style.display = 'block';
+      document.getElementById('revealLogBtn').style.display = 'none';
+    });
+
+    document.getElementById('eliminateNoFirstKillBtn').addEventListener('click', async () => {
+      const out = document.getElementById('eliminateNoFirstKillOutput');
+      if (!confirm('This eliminates every currently active player who has not yet successfully eliminated anyone. This cannot be undone (though you can manually mark someone active again below). Continue?')) return;
+      const btn = document.getElementById('eliminateNoFirstKillBtn');
+      btn.disabled = true;
+      showOutput(out, 'Working...', '');
+      const data = await callBackend('adminEliminateNoFirstKill', { password });
+      btn.disabled = false;
+      showOutput(out, data.message, data.success ? 'success' : 'error');
+      if (data.success) loadAdminContent();
+    });
+
+    document.getElementById('revealPlayersBtn').addEventListener('click', () => {
+      document.getElementById('playersHidden').style.display = 'block';
+      document.getElementById('revealPlayersBtn').style.display = 'none';
+    });
+
+    document.getElementById('shuffleHallsBtn').addEventListener('click', async () => {
+      const shuffleOutput = document.getElementById('shuffleOutput');
+      if (!confirm('This rearranges the row order of ALL players to alternate halls as evenly as possible. This changes everyone\'s target chain — only do this at the start of a game, before anyone has a target. Continue?')) return;
+      const btn = document.getElementById('shuffleHallsBtn');
+      btn.disabled = true;
+      showOutput(shuffleOutput, 'Shuffling...', '');
+      const data = await callBackend('adminRandomizeHalls', { password });
+      btn.disabled = false;
+      showOutput(shuffleOutput, data.message, data.success ? 'success' : 'error');
+      if (data.success) loadAdminContent();
+    });
+
+    const playersData = await callBackend('adminGetPlayers', { password });
+    const playersList = document.getElementById('playersList');
+    const players = Array.isArray(playersData.players) ? playersData.players : [];
+    const activeCount = players.filter(p => p.status === 'active').length;
+    document.getElementById('playerStats').innerHTML =
+      '<div class="admin-stat"><strong>'+players.length+'</strong>Total</div>' +
+      '<div class="admin-stat"><strong>'+activeCount+'</strong>Active</div>' +
+      '<div class="admin-stat"><strong>'+(players.length-activeCount)+'</strong>Other</div>';
+    playersList.innerHTML = '<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Name</th><th>Codename</th><th>Hall</th><th>Status</th><th>Actions</th></tr></thead><tbody>' +
+      players.map((p,i) => '<tr data-player-row="'+i+'"><td>'+escapeHtml(p.name || '')+'</td><td>'+escapeHtml(p.codename || '')+
+      '</td><td>'+escapeHtml(p.hall || '—')+'</td><td class="status-'+(p.status === 'active' ? 'active' : 'eliminated')+'">'+escapeHtml(p.status || 'unknown')+
+      '</td><td><button type="button" data-toggle-index="'+i+'">'+(p.status === 'active' ? 'Eliminate' : 'Reactivate')+
+      '</button><button type="button" class="remove-player" data-remove-index="'+i+'" title="Requires backend support">Remove</button></td></tr>').join('') +
+      '</tbody></table></div><div class="output" id="playerActionOutput"></div>';
+    const search = document.getElementById('playerSearch');
+    const updateSearch = () => {
+      const term = search.value.trim().toLowerCase();
+      let visible = 0;
+      playersList.querySelectorAll('[data-player-row]').forEach(row => {
+        const p = players[Number(row.dataset.playerRow)];
+        const matches = [p.name,p.codename,p.hall,p.status].some(v => String(v || '').toLowerCase().includes(term));
+        row.hidden = !matches;
+        if(matches) visible++;
+      });
+      document.getElementById('playerFilterInfo').textContent = 'Showing '+visible+' of '+players.length+' players';
+    };
+    search.addEventListener('input',updateSearch);
+    updateSearch();
+    playersList.querySelectorAll('[data-toggle-index]').forEach(btn => btn.addEventListener('click',async () => {
+      const p = players[Number(btn.dataset.toggleIndex)];
+      const status = p.status === 'active' ? 'eliminated' : 'active';
+      if(!confirm('Mark '+p.codename+' as '+status+'?')) return;
+      btn.disabled = true;
+      try {
+        const data = await callBackend('adminSetPlayerStatus',{password,codename:p.codename,status,eliminatedBy:'admin'});
+        if(data.success === false) throw new Error(data.message || 'Unable to update player');
+        window.assassinsAdminTab = 'players';
+        await loadAdminContent();
+      } catch(e) {
+        btn.disabled = false;
+        showOutput(document.getElementById('playerActionOutput'),e.message || 'Unable to update player.','error');
+      }
+    }));
+    playersList.querySelectorAll('[data-remove-index]').forEach(btn => btn.addEventListener('click', async () => {
+      const p = players[Number(btn.dataset.removeIndex)];
+      if(!confirm('Permanently remove '+p.name+' ('+p.codename+') from the game? This is NOT an elimination and cannot be undone.')) return;
+      // The Assassins backend must implement adminRemovePlayer before this works.
+      btn.disabled = true;
+      const out = document.getElementById('playerActionOutput');
+      showOutput(out,'Requesting player removal…','');
+      try {
+        const data = await callBackend('adminRemovePlayer',{password,codename:p.codename});
+        if(!data || data.success !== true) throw new Error((data && (data.message || data.error)) || 'Player removal is not supported by the current backend.');
+        window.assassinsAdminTab = 'players';
+        await loadAdminContent();
+      } catch(e) {
+        btn.disabled = false;
+        showOutput(out,e.message || 'Unable to remove player. The Apps Script backend may need updating.','error');
+      }
+    }));
+
+    const logData = await callBackend('adminGetLog', { password });
+    const logList = document.getElementById('logList');
+    logList.innerHTML = `
+      <table>
+        <tr><th>Time</th><th>Type</th><th>Who</th><th>Details</th></tr>
+        ${logData.log.slice(0, 30).map(r => `
+          <tr><td>${r.timestamp}</td><td>${r.eventType}</td><td>${r.codename}</td><td>${r.details}</td></tr>
+        `).join('')}
+      </table>
+    `;
+
+    document.getElementById('resetKeepBtn').addEventListener('click', async () => {
+      const resetOutput = document.getElementById('resetOutput');
+      const resetPassword = document.getElementById('resetPasswordInput').value;
+      if (!resetPassword) { showOutput(resetOutput, 'Enter the reset password first.', 'error'); return; }
+      if (!confirm('Are you sure? This will set ALL players back to active and permanently clear elimination history. This cannot be undone.')) return;
+      const data = await callBackend('adminResetKeepPlayers', { password, resetPassword });
+      showOutput(resetOutput, data.message, data.success ? 'success' : 'error');
+      if (data.success) loadAdminContent();
+    });
+
+    document.getElementById('resetWipeBtn').addEventListener('click', async () => {
+      const resetOutput = document.getElementById('resetOutput');
+      const resetPassword = document.getElementById('resetPasswordInput').value;
+      if (!resetPassword) { showOutput(resetOutput, 'Enter the reset password first.', 'error'); return; }
+      if (!confirm('Are you sure? This will PERMANENTLY DELETE all players. Everyone will need to sign up again. This cannot be undone.')) return;
+      const data = await callBackend('adminResetFullWipe', { password, resetPassword });
+      showOutput(resetOutput, data.message, data.success ? 'success' : 'error');
+      if (data.success) loadAdminContent();
+    });
+  }
+}
+</script>
+</body>
+</html>
