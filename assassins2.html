@@ -299,8 +299,8 @@ async function renderLanding() {
       <p style="text-align:center;">Find your target. Tag them with a sock. Confirm the elimination using their codename.</p>
       <div class="status-line" id="gameStatus">Checking game status…</div>
       <div class="action-links">
-        ${isEnabled('dashboardEnabled') ? '<a href="${GAME_PAGE}&view=dashboard">Player Dashboard / Sign In</a>' : ''}
-        ${isEnabled('signupEnabled') && !rememberedCodename() ? '<a href="${GAME_PAGE}&view=signup">Sign Up</a>' : ''}
+        ${isEnabled('dashboardEnabled') ? '<a href="' + GAME_PAGE + '&view=dashboard">Player Dashboard / Sign In</a>' : ''}
+        ${isEnabled('signupEnabled') && !rememberedCodename() ? '<a href="' + GAME_PAGE + '&view=signup">Sign Up</a>' : ''}
         <a href="${GAME_PAGE}&view=rules">How to Play</a>
       </div>
       <p class="subtle" style="text-align:center;">${rememberedCodename() ? 'Codename saved on this device. Open the dashboard to continue.' : 'Already registered? Enter your codename on the dashboard.'}</p>
