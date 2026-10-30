@@ -62,7 +62,7 @@ begin
  if v_name is null or char_length(v_name)<2 or char_length(v_name)>120 then raise exception 'Enter your first and last name'; end if;
  if c.phone_enabled and nullif(trim(p_phone),'') is null then raise exception 'Phone is required'; end if;
  if c.hall_enabled and nullif(trim(p_hall),'') is null then raise exception 'Hall is required'; end if;
- if c.hall_enabled and not trim(p_hall)=any(string_to_array(c.hall_options,',')) then raise exception 'Invalid hall'; end if;
+ if c.hall_enabled and not (trim(p_hall)=any(string_to_array(replace(c.hall_options,', ',','),','))) then raise exception 'Invalid hall'; end if;
  if c.instructions_enabled and c.instruction_verification_enabled and not p_accepted then raise exception 'Please accept the instructions'; end if;
  if exists(select 1 from public.game_memberships where game_id=g.id and user_id=(select auth.uid())) then raise exception 'You have already registered for this game'; end if;
  if exists(select 1 from public.game_memberships where game_id=g.id and lower(codename)=v_code) then raise exception 'Codename is taken'; end if;
