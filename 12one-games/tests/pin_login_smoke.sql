@@ -10,7 +10,13 @@ begin
  if not public.game_player_sign_in('ASS100','first','2468') then raise exception 'Assassins cross-device login failed';end if;
  if not exists(select 1 from public.game_memberships where game_id=(select id from public.games where game_code='ASS100')
  and codename='first' and user_id=auth.uid()) then raise exception 'Assassins membership not transferred';end if;
- if public.game_player_sign_in('ASS100','second','2468') then raise exception 'Another player admitted';end if;
+ -- The same browser may not claim a second player in the same game.
+ begin
+  perform public.game_player_sign_in('ASS100','second','2468');
+  raise exception 'SECURITY FAILURE: claimed second player';
+ exception when raise_exception then
+  if sqlerrm='SECURITY FAILURE: claimed second player' then raise; end if;
+ end;
 end $$;
 select set_config('test.user_id','00000000-0000-4000-8000-000000000098',false);
 do $$
