@@ -27,6 +27,7 @@ Migrations 001–007 must already be installed. For testing, clone the database 
 3. `12one-games/sql/010_mafia_game.sql`
 4. `12one-games/sql/011_settings_parity.sql`
 5. `12one-games/sql/012_mafia_settings_parity.sql`
+6. `12one-games/sql/013_player_recovery.sql`
 
 **Never run test fixtures on the real Supabase project.** They are for disposable PostgreSQL CI only.
 
@@ -41,7 +42,7 @@ GitHub Actions: `.github/workflows/12one-games-check.yml`. This parses the JavaS
 - Assassins: register at least three players with real names; verify phone/hall/instruction settings; test target assignment, codename verification, instant elimination, pause, disabled messages, master lock, host player status, shuffle, elimination feed, and resets.
 - Mafia: register players; choose 4-digit PINs; assign Mafia/detective/citizen roles; verify role-specific dashboards, cooldowns, votes, retractions, vote expiry, result banners, elimination, endgame threshold, host settings, player management, and resets.
 - Reopen each game in the same browser; ensure host sign-in and other game player sessions have not been overwritten.
-- Test lost-browser-session recovery explicitly. **Currently a lost anonymous browser session cannot be recovered by entering only the codename.** Decide on a secure recovery method before production release.
+- Test lost-browser-session recovery explicitly. A one-time recovery-code function is now implemented and tested, and the Assassins player UI issues and accepts these codes. The Mafia recovery UI still requires integration and end-to-end testing. Recovery tokens must remain private; knowing a codename alone does not authorize account access.
 - Test mobile layout and error states, network failures, and disabling registration while other games are active.
 
 ## Release gate
