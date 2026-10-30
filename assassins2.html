@@ -176,7 +176,7 @@ async function callBackend(action, params = {}) {
     if(error) throw error;
     gameContext=data;
     const registration=data.status==='registration';
-    return {masterLock:data.paused?'TRUE':'FALSE',signupEnabled:registration?'TRUE':'FALSE',dashboardEnabled:data.dashboard_enabled?'TRUE':'FALSE',eliminateEnabled:data.eliminate_enabled?'TRUE':'FALSE',hallFieldEnabled:data.hall_enabled?'TRUE':'FALSE',hallOptions:data.hall_options||'',phoneFieldEnabled:data.phone_enabled?'TRUE':'FALSE',instructionsEnabled:data.instructions_enabled?'TRUE':'FALSE',instructionVerificationEnabled:data.instruction_verification_enabled?'TRUE':'FALSE',instructionsText:data.instructions_text||'',gameStatus:data.status};
+    return {masterLock:'FALSE',paused:data.paused?'TRUE':'FALSE',signupEnabled:registration?'TRUE':'FALSE',dashboardEnabled:data.dashboard_enabled?'TRUE':'FALSE',eliminateEnabled:data.eliminate_enabled?'TRUE':'FALSE',hallFieldEnabled:data.hall_enabled?'TRUE':'FALSE',hallOptions:data.hall_options||'',phoneFieldEnabled:data.phone_enabled?'TRUE':'FALSE',instructionsEnabled:data.instructions_enabled?'TRUE':'FALSE',instructionVerificationEnabled:data.instruction_verification_enabled?'TRUE':'FALSE',instructionsText:data.instructions_text||'',gameStatus:data.status};
   }
   if (action === 'submitForm') {
     const result = await v2db.rpc('assassins_join',{p_code:GAME_CODE,p_codename:params.codename,p_real_name:params.real_name,p_phone:params.phone||'',p_hall:params.hall||'',p_accepted:params.instructionsAccepted==='true'});
@@ -188,16 +188,8 @@ async function callBackend(action, params = {}) {
       return error?{success:false,feed:[],message:error.message}:{success:true,feed:data.feed||[]};
     }
     const state = await v2db.rpc('assassins_state',{p_game_id:gameContext.id});
-    if (state.error) {
-      if (action === 'getPublicFeed') {
-        const {data,error}=await v2db.rpc('assassins_v2_public',{p_code:GAME_CODE});
-        if(error) return {success:false,feed:[],message:error.message};
-        return {success:true,feed:data.feed||[]};
-      }
-      return {success:false,message:state.error.message,feed:[]};
-    }
+    if (state.error) return {success:false,message:state.error.message,feed:[]};
     const st = state.data;
-    if (action === 'getPublicFeed') return {success:true,feed:st.feed||[]};
     // Codenames are never authentication credentials: only the current user's own membership works.
     if (!st.my_codename || st.my_codename.toLowerCase() !== String(params.codename||'').toLowerCase()) return {success:false,message:'This codename is not registered to your current session.'};
     if (action === 'verifyCitizen1') return {success:true,message:'Codename verified for this session.'};
@@ -295,8 +287,8 @@ async function renderLanding() {
   const status = document.getElementById('gameStatus');
   try {
     const d = publicStatus;
-    const names = {not_started:'Not started',live:'Game active',paused:'Game paused',ended:'Game ended'};
-    status.textContent = d.masterLock === 'TRUE' ? 'Game temporarily unavailable' :
+    const names = {draft:'Not started',registration:'Registration open',active:'Game active',finished:'Game ended'};
+    status.textContent = d.paused === 'TRUE' ? 'Game paused' :
       (names[d.gameStatus] || 'Game status unavailable') +
       ' · Sign-ups ' + (d.signupEnabled === 'TRUE' ? 'open' : 'closed') +
       ' · Dashboard ' + (d.dashboardEnabled === 'TRUE' ? 'open' : 'closed');
@@ -342,7 +334,7 @@ async function renderSignup() {
 
   let hallEnabled = false;
   let hallOptions = [];
-  let phoneEnabled = true;
+  let phoneEnabled = false;
   let instructionsEnabled = false;
   let instructionVerificationEnabled = false;
   let instructionsText = '';
@@ -354,7 +346,7 @@ async function renderSignup() {
     }
     hallEnabled = status.hallFieldEnabled === 'TRUE';
     hallOptions = (status.hallOptions || '').split(',').map(h => h.trim()).filter(Boolean);
-    phoneEnabled = status.phoneFieldEnabled !== 'FALSE';
+    phoneEnabled = status.phoneFieldEnabled === 'TRUE';
     instructionsEnabled = status.instructionsEnabled === 'TRUE';
     instructionVerificationEnabled = status.instructionVerificationEnabled === 'TRUE';
     instructionsText = status.instructionsText || '';
@@ -366,7 +358,7 @@ async function renderSignup() {
       <label>Hall:</label>
       <select id="hall" required>
         <option value="" disabled selected>Select your hall...</option>
-        ${hallOptions.map(h => `<option value="${h}">${h}</option>`).join('')}
+        ${hallOptions.map(h => `<option value="${escapeHtml(h)}">${escapeHtml(h)}</option>`).join('')}
       </select>
   ` : '';
 
