@@ -176,8 +176,8 @@ async function callBackend(action, params = {}) {
     const {data,error}=await v2db.rpc('assassins_v2_public',{p_code:GAME_CODE});
     if(error) throw error;
     gameContext=data;
-    const registration=data.status==='registration';
-    return {masterLock:'FALSE',paused:data.paused?'TRUE':'FALSE',signupEnabled:registration?'TRUE':'FALSE',dashboardEnabled:data.dashboard_enabled?'TRUE':'FALSE',eliminateEnabled:data.eliminate_enabled?'TRUE':'FALSE',hallFieldEnabled:data.hall_enabled?'TRUE':'FALSE',hallOptions:data.hall_options||'',phoneFieldEnabled:data.phone_enabled?'TRUE':'FALSE',instructionsEnabled:data.instructions_enabled?'TRUE':'FALSE',instructionVerificationEnabled:data.instruction_verification_enabled?'TRUE':'FALSE',instructionsText:data.instructions_text||'',gameStatus:data.status};
+    const registration=data.status==='registration' && data.signup_enabled!==false && !data.master_lock;
+    return {masterLock:data.master_lock?'TRUE':'FALSE',signupOffMessage:data.signup_off_message||'Registration is closed.',dashboardOffMessage:data.dashboard_off_message||'Dashboard unavailable.',eliminateOffMessage:data.eliminate_off_message||'Eliminations are disabled.',masterLockMessage:data.master_lock_message||'Game unavailable.',paused:data.paused?'TRUE':'FALSE',signupEnabled:registration?'TRUE':'FALSE',dashboardEnabled:data.dashboard_enabled?'TRUE':'FALSE',eliminateEnabled:data.eliminate_enabled?'TRUE':'FALSE',hallFieldEnabled:data.hall_enabled?'TRUE':'FALSE',hallOptions:data.hall_options||'',phoneFieldEnabled:data.phone_enabled?'TRUE':'FALSE',instructionsEnabled:data.instructions_enabled?'TRUE':'FALSE',instructionVerificationEnabled:data.instruction_verification_enabled?'TRUE':'FALSE',instructionsText:data.instructions_text||'',gameStatus:data.status};
   }
   if (action === 'submitForm') {
     const result = await v2db.rpc('assassins_join',{p_code:GAME_CODE,p_codename:params.codename,p_real_name:params.real_name,p_phone:params.phone||'',p_hall:params.hall||'',p_accepted:params.instructionsAccepted==='true'});
@@ -259,10 +259,12 @@ async function initialize() {
   // If a saved codename exists, the root URL opens the dashboard when enabled.
   const selected = view || (rememberedCodename() && isEnabled('dashboardEnabled') ? 'dashboard' : (isEnabled('signupEnabled') ? 'signup' : ''));
   renderNav(selected);
-  if (selected === 'signup' && !isEnabled('signupEnabled')) {
-    app.innerHTML = '<div class="form-section">Sign-ups are currently closed. <a href="' + GAME_PAGE + '">Return home</a>.</div>';
+  if (publicStatus.masterLock==='TRUE') {
+    app.textContent=publicStatus.masterLockMessage;
+  } else if (selected === 'signup' && !isEnabled('signupEnabled')) {
+    app.textContent=publicStatus.signupOffMessage;
   } else if (selected === 'dashboard' && !isEnabled('dashboardEnabled')) {
-    app.innerHTML = '<div class="form-section">The player dashboard is currently unavailable. <a href="' + GAME_PAGE + '">Return home</a>.</div>';
+    app.textContent=publicStatus.dashboardOffMessage;
   } else if (selected === 'signup') renderSignup();
   else if (selected === 'dashboard') renderDashboard();
   else if (selected === 'feed') renderFeed();
