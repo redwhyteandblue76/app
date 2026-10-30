@@ -135,17 +135,17 @@ begin
 end;
 $$;
 
-create or replace function public.assassins_remove_player(p_game_id uuid,p_member_id uuid)
+create or replace function public.assassins_remove_player(p_game_id uuid,p_codename text)
 returns void language plpgsql security definer set search_path='' as $$
 declare v_game public.games%rowtype;
 begin
  select * into v_game from public.games where id=p_game_id for update;
  if not found or v_game.owner_user_id is distinct from (select auth.uid()) then raise exception 'Host only'; end if;
  if v_game.status not in ('draft','registration') then raise exception 'Players can only be removed before the game starts'; end if;
- delete from public.game_memberships where id=p_member_id and game_id=p_game_id;
+ delete from public.game_memberships where game_id=p_game_id and lower(codename)=lower(trim(p_codename));
  if not found then raise exception 'Player not found'; end if;
 end;
 $$;
 
-revoke all on function public.assassins_start(uuid),public.assassins_report(uuid),public.assassins_resolve(uuid,boolean),public.assassins_state(uuid),public.assassins_remove_player(uuid,uuid) from public,anon;
-grant execute on function public.assassins_start(uuid),public.assassins_report(uuid),public.assassins_resolve(uuid,boolean),public.assassins_state(uuid),public.assassins_remove_player(uuid,uuid) to authenticated;
+revoke all on function public.assassins_start(uuid),public.assassins_report(uuid),public.assassins_resolve(uuid,boolean),public.assassins_state(uuid),public.assassins_remove_player(uuid,text) from public,anon;
+grant execute on function public.assassins_start(uuid),public.assassins_report(uuid),public.assassins_resolve(uuid,boolean),public.assassins_state(uuid),public.assassins_remove_player(uuid,text) to authenticated;
