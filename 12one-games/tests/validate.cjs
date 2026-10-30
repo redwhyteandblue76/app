@@ -46,13 +46,18 @@ for(const name of ['011_settings_parity.sql','012_mafia_settings_parity.sql']){
 const assassinsPage=read('assassins2.html');
 const mafiaPage=read('mafia2.html');
 for(const [file,source] of [['assassins2.html',assassinsPage],['mafia2.html',mafiaPage]]){
- assert(source.includes('game_recover'),'Missing recovery redemption: '+file);
- assert(source.includes('game_issue_recovery'),'Missing recovery issuance: '+file);
- assert(source.includes('crypto.getRandomValues'),'Recovery codes must be randomly generated: '+file);
+ assert(!source.includes('game_recover')&&!source.includes('game_issue_recovery'),'Recovery references remain in '+file);
+ assert(source.includes('game_player_sign_in'),'Missing cross-device PIN login: '+file);
  assert(source.includes('storageKey:'),'Game must isolate browser sessions: '+file);
 }
-assert(mafiaPage.includes('renderMafiaRecoveryPanel'), 'Mafia recovery renewal UI missing');
-assert(assassinsPage.includes('newRecoveryCodeBtn'), 'Assassins recovery renewal UI missing');
+assert(assassinsPage.includes('assassins_join_with_pin'),'Assassins signup must require a PIN');
+assert(assassinsPage.includes('assassins_set_my_pin'),'Existing Assassins players need a PIN setup');
+const pinSql=read('12one-games/sql/014_player_pin_login.sql');
+for(const fn of ['assassins_join_with_pin','game_player_sign_in','assassins_set_my_pin']){
+ assert(pinSql.includes('function public.'+fn+'('),'Missing PIN RPC '+fn);
+}
+assert(pinSql.includes('drop function if exists public.game_recover'),'Remove legacy recovery API');
+assert(pinSql.includes('revoke execute on function public.assassins_join'),'Close direct PIN-less registration');
 assert(read('12one-games/platform.js').includes('12one_host_auth'),'Host login must use independent browser session');
 const assassinsSettings=['master_lock','game_status','signup_enabled','dashboard_enabled','eliminate_enabled','signup_off_message','dashboard_off_message','eliminate_off_message','master_lock_message','admin_password','last_updated','reset_password','hall_field_enabled','hall_options','phone_field_enabled','instructions_enabled','instruction_verification_enabled','instructions_text'];
 const assConfig=read('12one-games/sql/011_settings_parity.sql');
