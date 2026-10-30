@@ -1,5 +1,5 @@
 'use strict';
-const db=window.supabase.createClient('https://kzhrcwptyyyqodqlwngg.supabase.co','sb_publishable_37UbHH_v8-RyRFsEwril4A_oaEjDecl');
+const db=window.supabase.createClient('https://kzhrcwptyyyqodqlwngg.supabase.co','sb_publishable_37UbHH_v8-RyRFsEwril4A_oaEjDecl',{auth:{storageKey:'12one_host_auth'}});
 const $=id=>document.getElementById(id);
 let currentUser=null,currentGame=null;
 function msg(s){$('notice').textContent=s||''}
