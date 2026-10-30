@@ -74,7 +74,7 @@ begin
  select coalesce(jsonb_agg(case when coalesce(p.alive,true) then m.real_name||' is currently active.' else m.real_name||' was eliminated.' end order by m.joined_at),'[]'::jsonb)
  into roster from public.game_memberships m left join public.mafia_players p on p.member_id=m.id and p.game_id=g.id where m.game_id=g.id;
  return jsonb_build_object('id',g.id,'status',g.status,'setupEnabled',g.status='registration' and coalesce(c.setup_enabled,true),
- 'dashboardEnabled',coalesce(c.dashboard_enabled,true),'gameActive',coalesce(c.game_active,true) and g.status='active',
+ 'dashboardEnabled',coalesce(c.dashboard_enabled,true),'gameActive',coalesce(c.game_active,true) and g.status<>'finished',
  'announcement',coalesce(c.announcement,''),'announcementMessage',coalesce(c.announcement,''),
  'hallFieldEnabled',coalesce(c.hall_field_enabled,false),
  'hallOptions',coalesce(to_jsonb(string_to_array(c.hall_options,',')),'[]'::jsonb),
@@ -125,8 +125,8 @@ begin
  into vote from public.mafia_votes v join public.game_memberships t on t.id=v.target_id
  where v.game_id=p_game_id and v.voter_id=me.id and v.created_at>now()-make_interval(hours=>coalesce(c.vote_expiry_hours,24));
  return jsonb_build_object('official_name',me.real_name,'codename',me.codename,'status',case when p.alive then 'active' else 'eliminated' end,
- 'gameActive',g.status='active' and coalesce(c.game_active,true),'dashboardEnabled',coalesce(c.dashboard_enabled,true),'role',p.role,
- 'roleInstructions',case p.role when 'mafia' then c.mafia_instructions when 'detective' then c.detective_instructions else c.citizen_instructions end,
+ 'gameActive',g.status<>'finished' and coalesce(c.game_active,true),'dashboardEnabled',coalesce(c.dashboard_enabled,true),'role',p.role,
+ 'gameStatus',g.status,'roleInstructions',case p.role when 'mafia' then c.mafia_instructions when 'detective' then c.detective_instructions else c.citizen_instructions end,
  'mafiaTeam',team,
  'mafiaCooldown',jsonb_build_object('ready',p.mafia_last_at is null or p.mafia_last_at+make_interval(hours=>coalesce(c.mafia_cooldown_hours,24))<=now(),
  'remaining',greatest(0,ceil(extract(epoch from (p.mafia_last_at+make_interval(hours=>coalesce(c.mafia_cooldown_hours,24))-now()))/60))::integer||' min'),
