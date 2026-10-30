@@ -48,6 +48,16 @@ create table if not exists public.mafia_log (
  created_at timestamptz not null default now()
 );
 create index if not exists mafia_log_recent on public.mafia_log(game_id,created_at desc);
+create table if not exists public.mafia_vote_results (
+ game_id uuid not null references public.games(id) on delete cascade,
+ voter_id uuid not null references public.game_memberships(id) on delete cascade,
+ target_name text not null,
+ was_mafia boolean not null,
+ created_at timestamptz not null default now(),
+ primary key(game_id,voter_id)
+);
+alter table public.mafia_vote_results enable row level security;
+revoke all on public.mafia_vote_results from anon,authenticated;
 alter table public.mafia_config enable row level security;
 alter table public.mafia_players enable row level security;
 alter table public.mafia_votes enable row level security;
@@ -124,7 +134,7 @@ begin
  'remaining',greatest(0,ceil(extract(epoch from (p.detective_last_at+make_interval(hours=>coalesce(c.detective_cooldown_hours,24))-now()))/60))::integer||' min'),
  'citizenCooldown',jsonb_build_object('ready',p.citizen_last_at is null or p.citizen_last_at+make_interval(hours=>coalesce(c.citizen_cooldown_hours,24))<=now(),
  'remaining',greatest(0,ceil(extract(epoch from (p.citizen_last_at+make_interval(hours=>coalesce(c.citizen_cooldown_hours,24))-now()))/60))::integer||' min'),
- 'activeVote',vote,'allowCitizenVotes',p.role='citizen' or (p.role='mafia' and coalesce(c.allow_mafia_votes,true)) or (p.role='detective' and coalesce(c.allow_detective_votes,true)));
+ 'activeVote',vote,'lastVoteResult',(select jsonb_build_object('targetName',r.target_name,'wasMafia',r.was_mafia,'time',r.created_at) from public.mafia_vote_results r where r.game_id=p_game_id and r.voter_id=me.id),'allowCitizenVotes',p.role='citizen' or (p.role='mafia' and coalesce(c.allow_mafia_votes,true)) or (p.role='detective' and coalesce(c.allow_detective_votes,true)));
 end $$;
 
 create or replace function public.mafia_action(p_game_id uuid,p_action text,p_codename text default '',p_password text default '',p_target text default '')
@@ -153,6 +163,7 @@ begin
   where m.game_id=p_game_id and lower(m.codename)=lower(trim(p_target));
   if v_target is null or v_target=me.id or target_role='mafia' then raise exception 'Invalid Mafia target'; end if;
   update public.mafia_players set alive=false where game_id=p_game_id and member_id=v_target;
+  delete from public.mafia_votes where game_id=p_game_id and target_id=v_target;
   update public.mafia_players set mafia_last_at=now() where game_id=p_game_id and member_id=me.id;
  elsif p_action in ('detective','vote') then
   select m.id,m.real_name,q.role into v_target,target_name,target_role from public.game_memberships m
@@ -178,6 +189,10 @@ begin
    return jsonb_build_object('success','Vote recorded','votesSoFar',votes,'votesRequired',c.votes_required);
   end if;
   update public.mafia_players set alive=false where game_id=p_game_id and member_id=v_target;
+  insert into public.mafia_vote_results(game_id,voter_id,target_name,was_mafia,created_at)
+  select p_game_id,v.voter_id,target_name,target_role='mafia',now() from public.mafia_votes v
+  where v.game_id=p_game_id and v.target_id=v_target
+  on conflict(game_id,voter_id) do update set target_name=excluded.target_name,was_mafia=excluded.was_mafia,created_at=excluded.created_at;
   update public.mafia_players set citizen_last_at=now() where game_id=p_game_id and member_id in
    (select voter_id from public.mafia_votes where game_id=p_game_id and target_id=v_target);
   delete from public.mafia_votes where game_id=p_game_id and target_id=v_target;
@@ -207,6 +222,7 @@ begin
   select count(*) into n from public.mafia_players where game_id=p_game_id;
   if n<3 or n_mafia<1 or n_detectives<0 or n_mafia+n_detectives>=n then raise exception 'Invalid role counts'; end if;
   delete from public.mafia_votes where game_id=p_game_id;
+  delete from public.mafia_vote_results where game_id=p_game_id;
   with numbered as (select member_id,row_number() over(order by random()) as rn from public.mafia_players where game_id=p_game_id)
   update public.mafia_players p set role=case when numbered.rn<=n_mafia then 'mafia' when numbered.rn<=n_mafia+n_detectives then 'detective' else 'citizen' end,
   alive=true,mafia_last_at=null,detective_last_at=null,citizen_last_at=null
@@ -216,6 +232,7 @@ begin
   return jsonb_build_object('total',n,'mafia',n_mafia,'detectives',n_detectives,'citizens',n-n_mafia-n_detectives);
  elsif p_action='reset' then
   delete from public.mafia_votes where game_id=p_game_id;
+  delete from public.mafia_vote_results where game_id=p_game_id;
   update public.mafia_players set role=null,alive=true,mafia_last_at=null,detective_last_at=null,citizen_last_at=null where game_id=p_game_id;
   update public.games set status='draft' where id=p_game_id;
  elsif p_action='remove' then
