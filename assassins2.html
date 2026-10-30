@@ -158,7 +158,7 @@ let v2db = null;
 async function initializeGameContext() {
   if (!GAME_CODE) throw Error('Missing game code. Open the link provided by your host.');
   if (!window.supabase) throw Error('Unable to load the game service.');
-  v2db = window.supabase.createClient('https://kzhrcwptyyyqodqlwngg.supabase.co','sb_publishable_37UbHH_v8-RyRFsEwril4A_oaEjDecl');
+  v2db = window.supabase.createClient('https://kzhrcwptyyyqodqlwngg.supabase.co','sb_publishable_37UbHH_v8-RyRFsEwril4A_oaEjDecl',{auth:{storageKey:'12one_assassins_'+GAME_CODE}});
   const session = await v2db.auth.getSession();
   if (session.error) throw session.error;
   if (!session.data.session) {
