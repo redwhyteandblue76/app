@@ -232,7 +232,7 @@ let mafiaDB=null, mafiaGame=null;
 async function bootstrapMafia(){
  if(!GAME_CODE) throw Error('Missing game code. Use the link from your host.');
  if(!window.supabase) throw Error('The game service could not load.');
- mafiaDB=window.supabase.createClient('https://kzhrcwptyyyqodqlwngg.supabase.co','sb_publishable_37UbHH_v8-RyRFsEwril4A_oaEjDecl',{auth:{storageKey:'12one_mafia_'+GAME_CODE}});
+ mafiaDB=window.supabase.createClient('https://dfsthxttqxbmafhykfqh.supabase.co','sb_publishable_OFz4bRAe0_9jgoGXp4xXIQ_Nr7STWWR',{auth:{storageKey:'12one_mafia_'+GAME_CODE}});
  const {data:session,error:sessionError}=await mafiaDB.auth.getSession();
  if(sessionError) throw sessionError;
  if(!session.session){
