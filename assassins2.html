@@ -180,7 +180,7 @@ async function callBackend(action, params = {}) {
     return {masterLock:data.master_lock?'TRUE':'FALSE',signupOffMessage:data.signup_off_message||'Registration is closed.',dashboardOffMessage:data.dashboard_off_message||'Dashboard unavailable.',eliminateOffMessage:data.eliminate_off_message||'Eliminations are disabled.',masterLockMessage:data.master_lock_message||'Game unavailable.',paused:data.paused?'TRUE':'FALSE',signupEnabled:registration?'TRUE':'FALSE',dashboardEnabled:data.dashboard_enabled?'TRUE':'FALSE',eliminateEnabled:data.eliminate_enabled?'TRUE':'FALSE',hallFieldEnabled:data.hall_enabled?'TRUE':'FALSE',hallOptions:data.hall_options||'',phoneFieldEnabled:data.phone_enabled?'TRUE':'FALSE',instructionsEnabled:data.instructions_enabled?'TRUE':'FALSE',instructionVerificationEnabled:data.instruction_verification_enabled?'TRUE':'FALSE',instructionsText:data.instructions_text||'',gameStatus:data.status};
   }
   if (action === 'submitForm') {
-    const result = await v2db.rpc('assassins_join',{p_code:GAME_CODE,p_codename:params.codename,p_real_name:params.real_name,p_phone:params.phone||'',p_hall:params.hall||'',p_accepted:params.instructionsAccepted==='true'});
+    const result = await v2db.rpc('assassins_join_with_pin',{p_code:GAME_CODE,p_codename:params.codename,p_real_name:params.real_name,p_pin:params.pin,p_phone:params.phone||'',p_hall:params.hall||'',p_accepted:params.instructionsAccepted==='true'});
     return result.error?{success:false,message:result.error.message}:{success:true,message:'Registration complete'};
   }
   if (['verifyCitizen1','findMyTarget','eliminateTarget','getPublicFeed'].includes(action)) {
@@ -202,24 +202,6 @@ async function callBackend(action, params = {}) {
     }
   }
   throw Error('This original game feature is being migrated to game-specific Supabase storage: '+action);
-}
-
-async function createGameRecoveryCode() {
- const bytes=new Uint8Array(16);crypto.getRandomValues(bytes);
- const code=Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
- const {error}=await v2db.rpc('game_issue_recovery',{p_game_id:gameContext.id,p_token:code});
- if(error)throw error;
- return code;
-}
-async function recoverAssassinsPlayer(){
- const code=document.getElementById('recoverCode').value.trim().toLowerCase();
- const codename=normalizeCodenameInput(document.getElementById('recoverCodename').value);
- const status=document.getElementById('recoverStatus');
- if(!codename||!code){status.textContent='Enter your codename and recovery code.';return}
- const {error}=await v2db.rpc('game_recover',{p_code:GAME_CODE,p_codename:codename,p_token:code});
- if(error){status.textContent=error.message;return}
- localStorage.setItem(CODENAME_KEY,codename);
- location.href=GAME_PAGE+'&view=dashboard';
 }
 
 function normalizeCodenameInput(value) {
@@ -408,6 +390,8 @@ async function renderSignup() {
     <div class="form-section">
       <label>Codename (letters and numbers only, no spaces):</label>
       <input type="text" id="codename" autocapitalize="off" autocomplete="off" required>
+      <label>Choose a private 4-digit PIN:</label>
+      <input type="password" id="signupPin" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="new-password" required>
       <label>First and Last Name:</label>
       <input type="text" id="real_name" required>
       ${phoneFieldHtml}
@@ -427,6 +411,7 @@ async function renderSignup() {
 
     const codename = normalizeCodenameInput(document.getElementById('codename').value);
     const real_name = document.getElementById('real_name').value.trim();
+    const pin = document.getElementById('signupPin').value.trim();
     const phoneField = document.getElementById('phone');
     const phone = phoneField ? phoneField.value.trim() : '';
     const hallField = document.getElementById('hall');
@@ -442,6 +427,7 @@ async function renderSignup() {
       showOutput(output, 'Codename must contain only letters and numbers, no spaces.', 'error');
       return;
     }
+    if (!/^[0-9]{4}$/.test(pin)) { showOutput(output, 'Choose a four-digit PIN.', 'error'); return; }
     if (instructionVerificationEnabled && !instructionsAccepted) {
       showOutput(output, 'Please confirm you have read and understand the instructions.', 'error');
       return;
@@ -450,7 +436,7 @@ async function renderSignup() {
     btn.disabled = true;
     setLoading(loading, true);
     try {
-      const submitParams = { codename, real_name };
+      const submitParams = { codename, real_name, pin };
       if (phoneEnabled) submitParams.phone = phone;
       if (hallEnabled) submitParams.hall = hall;
       if (instructionVerificationEnabled) submitParams.instructionsAccepted = String(instructionsAccepted);
@@ -458,24 +444,15 @@ async function renderSignup() {
       setLoading(loading, false);
       btn.disabled = false;
       if (data.success) {
-        showOutput(output, `Welcome, ${real_name}! Your codename is "${codename}". Screenshot this for your records.`, 'success');
+        showOutput(output, `Welcome, ${real_name}! Your codename is "${codename}". Remember your four-digit PIN to sign in on any device.`, 'success');
         document.getElementById('codename').value = '';
         document.getElementById('real_name').value = '';
+        document.getElementById('signupPin').value = '';
         if (phoneField) phoneField.value = '';
         if (hallField) hallField.selectedIndex = 0;
         if (instructionsCheckbox) instructionsCheckbox.checked = false;
         localStorage.setItem(CODENAME_KEY, codename);
         renderNav('signup');
-        try{
-         const recovery=await createGameRecoveryCode();
-         const notice=document.createElement('p');
-         notice.textContent='IMPORTANT: Save this private one-time account recovery code to regain access if you switch devices: '+recovery;
-         output.appendChild(notice);
-        }catch(recoveryError){
-         const warn=document.createElement('p');
-         warn.textContent='Registration succeeded, but a recovery code could not be created: '+recoveryError.message;
-         output.appendChild(warn);
-        }
         const next = document.createElement('a');
         next.href = GAME_PAGE + '&view=dashboard';
         next.textContent = 'Open your player dashboard';
@@ -502,20 +479,17 @@ function renderDashboard() {
     <div class="form-section" id="codenameSection">
       <label>Input your codename:</label>
       <input type="text" id="codename" autocapitalize="off" autocomplete="off" required>
-      <button id="verifyBtn">Verify</button>
+      <label>4-digit PIN:</label><input type="password" id="signinPin" maxlength="4" inputmode="numeric" autocomplete="off">
+      <button id="verifyBtn">Sign In</button>
       <div class="loading" id="verifyLoading"><div class="spinner"></div>Loading...</div>
       <div class="output" id="verifyOutput"></div>
     </div>
-    <details class="form-section">
-      <summary>Changed device or lost your player session? Recover access</summary>
-      <p>A private recovery code is provided when you register. Codenames alone cannot recover someone else's player account.</p>
-      <label>Codename:</label><input id="recoverCodename" type="text">
-      <label>One-time recovery code:</label><input id="recoverCode" type="text" autocomplete="off">
-      <button id="recoverBtn" type="button">Recover this account</button>
-      <div id="recoverStatus" role="status"></div>
-      <button id="newRecoveryCodeBtn" type="button">Generate a new private recovery code</button>
-      <div id="newRecoveryCodeStatus" role="status"></div>
-    </details>
+    <div class="form-section" id="legacyPinSection" style="display:none;">
+      <p>Already registered before PINs were introduced? Set your PIN from your original browser session.</p>
+      <label>Choose a 4-digit PIN:</label><input type="password" id="legacyPin" maxlength="4" inputmode="numeric">
+      <button type="button" id="setLegacyPin">Set My PIN</button>
+      <div id="legacyPinStatus" role="status"></div>
+    </div>
     <div class="form-section" id="actionSection" style="display:none;">
       <p class="subtle">Your codename is verified. Find your target or report a confirmed elimination.</p>
       <button id="findTargetBtn">Find My Target</button>
@@ -537,14 +511,18 @@ function renderDashboard() {
     </div>
   `;
 
-  document.getElementById('newRecoveryCodeBtn').addEventListener('click',async()=>{
-   const out=document.getElementById('newRecoveryCodeStatus');
-   try{
-    const code=await createGameRecoveryCode();
-    out.textContent='Keep this new private recovery code: '+code+' — previous recovery codes no longer work.';
-   }catch(e){out.textContent=e.message||String(e)}
+  document.getElementById('setLegacyPin').addEventListener('click',async()=>{
+    const status=document.getElementById('legacyPinStatus');
+    const pin=document.getElementById('legacyPin').value.trim();
+    if(!/^[0-9]{4}$/.test(pin)){status.textContent='Use exactly four digits.';return}
+    const {error}=await v2db.rpc('assassins_set_my_pin',{p_game_id:gameContext.id,p_pin:pin});
+    status.textContent=error?error.message:'PIN saved. You can now sign in on another device.';
+    if(!error){document.getElementById('legacyPin').value='';document.getElementById('legacyPinSection').style.display='none'}
   });
-  document.getElementById('recoverBtn').addEventListener('click',()=>recoverAssassinsPlayer().catch(e=>{document.getElementById('recoverStatus').textContent=e.message}));
+  // Offer a PIN setup only to players with an existing session from pre-PIN registration.
+  v2db.rpc('assassins_state',{p_game_id:gameContext.id}).then(({data})=>{
+    if(data?.my_codename)document.getElementById('legacyPinSection').style.display='block';
+  }).catch(()=>{});
   const codeInput = document.getElementById('codename');
   codeInput.value = rememberedCodename();
   const getCodename = () => normalizeCodenameInput(codeInput.value);
@@ -557,11 +535,15 @@ function renderDashboard() {
 
     const codename = getCodename();
     if (!codename) { showOutput(output, 'Please enter your codename.', 'error'); return; }
+    const pin=document.getElementById('signinPin').value.trim();
+    if(!/^[0-9]{4}$/.test(pin)){showOutput(output,'Enter your four-digit PIN.','error');return}
 
     btn.disabled = true;
     setLoading(loading, true);
     try {
-      const data = await callBackend('verifyCitizen1', { codename });
+      const {data:authenticated,error:loginError}=await v2db.rpc('game_player_sign_in',{p_code:GAME_CODE,p_codename:codename,p_pin:pin});
+      if(loginError)throw loginError;
+      const data=authenticated?await callBackend('verifyCitizen1',{codename}):{success:false,message:'Incorrect codename or PIN.'};
       setLoading(loading, false);
       btn.disabled = false;
       showOutput(output, data.message, data.success ? 'success' : 'error');
@@ -575,7 +557,7 @@ function renderDashboard() {
     } catch (err) {
       setLoading(loading, false);
       btn.disabled = false;
-      showOutput(output, 'Network error — please try again.', 'error');
+      showOutput(output, err.message || 'Sign-in error — please try again.', 'error');
     }
   });
 
