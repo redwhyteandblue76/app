@@ -15,8 +15,8 @@
 <section id="joinSection"><h2>JOIN A GAME</h2><p>Enter a game code or open a host's join link.</p>
 <form id="lookupForm"><label for="joinCode">Game code</label><input id="joinCode" required maxlength="10" autocomplete="off"><button>Find game</button></form>
 <p id="foundGame" aria-live="polite"></p>
-<form id="joinForm" class="hidden"><label for="codename">Your codename (2–32 characters)</label><input id="codename" minlength="2" maxlength="32" required><button>Join game</button></form></section>
-<section id="lobby" class="hidden"><h2>GAME LOBBY</h2><div id="lobbyList"></div><p class="muted">Player list shows public codenames only. Gameplay is coming later.</p></section>
+<form id="joinForm" class="hidden"><label for="codename">Your codename (2–32 characters)</label><input id="codename" minlength="2" maxlength="32" required><div id="assassinsSignupFields" class="hidden"><label for="realName">First and last name</label><input id="realName" maxlength="120"><label id="playerPhoneLabel" class="hidden" for="playerPhone">Phone<input id="playerPhone" type="tel"></label><label id="playerHallLabel" class="hidden" for="playerHall">Hall<select id="playerHall"></select></label><div id="instructionsArea" class="hidden"><p id="instructionsText"></p><label id="acceptInstructionsLabel" class="hidden"><input id="instructionsAccepted" type="checkbox" style="width:auto"> I have read and understand the instructions</label></div></div><button>Join game</button></form></section>
+<section id="lobby" class="hidden"><h2>GAME LOBBY</h2><div id="lobbyList"></div><p class="muted">Player list shows real names. Codenames remain private.</p></section>
 <section id="assassinsPanel" class="hidden"><h2 id="assassinsTitle">ASSASSINS 2.0</h2><div id="assassinsContent"></div></section>
 <section id="dashboard" class="hidden"><div class="row"><h2>MY GAMES</h2><button id="signout" class="secondary" type="button">Sign out</button></div>
 <p id="identity" class="muted"></p><p>Available game credits: <strong id="creditCount">—</strong></p>
@@ -25,7 +25,7 @@
 <h2 style="margin-top:25px">CREATE A GAME</h2><form id="createForm"><label for="gameName">Game name</label><input id="gameName" maxlength="100" required>
 <label for="gameType">Game type</label><select id="gameType"><option value="assassins">Assassins 2.0</option><option value="mafia">Mafia 2.0</option></select>
 <button>Create game (uses 1 credit)</button></form>
-<p class="muted">Open registration to allow players to join. Gameplay is coming in the next phase.</p></section>
+<p class="muted">Open registration to allow players to join. Each game has its own players and gameplay.</p></section>
 <section id="owner" class="hidden"><h2>PLATFORM OWNER</h2><p>Issue a single-use invitation. Each code grants one game credit. Copy it now: the database stores only its hash.</p>
 <form id="issueForm"><label for="expiry">Optional expiration date</label><input id="expiry" type="date"><button>Generate invitation</button></form>
 <p id="issuedCode" class="muted" aria-live="polite"></p></section>

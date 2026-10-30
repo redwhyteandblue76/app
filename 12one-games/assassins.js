@@ -1,48 +1,72 @@
 'use strict';
 (function(){
-const $=id=>document.getElementById(id);
-const root=$('assassinsPanel');
-let selected=null, owner=false, currentStatus='';
-const el=(tag,text)=>{const x=document.createElement(tag);x.textContent=text;return x};
-const call=async(name,args)=>{const {data,error}=await db.rpc(name,args);if(error)throw error;return data};
-function action(text,fn){const b=el('button',text);b.className='secondary';b.onclick=async()=>{b.disabled=true;try{await fn();await render()}catch(e){fail(e)}finally{b.disabled=false}};return b}
+const root=document.getElementById('assassinsPanel');
+const area=document.getElementById('assassinsContent');
+const el=(tag,text)=>{const n=document.createElement(tag);n.textContent=text??'';return n};
+const rpc=async(name,args)=>{const {data,error}=await db.rpc(name,args);if(error)throw error;return data};
+let selected=null;
+const button=(label,fn)=>{const b=el('button',label);b.className='secondary';b.onclick=async()=>{b.disabled=true;try{await fn()}catch(e){fail(e)}finally{b.disabled=false}};return b};
+const field=(label,type='text',value='')=>{const wrap=el('label',label);const inp=el('input');inp.type=type;inp.value=value;wrap.append(inp);return [wrap,inp]};
+const heading=t=>area.append(el('h3',t));
 async function render(){
  if(!selected)return;
- const state=await call('assassins_state',{p_game_id:selected});
- owner=state.host;currentStatus=state.status;
- root.classList.remove('hidden');
- $('assassinsTitle').textContent='ASSASSINS 2.0 · '+state.status.toUpperCase();
- const area=$('assassinsContent');area.replaceChildren();
- area.append(el('p',state.players.length+' registered player(s)'));
- for(const p of state.players){
-  const line=el('div',p.codename+(state.status==='active'||state.status==='finished'?(p.alive?' · Active':' · Eliminated'):''));
-  line.className='game';
-  if(owner&&['draft','registration'].includes(state.status)){
-   line.append(action('Remove player',async()=>{if(!confirm('Remove '+p.codename+' from this game?'))return;await call('assassins_remove_player',{p_game_id:selected,p_codename:p.codename});await refresh()}));
+ const s=await rpc('assassins_state',{p_game_id:selected});
+ root.classList.remove('hidden');area.replaceChildren();
+ document.getElementById('assassinsTitle').textContent='ASSASSINS · '+s.status.toUpperCase();
+ if(s.paused)area.append(el('p','Game paused by host.'));
+ if(s.instructions_enabled){heading('INSTRUCTIONS');area.append(el('p',s.instructions_text||'No instructions posted.'))}
+ area.append(el('p',s.players.length+' registered player(s)'));
+ if(s.host){heading('HOST MANAGEMENT');
+  if(s.status==='registration')area.append(button('Start game',async()=>{if(!confirm('Start the game?'))return;await rpc('assassins_start',{p_game_id:selected});await refresh();await render()}));
+  const hostPlayers=await rpc('assassins_host_players',{p_game_id:selected});
+  const details=el('details');const summary=el('summary','Private host player list (includes codenames)');details.append(summary);
+  for(const p of hostPlayers){
+   const line=el('div',p.name+' · '+p.codename+' · '+(p.alive?'Active':'Eliminated')+' · '+p.kills+' eliminations'+(p.hall?' · '+p.hall:''));
+   line.className='game';
+   if(['draft','registration'].includes(s.status))line.append(button('Remove',async()=>{if(!confirm('Remove '+p.name+'?'))return;await rpc('assassins_remove_player',{p_game_id:selected,p_codename:p.codename});await render()}));
+   if(['active','finished'].includes(s.status))line.append(button(p.alive?'Mark eliminated':'Reactivate',async()=>{if(!confirm('Change status for '+p.name+'?'))return;await rpc('assassins_host_status',{p_game_id:selected,p_member_id:p.id,p_alive:!p.alive});await render()}));
+   details.append(line);
   }
-  area.append(line);
+  area.append(details);
+  const settings=el('details');settings.append(el('summary','Game settings'));
+  for(const [key,label] of [['dashboard_enabled','Player dashboard'],['eliminate_enabled','Eliminations enabled'],['paused','Pause game'],['phone_enabled','Require phone at registration'],['hall_enabled','Require hall at registration'],['instructions_enabled','Show instructions'],['instruction_verification_enabled','Require instructions acknowledgement']]){
+   const wrap=el('label',label+' ');const inp=el('input');inp.type='checkbox';inp.checked=!!s[key];inp.onchange=async()=>{try{await rpc('assassins_host_setting',{p_game_id:selected,p_key:key,p_value:String(inp.checked)});await render()}catch(e){fail(e)}};wrap.append(inp);settings.append(wrap);
+  }
+  for(const [key,label] of [['hall_options','Hall options (comma separated)'],['instructions_text','Instructions']]){
+   const [wrap,inp]=field(label,'text',s[key]||'');settings.append(wrap,button('Save '+label,async()=>{await rpc('assassins_host_setting',{p_game_id:selected,p_key:key,p_value:inp.value});await render()}));
+  }
+  area.append(settings);
+  if(['active','finished'].includes(s.status)){
+   area.append(button('Shuffle target order (before first elimination)',async()=>{if(!confirm('Reassign target order?'))return;await rpc('assassins_host_shuffle',{p_game_id:selected});await render()}));
+   area.append(button('Eliminate players without a first elimination',async()=>{if(!confirm('Eliminate all active players with zero confirmed eliminations?'))return;const n=await rpc('assassins_host_no_first_elimination',{p_game_id:selected});msg(n+' players eliminated.');await render()}));
+  }
+  area.append(button('Reset game (keep registrations)',async()=>{if(!confirm('Reset this game and erase elimination history?'))return;await rpc('assassins_host_reset',{p_game_id:selected,p_wipe:false});await refresh();await render()}));
+  area.append(button('Full wipe (delete all registrations)',async()=>{if(!confirm('Permanently remove all players and elimination history?'))return;await rpc('assassins_host_reset',{p_game_id:selected,p_wipe:true});await refresh();await render()}));
  }
- if(owner&&state.status==='registration')area.append(action('Start Assassins game',async()=>{if(!confirm('Start game and assign targets? Registration will close.'))return;await call('assassins_start',{p_game_id:selected});await refresh()}));
- if(state.status==='active'){
-  if(state.my_alive){
-   area.append(el('h3','YOUR TARGET'),el('p',state.my_target||'No target assigned'));
-   if(!state.my_pending)area.append(action('Report target eliminated',async()=>{if(!confirm('Submit an elimination report for host review?'))return;await call('assassins_report',{p_game_id:selected});msg('Report submitted. Waiting for host approval.')}));
-   else area.append(el('p','Your elimination report is pending host review.'));
-  } else if(!owner)area.append(el('p','You are not an active player.'));
-  if(owner){
-   area.append(el('h3','PENDING REPORTS'));
-   if(!state.pending_reports.length)area.append(el('p','No pending reports.'));
-   for(const r of state.pending_reports){
-    const line=el('div',r.reporter+' reports '+r.target);line.className='game';
-    line.append(action('Approve',async()=>{await call('assassins_resolve',{p_report_id:r.id,p_approve:true});await refresh()}));
-    line.append(action('Reject',async()=>{await call('assassins_resolve',{p_report_id:r.id,p_approve:false});await refresh()}));
-    area.append(line);
+ heading('PLAYER DASHBOARD');
+ if(s.my_codename){
+  area.append(el('p','Signed in as '+s.my_codename+'.'));
+  if(s.status==='active'&&s.my_alive&&s.dashboard_enabled&&!s.paused){
+   area.append(button('Find My Target',async()=>{msg(s.my_target?'Your current target is '+s.my_target+'.':'No active targets remaining.');}));
+   if(s.eliminate_enabled){
+    const [wrap,inp]=field('Enter your target\'s secret codename');area.append(wrap);
+    area.append(button('Eliminate a Player',async()=>{
+     if(!inp.value.trim())throw Error('Enter the target codename');
+     if(!confirm('Confirm elimination? This cannot be undone.'))return;
+     const result=await rpc('assassins_confirm',{p_game_id:selected,p_target_codename:inp.value.trim()});
+     msg('Confirmed: '+result.eliminated+'. '+(result.winner?'You are the last active player!':('Next target: '+result.next_target)));
+     await refresh();await render();
+    }));
    }
-  }
- }
- if(state.status==='finished')area.append(el('p','Game finished. Final active player is the winner.'));
- area.append(action('Refresh game',async()=>{}));
+  }else if(!s.my_alive&&['active','finished'].includes(s.status))area.append(el('p','You have been eliminated.'));
+ }else area.append(el('p','You are the host. Player dashboards are accessible to registered participants.'));
+ heading('REGISTERED PLAYERS');
+ for(const p of s.players)area.append(el('div',p.name+(s.status==='active'||s.status==='finished'?(p.alive?' · Active':' · Eliminated'):'')));
+ heading('ELIMINATION FEED');
+ if(!s.feed.length)area.append(el('p','No eliminations yet.'));
+ for(const item of s.feed)area.append(el('div',item.details+' · '+new Date(item.time).toLocaleString()));
+ area.append(button('Refresh',render));
 }
-window.openAssassins=async(id)=>{selected=id;await render();root.scrollIntoView({behavior:'smooth',block:'start'})};
+window.openAssassins=async id=>{selected=id;await render();root.scrollIntoView({behavior:'smooth',block:'start'})};
 window.refreshAssassins=async()=>{if(selected)await render()};
 })();
