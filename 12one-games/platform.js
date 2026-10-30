@@ -15,7 +15,7 @@ async function refresh(){
  const guest=!!currentUser?.is_anonymous;
  show('auth',!currentUser);show('dashboard',!!currentUser&&!guest);show('guestPanel',guest);show('owner',false);
  $('identity').textContent=currentUser?(guest?'Guest session (this browser)':'Signed in as '+currentUser.email):'';
- if(!currentUser){show('lobby',false);show('assassinsPanel',false);return}
+ if(!currentUser){show('lobby',false);show('assassinsPanel',false);show('mafiaPanel',false);return}
  const {data:games,error:ge}=await db.from('games').select('id,name,game_type,game_code,status,owner_user_id').eq('owner_user_id',currentUser.id).order('created_at',{ascending:false});if(ge)throw ge;
  $('gamesList').replaceChildren();
  if(!games.length)$('gamesList').append(node('p','No games yet.'));
@@ -23,7 +23,8 @@ async function refresh(){
  const el=node('div','');el.className='game';el.append(node('strong',g.name),node('p',g.game_type.toUpperCase()+' · '+g.status+' · '+g.game_code));
  const a=node('a','Share join link');a.href=linkFor(g.game_code,g.game_type);el.append(a);const go=node('button','Open game page');go.onclick=()=>location.assign(linkFor(g.game_code,g.game_type));el.append(go);
  const open=node('button','View lobby');open.className='secondary';open.onclick=()=>loadLobby(g.id).catch(fail);el.append(open);
- if(g.game_type==='assassins'&&g.owner_user_id===currentUser.id){const manage=node('button','Manage Assassins');manage.onclick=()=>window.openAssassins(g.id).catch(fail);el.append(manage)}
+ if(g.game_type==='assassins'&&g.owner_user_id===currentUser.id){const manage=node('button','Manage Assassins');manage.onclick=()=>{show('mafiaPanel',false);window.openAssassins(g.id).catch(fail)};el.append(manage)}
+ if(g.game_type==='mafia'&&g.owner_user_id===currentUser.id){const manage=node('button','Manage Mafia');manage.onclick=()=>{show('assassinsPanel',false);window.openMafia(g.id).catch(fail)};el.append(manage)}
  if(g.owner_user_id===currentUser.id&&['draft','registration'].includes(g.status)){
  const b=node('button',g.status==='registration'?'Close registration':'Open registration');
  b.onclick=async()=>{try{const {error}=await db.rpc('set_game_registration',{p_game_id:g.id,p_open:g.status==='draft'});if(error)throw error;await refresh()}catch(e){fail(e)}};el.append(b);
@@ -39,6 +40,7 @@ async function refresh(){
  }
  if(currentGame)await loadLobby(currentGame);
  if(window.refreshAssassins)await window.refreshAssassins();
+ if(window.refreshMafia)await window.refreshMafia();
 }
 async function lookup(){
  const code=$('joinCode').value.trim().toUpperCase();
