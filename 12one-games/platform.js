@@ -8,7 +8,7 @@ function busy(form,v){form.querySelectorAll('button').forEach(b=>b.disabled=v)}
 async function task(form,fn){busy(form,true);msg('');try{await fn();await refresh()}catch(e){fail(e)}finally{busy(form,false)}}
 function show(id,v){$(id).classList.toggle('hidden',!v)}
 function node(tag,text){const n=document.createElement(tag);n.textContent=text;return n}
-function linkFor(code){const u=new URL(location.href);u.searchParams.set('join',code);return u.href}
+function linkFor(code,type){const page=type==='assassins'?'assassins2.html':type==='mafia'?'mafia2.html':'host.html';const u=new URL(page,location.href);u.searchParams.set('game',code);return u.href}
 async function refresh(){
  const {data,error}=await db.auth.getSession();if(error)throw error;
  currentUser=data.session?.user||null;
@@ -21,7 +21,7 @@ async function refresh(){
  if(!games.length)$('gamesList').append(node('p','No games yet.'));
  for(const g of games){
  const el=node('div','');el.className='game';el.append(node('strong',g.name),node('p',g.game_type.toUpperCase()+' · '+g.status+' · '+g.game_code));
- const a=node('a','Share join link');a.href=linkFor(g.game_code);el.append(a);
+ const a=node('a','Share join link');a.href=linkFor(g.game_code,g.game_type);el.append(a);const go=node('button','Open game page');go.onclick=()=>location.assign(linkFor(g.game_code,g.game_type));el.append(go);
  const open=node('button','View lobby');open.className='secondary';open.onclick=()=>loadLobby(g.id).catch(fail);el.append(open);
  if(g.game_type==='assassins'){const play=node('button','Assassins game');play.onclick=()=>window.openAssassins(g.id).catch(fail);el.append(play)}
  if(g.owner_user_id===currentUser.id&&['draft','registration'].includes(g.status)){
