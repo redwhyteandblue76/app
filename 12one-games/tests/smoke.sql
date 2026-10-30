@@ -46,6 +46,40 @@ begin
   if sqlerrm='SECURITY FAILURE: a player was able to reset Mafia' then raise; end if;
  end;
 end $$;
+-- Exercise a real Mafia elimination and assert that the victim is removed from active play.
+select set_config('test.user_id',(select m.user_id::text from public.game_memberships m join public.mafia_players p on p.member_id=m.id where p.role='mafia' and p.game_id=(select id from public.games where game_code='MAF100') limit 1),false);
+do $
+declare g uuid; actor_code text; victim_code text; victim_id uuid; response jsonb;
+begin
+ select id into g from public.games where game_code='MAF100';
+ select codename into actor_code from public.game_memberships where game_id=g and user_id=auth.uid();
+ select m.id,m.codename into victim_id,victim_code from public.game_memberships m
+ join public.mafia_players p on p.member_id=m.id and p.game_id=g
+ where m.game_id=g and p.role='citizen' limit 1;
+ response:=public.mafia_action(g,'mafia',actor_code,'1234',victim_code);
+ if not exists(select 1 from public.mafia_players where game_id=g and member_id=victim_id and not alive) then
+  raise exception 'Mafia elimination failed'; end if;
+ if (select status from public.games where id=g)<>'active' then raise exception 'Unexpected game completion'; end if;
+end $;
+-- One-vote threshold validates the atomic citizen vote elimination and vote cleanup.
+select set_config('test.user_id','00000000-0000-4000-8000-000000000001',false);
+select public.mafia_host((select id from public.games where game_code='MAF100'),'setting','{"key":"votesRequired","value":"1"}'::jsonb);
+select set_config('test.user_id',(select m.user_id::text from public.game_memberships m
+ join public.mafia_players p on p.member_id=m.id where p.role='citizen' and p.alive
+ and p.game_id=(select id from public.games where game_code='MAF100') limit 1),false);
+do $
+declare g uuid; actor_code text; victim_name text; victim_id uuid; result jsonb;
+begin
+ select id into g from public.games where game_code='MAF100';
+ select codename into actor_code from public.game_memberships where game_id=g and user_id=auth.uid();
+ select m.id,m.real_name into victim_id,victim_name from public.game_memberships m
+ join public.mafia_players p on p.member_id=m.id and p.game_id=g where m.game_id=g and p.role='mafia' and p.alive limit 1;
+ result:=public.mafia_action(g,'vote',actor_code,'1234',victim_name);
+ if (result->>'votesSoFar')::integer<>1 then raise exception 'Vote threshold not applied'; end if;
+ if (select alive from public.mafia_players where game_id=g and member_id=victim_id) then
+  raise exception 'Citizen vote did not eliminate target'; end if;
+ if (select status from public.games where id=g)<>'finished' then raise exception 'Game did not finish after final Mafia elimination'; end if;
+end $;
 select set_config('test.user_id','00000000-0000-4000-8000-000000000001',false);
 select public.mafia_host((select id from public.games where game_code='MAF100'),'reset');
 do $$
@@ -69,5 +103,20 @@ begin
  raise exception 'Assassins start did not assign targets'; end if;
 end $$;
 select public.assassins_host_shuffle((select id from public.games where game_code='ASS100'));
+select set_config('test.user_id',(select m.user_id::text from public.game_memberships m join public.assassins_players p on p.member_id=m.id where m.game_id=(select id from public.games where game_code='ASS100') order by p.turn_order limit 1),false);
+do $
+declare g uuid; me uuid; target_member uuid; victim_code text; result jsonb;
+begin
+ select id into g from public.games where game_code='ASS100';
+ select id into me from public.game_memberships where game_id=g and user_id=auth.uid();
+ target_member:=public.assassins_target(g,me);
+ select codename into victim_code from public.game_memberships where id=target_member;
+ -- Fixture invokes the existing Assassins target algorithm; eliminate with a scoped atomic update.
+ update public.assassins_players set alive=false where game_id=g and member_id=target_member;
+ insert into public.assassins_eliminations(game_id,assassin_id,target_id) values(g,me,target_member);
+ if jsonb_array_length((public.assassins_v2_public('ASS100')->'feed'))<>1 then
+  raise exception 'Public elimination feed did not report a game-specific event'; end if;
+end $;
+select set_config('test.user_id','00000000-0000-4000-8000-000000000001',false);
 select public.assassins_v2_public('ASS100');
 select 'PASS: disposable PostgreSQL migration and RPC smoke test' as result;
