@@ -38,4 +38,16 @@ for(const fn of ['mafia_public','mafia_join','mafia_state','mafia_action','mafia
 }
 assert(!sql.includes('target_id=target_id'),'Ambiguous target reference may affect other votes');
 assert(sql.includes('security definer set search_path=\'\''),'Restrict SQL SECURITY DEFINER search_path');
+
+for(const name of ['011_settings_parity.sql','012_mafia_settings_parity.sql']){
+ const source=read('12one-games/sql/'+name);
+ assert(source.length>100,name+' must not be empty');
+}
+const assassinsSettings=['master_lock','game_status','signup_enabled','dashboard_enabled','eliminate_enabled','signup_off_message','dashboard_off_message','eliminate_off_message','master_lock_message','admin_password','last_updated','reset_password','hall_field_enabled','hall_options','phone_field_enabled','instructions_enabled','instruction_verification_enabled','instructions_text'];
+const assConfig=read('12one-games/sql/011_settings_parity.sql');
+for(const setting of assassinsSettings)assert(assConfig.includes(setting),'Missing Assassins host setting '+setting);
+const mafiaSettings=['setupEnabled','dashboardEnabled','gameActive','mafiaCooldownHours','detectiveCooldownHours','citizenCooldownHours','citizenVotesRequired','voteExpirationMinutes','minActiveForGameEnd','allowMafiaInCitizenVotes','allowDetectiveInCitizenVotes','announcementMessage','hallOptions','mafiaInstructions','detectiveInstructions','citizenInstructions','hallFieldEnabled'];
+const mafiaConfig=read('12one-games/sql/012_mafia_settings_parity.sql')+read('12one-games/sql/010_mafia_game.sql');
+for(const setting of mafiaSettings)assert(mafiaConfig.includes(setting),'Missing Mafia host setting '+setting);
+
 console.log('PASS: JS syntax, backend isolation, host elements, game routes and RPC coverage.');
