@@ -37,7 +37,7 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           from pglast import parse_sql
-          for name in ['008_assassins_v2_public.sql','009_assassins_host_parity.sql','010_mafia_game.sql','011_settings_parity.sql','012_mafia_settings_parity.sql','013_player_recovery.sql']:
+          for name in ['008_assassins_v2_public.sql','009_assassins_host_parity.sql','010_mafia_game.sql','011_settings_parity.sql','012_mafia_settings_parity.sql','013_player_recovery.sql','014_player_pin_login.sql']:
               file=Path('12one-games/sql')/name
               parse_sql(file.read_text())
               print('PASS', file)
@@ -49,8 +49,8 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq postgresql-client
           psql -h localhost -U postgres -d games_test -v ON_ERROR_STOP=1 -f 12one-games/tests/base_fixture.sql
-          for file in 008_assassins_v2_public.sql 009_assassins_host_parity.sql 010_mafia_game.sql 011_settings_parity.sql 012_mafia_settings_parity.sql 013_player_recovery.sql; do
+          for file in 008_assassins_v2_public.sql 009_assassins_host_parity.sql 010_mafia_game.sql 011_settings_parity.sql 012_mafia_settings_parity.sql 013_player_recovery.sql 014_player_pin_login.sql; do
             psql -h localhost -U postgres -d games_test -v ON_ERROR_STOP=1 -f "12one-games/sql/$file"
           done
           psql -h localhost -U postgres -d games_test -v ON_ERROR_STOP=1 -f 12one-games/tests/smoke.sql
-          psql -h localhost -U postgres -d games_test -v ON_ERROR_STOP=1 -f 12one-games/tests/recovery_smoke.sql
+          psql -h localhost -U postgres -d games_test -v ON_ERROR_STOP=1 -f 12one-games/tests/pin_login_smoke.sql
