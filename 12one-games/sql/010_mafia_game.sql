@@ -264,7 +264,11 @@ begin
    if lower(v) not in ('true','false') then raise exception 'Expected true or false'; end if;
    execute format('update public.mafia_config set %I=$1::boolean where game_id=$2',setting_col) using v,p_game_id;
   elsif setting_col in ('mafia_cooldown_hours','detective_cooldown_hours','citizen_cooldown_hours','votes_required','vote_expiry_hours') then
-   if v !~ '^[0-9]{1,3}
+   if v !~ '^[0-9]{1,3}$' then raise exception 'Enter a valid number'; end if;
+   execute format('update public.mafia_config set %I=$1::integer where game_id=$2',setting_col) using v,p_game_id;
+  else
+   execute format('update public.mafia_config set %I=$1 where game_id=$2',setting_col) using v,p_game_id;
+  end if;
  else
   if p_action<>'read' then raise exception 'Unsupported host command'; end if;
  end if;
@@ -319,32 +323,3 @@ revoke all on function public.mafia_public(text),public.mafia_join(text,text,tex
 grant execute on function public.mafia_public(text) to anon,authenticated;
 grant execute on function public.mafia_join(text,text,text,text,text,text),public.mafia_state(uuid),
  public.mafia_action(uuid,text,text,text,text),public.mafia_host(uuid,text,jsonb),public.mafia_login(uuid,text,text),public.mafia_verify(uuid,text,text) to authenticated;
- then raise exception 'Enter a valid number'; end if;
-   execute format('update public.mafia_config set %I=$1::integer where game_id=$2',setting_col) using v,p_game_id;
-  else
-   execute format('update public.mafia_config set %I=$1 where game_id=$2',setting_col) using v,p_game_id;
-  end if;
- else
-  if p_action<>'read' then raise exception 'Unsupported host command'; end if;
- end if;
- select * into c from public.mafia_config where game_id=p_game_id;
- select coalesce(jsonb_agg(jsonb_build_object('id',m.id,'official_name',m.real_name,'codename',m.codename,'role',p.role,
- 'status',case when p.alive then 'active' else 'eliminated' end) order by m.joined_at),'[]'::jsonb)
- into players from public.mafia_players p join public.game_memberships m on m.id=p.member_id where p.game_id=p_game_id;
- select coalesce(jsonb_agg(jsonb_build_object('time',l.created_at,'message',l.message) order by l.created_at desc),'[]'::jsonb)
- into logs from (select * from public.mafia_log where game_id=p_game_id order by created_at desc limit 200) l;
- return jsonb_build_object('players',players,'log',logs,'status',(select status from public.games where id=p_game_id),
- 'settings',jsonb_build_object('setupEnabled',c.setup_enabled,'dashboardEnabled',c.dashboard_enabled,'gameActive',c.game_active,
- 'hallFieldEnabled',c.hall_field_enabled,'hallOptions',c.hall_options,
- 'allowMafiaInCitizenVotes',c.allow_mafia_votes,'allowDetectiveInCitizenVotes',c.allow_detective_votes,
- 'mafiaCooldownHours',c.mafia_cooldown_hours,'detectiveCooldownHours',c.detective_cooldown_hours,
- 'citizenCooldownHours',c.citizen_cooldown_hours,'votesRequired',c.votes_required,'voteExpiryHours',c.vote_expiry_hours,
- 'mafiaInstructions',c.mafia_instructions,'detectiveInstructions',c.detective_instructions,
- 'citizenInstructions',c.citizen_instructions,'gameInstructions',c.game_instructions,'announcementMessage',c.announcement));
-end $$;
-
-revoke all on function public.mafia_public(text),public.mafia_join(text,text,text,text,text,text),
- public.mafia_state(uuid),public.mafia_action(uuid,text,text,text,text),public.mafia_host(uuid,text,jsonb) from public,anon;
-grant execute on function public.mafia_public(text) to anon,authenticated;
-grant execute on function public.mafia_join(text,text,text,text,text,text),public.mafia_state(uuid),
- public.mafia_action(uuid,text,text,text,text),public.mafia_host(uuid,text,jsonb) to authenticated;
