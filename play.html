@@ -7,10 +7,16 @@
 <header><h1>12ONE GAMES</h1><span class="muted">PLATFORM PREVIEW</span></header>
 <p>A new home for Assassins, Mafia, and future games. Existing games remain unchanged.</p>
 <div id="notice" role="status" aria-live="polite"></div>
-<section id="auth"><h2>ACCOUNT</h2><p>Sign in or create an account to manage your games. Guest joining is coming in a later phase.</p>
+<section id="auth"><h2>ACCOUNT</h2><p>Sign in or create an account to manage your games. Or continue as a guest to join a game.</p>
 <form id="authForm"><label for="email">Email</label><input id="email" type="email" autocomplete="email" required>
 <label for="password">Password</label><input id="password" type="password" autocomplete="current-password" minlength="6" required>
-<button type="submit" data-action="signin">Sign in</button><button type="button" id="signup" class="secondary">Create account</button></form></section>
+<button type="submit" data-action="signin">Sign in</button><button type="button" id="signup" class="secondary">Create account</button></form><form id="guestActions"><button type="button" id="guestStart" class="secondary">Continue as guest</button></form></section>
+<section id="guestPanel" class="hidden"><h2>GUEST ACCESS</h2><p>Guest access is saved in this browser. Clearing browser data or switching devices may lose access.</p><button id="guestSignout" class="secondary">Sign out of guest session</button></section>
+<section id="joinSection"><h2>JOIN A GAME</h2><p>Enter a game code or open a host's join link.</p>
+<form id="lookupForm"><label for="joinCode">Game code</label><input id="joinCode" required maxlength="10" autocomplete="off"><button>Find game</button></form>
+<p id="foundGame" aria-live="polite"></p>
+<form id="joinForm" class="hidden"><label for="codename">Your codename (2–32 characters)</label><input id="codename" minlength="2" maxlength="32" required><button>Join game</button></form></section>
+<section id="lobby" class="hidden"><h2>GAME LOBBY</h2><div id="lobbyList"></div><p class="muted">Player list shows public codenames only. Gameplay is coming later.</p></section>
 <section id="dashboard" class="hidden"><div class="row"><h2>MY GAMES</h2><button id="signout" class="secondary" type="button">Sign out</button></div>
 <p id="identity" class="muted"></p><p>Available game credits: <strong id="creditCount">—</strong></p>
 <div id="gamesList"></div>
@@ -18,42 +24,11 @@
 <h2 style="margin-top:25px">CREATE A GAME</h2><form id="createForm"><label for="gameName">Game name</label><input id="gameName" maxlength="100" required>
 <label for="gameType">Game type</label><select id="gameType"><option value="assassins">Assassins 2.0</option><option value="mafia">Mafia 2.0</option></select>
 <button>Create game (uses 1 credit)</button></form>
-<p class="muted">Game creation is live; joining and gameplay will be added next. Please do not invite players yet.</p></section>
+<p class="muted">Open registration to allow players to join. Gameplay is coming in the next phase.</p></section>
 <section id="owner" class="hidden"><h2>PLATFORM OWNER</h2><p>Issue a single-use invitation. Each code grants one game credit. Copy it now: the database stores only its hash.</p>
 <form id="issueForm"><label for="expiry">Optional expiration date</label><input id="expiry" type="date"><button>Generate invitation</button></form>
 <p id="issuedCode" class="muted" aria-live="polite"></p></section>
 <p class="muted">12ONE Games preview · Supabase Free · <a href="assassins.html">Original Assassins</a> · <a href="mafia.html">Original Mafia</a></p>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script>
-'use strict';
-const client=window.supabase.createClient('https://kzhrcwptyyyqodqlwngg.supabase.co','sb_publishable_37UbHH_v8-RyRFsEwril4A_oaEjDecl');
-const $=id=>document.getElementById(id);
-function notice(msg){$('notice').textContent=msg||''}
-function error(e){notice(e?.message||String(e))}
-function busy(form,on){form.querySelectorAll('button').forEach(b=>b.disabled=on)}
-function gameNode(g){const el=document.createElement('div');el.className='game';const strong=document.createElement('strong');strong.textContent=g.name;el.append(strong);const p=document.createElement('p');p.textContent=g.game_type.toUpperCase()+' · '+g.status+' · Code: '+g.game_code;el.append(p);return el}
-async function refresh(){const {data:{session},error:se}=await client.auth.getSession();if(se)throw se;const user=session?.user||null;
-$('auth').classList.toggle('hidden',!!user);$('dashboard').classList.toggle('hidden',!user);$('owner').classList.add('hidden');if(!user)return;
-$('identity').textContent='Signed in as '+(user.email||'guest');
-const [credits,games,admin]=await Promise.all([
-client.from('game_credits').select('id').is('consumed_at',null),
-client.from('games').select('id,name,game_type,game_code,status').order('created_at',{ascending:false}),
-client.rpc('is_platform_admin')
-]);
-if(credits.error)throw credits.error;if(games.error)throw games.error;
-$('creditCount').textContent=String(credits.data.length);
-$('gamesList').replaceChildren();if(!games.data.length){const p=document.createElement('p');p.textContent='No games yet.';$('gamesList').append(p)}
-games.data.forEach(g=>$('gamesList').append(gameNode(g)));
-if(!admin.error&&admin.data===true)$('owner').classList.remove('hidden');
-}
-async function run(form,fn){busy(form,true);notice('');try{await fn();await refresh()}catch(e){error(e)}finally{busy(form,false)}}
-$('authForm').addEventListener('submit',e=>{e.preventDefault();run(e.currentTarget,async()=>{const {error}=await client.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;notice('Signed in.')})});
-$('signup').addEventListener('click',()=>run($('authForm'),async()=>{const {data,error}=await client.auth.signUp({email:$('email').value.trim(),password:$('password').value});if(error)throw error;notice(data.session?'Account created.':'Account created. Check your email to confirm your address before signing in.')}));
-$('signout').addEventListener('click',async()=>{const {error:signoutError}=await client.auth.signOut();if(signoutError)error(signoutError);else{notice('Signed out.');await refresh()}});
-$('redeemForm').addEventListener('submit',e=>{e.preventDefault();run(e.currentTarget,async()=>{const {error}=await client.rpc('redeem_game_invite',{p_code:$('invite').value.trim()});if(error)throw error;$('invite').value='';notice('One game credit added.')})});
-$('createForm').addEventListener('submit',e=>{e.preventDefault();run(e.currentTarget,async()=>{const {data,error}=await client.rpc('create_hosted_game',{p_game_type:$('gameType').value,p_name:$('gameName').value.trim()});if(error)throw error;$('gameName').value='';notice('Game created! Join code: '+data[0].join_code+'\nGameplay and joining are not enabled yet.')})});
-$('issueForm').addEventListener('submit',e=>{e.preventDefault();run(e.currentTarget,async()=>{const date=$('expiry').value;const {data,error}=await client.rpc('admin_issue_game_invite',{p_expires_at:date?new Date(date+'T23:59:59').toISOString():null});if(error)throw error;$('issuedCode').textContent='NEW INVITATION CODE (copy now): '+data;notice('Invitation generated. Save the code before leaving this page.')})});
-client.auth.onAuthStateChange(()=>{setTimeout(()=>refresh().catch(error),0)});
-refresh().catch(error);
-</script></body></html>
+<script src="12one-games/platform.js"></script></body></html>
