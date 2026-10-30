@@ -1,0 +1,41 @@
+'use strict';
+const fs=require('fs');
+const vm=require('vm');
+const assert=require('assert/strict');
+const path=require('path');
+const root=path.resolve(__dirname,'../..');
+const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const pages=['assassins2.html','mafia2.html','host.html'];
+const scripts=['12one-games/platform.js','12one-games/assassins.js','12one-games/mafia.js'];
+function fail(msg){throw new Error(msg)}
+for(const page of pages){
+ const html=read(page);
+ assert(!html.includes('script.google.com'),page+' must not call the original Google Apps Script');
+ for(const x of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)){
+  new vm.Script(x[1],{filename:page});
+ }
+}
+for(const file of scripts)new vm.Script(read(file),{filename:file});
+const host=read('host.html');
+const script=read('12one-games/platform.js');
+const ids=new Set([...host.matchAll(/\bid="([^"]+)"/g)].map(x=>x[1]));
+for(const m of script.matchAll(/(?:\$|show)\('([^']+)'/g)){
+ assert(ids.has(m[1]),'Missing host element #'+m[1]);
+}
+assert(!/guestStart|joinForm|assassinsSignupFields/.test(script),'Obsolete player forms remain on host');
+assert(host.includes('id="mafiaPanel"')&&host.includes('id="assassinsPanel"'),'Both host game dashboards required');
+assert(!read('assassins2.html').includes('function renderAdmin('),'Assassins administration must remain on host');
+assert(!read('mafia2.html').includes('function renderAdminLogin('),'Mafia administration must remain on host');
+for(const [name,sqlName] of [
+ ['assassins2.html','assassins_v2_public'],
+ ['mafia2.html','mafia_public']
+]){
+ assert(read(name).includes(sqlName),name+' must read from isolated public RPC');
+}
+const sql=read('12one-games/sql/010_mafia_game.sql');
+for(const fn of ['mafia_public','mafia_join','mafia_state','mafia_action','mafia_host','mafia_login','mafia_verify']){
+ assert(sql.includes('function public.'+fn+'('),'Missing Mafia RPC: '+fn);
+}
+assert(!sql.includes('target_id=target_id'),'Ambiguous target reference may affect other votes');
+assert(sql.includes('security definer set search_path=\'\''),'Restrict SQL SECURITY DEFINER search_path');
+console.log('PASS: JS syntax, backend isolation, host elements, game routes and RPC coverage.');
