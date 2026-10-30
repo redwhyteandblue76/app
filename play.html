@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>12ONE Games | Platform Preview</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#080808;color:#f4f4f4;font:16px/1.55 "Courier New",monospace}main{max-width:820px;margin:0 auto;padding:26px 18px 70px}header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #555;padding-bottom:16px;margin-bottom:24px}h1{font-size:26px;margin:0}h2{font-size:19px;margin:0 0 12px}section{border:1px solid #555;padding:18px;margin:18px 0}p{margin:8px 0 14px;color:#ccc}label{display:block;margin:12px 0 5px}input,select,button{font:inherit;border:1px solid #888;padding:10px;background:#111;color:white;max-width:100%}input,select{width:100%}button{cursor:pointer;background:#eee;color:#080808;font-weight:bold;margin:8px 8px 0 0}button.secondary{background:#111;color:white}button:disabled{opacity:.5;cursor:wait}.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.row>*{flex:1}.muted{color:#aaa;font-size:13px}.hidden{display:none}#notice{white-space:pre-wrap;border-left:3px solid #aaa;padding:10px;margin:12px 0}#notice:empty{display:none}.game{padding:12px;border-top:1px solid #555}code{overflow-wrap:anywhere}a{color:white;text-decoration:underline}
+</style></head><body><main>
+<header><h1>12ONE GAMES</h1><span class="muted">PLATFORM PREVIEW</span></header>
+<p>A new home for Assassins, Mafia, and future games. Existing games remain unchanged.</p>
+<div id="notice" role="status" aria-live="polite"></div>
+<section id="auth"><h2>ACCOUNT</h2><p>Sign in or create an account to manage your games. Guest joining is coming in a later phase.</p>
+<form id="authForm"><label for="email">Email</label><input id="email" type="email" autocomplete="email" required>
+<label for="password">Password</label><input id="password" type="password" autocomplete="current-password" minlength="6" required>
+<button type="submit" data-action="signin">Sign in</button><button type="button" id="signup" class="secondary">Create account</button></form></section>
+<section id="dashboard" class="hidden"><div class="row"><h2>MY GAMES</h2><button id="signout" class="secondary" type="button">Sign out</button></div>
+<p id="identity" class="muted"></p><p>Available game credits: <strong id="creditCount">—</strong></p>
+<div id="gamesList"></div>
+<h2>REDEEM ONE-GAME INVITATION</h2><form id="redeemForm"><label for="invite">Invitation code</label><input id="invite" autocomplete="off" maxlength="32" pattern="[A-Fa-f0-9]{32}" required><button>Redeem code</button></form>
+<h2 style="margin-top:25px">CREATE A GAME</h2><form id="createForm"><label for="gameName">Game name</label><input id="gameName" maxlength="100" required>
+<label for="gameType">Game type</label><select id="gameType"><option value="assassins">Assassins 2.0</option><option value="mafia">Mafia 2.0</option></select>
+<button>Create game (uses 1 credit)</button></form>
+<p class="muted">Game creation is live; joining and gameplay will be added next. Please do not invite players yet.</p></section>
+<section id="owner" class="hidden"><h2>PLATFORM OWNER</h2><p>Issue a single-use invitation. Each code grants one game credit. Copy it now: the database stores only its hash.</p>
+<form id="issueForm"><label for="expiry">Optional expiration date</label><input id="expiry" type="date"><button>Generate invitation</button></form>
+<p id="issuedCode" class="muted" aria-live="polite"></p></section>
+<p class="muted">12ONE Games preview · Supabase Free · <a href="assassins.html">Original Assassins</a> · <a href="mafia.html">Original Mafia</a></p>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+'use strict';
+const client=window.supabase.createClient('https://kzhrcwptyyyqodqlwngg.supabase.co','sb_publishable_37UbHH_v8-RyRFsEwril4A_oaEjDecl');
+const $=id=>document.getElementById(id);
+function notice(msg){$('notice').textContent=msg||''}
+function error(e){notice(e?.message||String(e))}
+function busy(form,on){form.querySelectorAll('button').forEach(b=>b.disabled=on)}
+function gameNode(g){const el=document.createElement('div');el.className='game';const strong=document.createElement('strong');strong.textContent=g.name;el.append(strong);const p=document.createElement('p');p.textContent=g.game_type.toUpperCase()+' · '+g.status+' · Code: '+g.game_code;el.append(p);return el}
+async function refresh(){const {data:{user},error:ue}=await client.auth.getUser();if(ue)throw ue;
+$('auth').classList.toggle('hidden',!!user);$('dashboard').classList.toggle('hidden',!user);$('owner').classList.add('hidden');if(!user)return;
+$('identity').textContent='Signed in as '+(user.email||'guest');
+const [credits,games,admin]=await Promise.all([
+client.from('game_credits').select('id').is('consumed_at',null),
+client.from('games').select('id,name,game_type,game_code,status').order('created_at',{ascending:false}),
+client.rpc('is_platform_admin')
+]);
+if(credits.error)throw credits.error;if(games.error)throw games.error;
+$('creditCount').textContent=String(credits.data.length);
+$('gamesList').replaceChildren();if(!games.data.length){const p=document.createElement('p');p.textContent='No games yet.';$('gamesList').append(p)}
+games.data.forEach(g=>$('gamesList').append(gameNode(g)));
+if(!admin.error&&admin.data===true)$('owner').classList.remove('hidden');
+}
+async function run(form,fn){busy(form,true);notice('');try{await fn();await refresh()}catch(e){error(e)}finally{busy(form,false)}}
+$('authForm').addEventListener('submit',e=>{e.preventDefault();run(e.currentTarget,async()=>{const {error}=await client.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;notice('Signed in.')})});
+$('signup').addEventListener('click',()=>run($('authForm'),async()=>{const {data,error}=await client.auth.signUp({email:$('email').value.trim(),password:$('password').value});if(error)throw error;notice(data.session?'Account created.':'Account created. Check your email to confirm your address before signing in.')}));
+$('signout').addEventListener('click',async()=>{const {error}=await client.auth.signOut();if(error)error(error);else{notice('Signed out.');await refresh()}});
+$('redeemForm').addEventListener('submit',e=>{e.preventDefault();run(e.currentTarget,async()=>{const {error}=await client.rpc('redeem_game_invite',{p_code:$('invite').value.trim()});if(error)throw error;$('invite').value='';notice('One game credit added.')})});
+$('createForm').addEventListener('submit',e=>{e.preventDefault();run(e.currentTarget,async()=>{const {data,error}=await client.rpc('create_hosted_game',{p_game_type:$('gameType').value,p_name:$('gameName').value.trim()});if(error)throw error;$('gameName').value='';notice('Game created! Join code: '+data[0].join_code+'\nGameplay and joining are not enabled yet.')})});
+$('issueForm').addEventListener('submit',e=>{e.preventDefault();run(e.currentTarget,async()=>{const date=$('expiry').value;const {data,error}=await client.rpc('admin_issue_game_invite',{p_expires_at:date?new Date(date+'T23:59:59').toISOString():null});if(error)throw error;$('issuedCode').textContent='NEW INVITATION CODE (copy now): '+data;notice('Invitation generated. Save the code before leaving this page.')})});
+client.auth.onAuthStateChange(()=>{setTimeout(()=>refresh().catch(error),0)});
+refresh().catch(error);
+</script></body></html>
