@@ -11,6 +11,7 @@ const heading=t=>area.append(el('h3',t));
 async function render(){
  if(!selected)return;
  const s=await rpc('assassins_state',{p_game_id:selected});
+ const hostSettings=await rpc('assassins_host_settings',{p_game_id:selected});
  root.classList.remove('hidden');area.replaceChildren();
  document.getElementById('assassinsTitle').textContent='ASSASSINS HOST DASHBOARD · '+s.status.toUpperCase();
  if(!s.host){area.append(el('p','Only the game host can manage this game.'));return;}
@@ -30,13 +31,41 @@ async function render(){
    details.append(line);
   }
   area.append(details);
-  const settings=el('details');settings.append(el('summary','Game settings'));
-  for(const [key,label] of [['dashboard_enabled','Player dashboard'],['eliminate_enabled','Eliminations enabled'],['paused','Pause game'],['phone_enabled','Require phone at registration'],['hall_enabled','Require hall at registration'],['instructions_enabled','Show instructions'],['instruction_verification_enabled','Require instructions acknowledgement']]){
-   const wrap=el('label',label+' ');const inp=el('input');inp.type='checkbox';inp.checked=!!s[key];inp.onchange=async()=>{try{await rpc('assassins_host_setting',{p_game_id:selected,p_key:key,p_value:String(inp.checked)});await render()}catch(e){fail(e)}};wrap.append(inp);settings.append(wrap);
+  const settings=el('details');settings.append(el('summary','All original Assassins settings'));
+  const settingsBool=[
+   ['master_lock','Master lock'],['signup_enabled','Sign-ups enabled'],
+   ['dashboard_enabled','Player dashboard'],['eliminate_enabled','Eliminations enabled'],
+   ['hall_field_enabled','Hall field enabled'],['phone_field_enabled','Phone field enabled'],
+   ['instructions_enabled','Show instructions'],['instruction_verification_enabled','Require instructions acknowledgment'],
+   ['paused','Pause eliminations']
+  ];
+  for(const [key,label] of settingsBool){
+   const wrap=el('label',label+' ('+key+') ');const inp=el('input');inp.type='checkbox';inp.style.width='auto';
+   inp.checked=!!hostSettings[key];
+   inp.onchange=async()=>{
+    const old= !inp.checked;inp.disabled=true;
+    try{
+     const mapped=key==='hall_field_enabled'?'hall_enabled':key==='phone_field_enabled'?'phone_enabled':key;
+     await rpc('assassins_host_setting',{p_game_id:selected,p_key:mapped,p_value:String(inp.checked)});
+     await render();
+    }catch(e){inp.checked=old;fail(e)}finally{inp.disabled=false}
+   };
+   wrap.append(inp);settings.append(wrap);
   }
-  for(const [key,label] of [['hall_options','Hall options (comma separated)'],['instructions_text','Instructions']]){
-   const [wrap,inp]=field(label,'text',s[key]||'');settings.append(wrap,button('Save '+label,async()=>{await rpc('assassins_host_setting',{p_game_id:selected,p_key:key,p_value:inp.value});await render()}));
+  for(const [key,label] of [
+   ['hall_options','Hall options'],['instructions_text','Registration instructions'],
+   ['signup_off_message','Registration closed message'],
+   ['dashboard_off_message','Dashboard disabled message'],
+   ['eliminate_off_message','Eliminations disabled message'],
+   ['master_lock_message','Master lock message']
+  ]){
+   const wrap=el('label',label+' ('+key+')');const inp=el(key.includes('message')||key==='instructions_text'?'textarea':'input');
+   inp.value=hostSettings[key]??'';inp.style.width='100%';wrap.append(inp);settings.append(wrap);
+   settings.append(button('Save '+label,async()=>{await rpc('assassins_host_setting',{p_game_id:selected,p_key:key,p_value:inp.value});await render()}));
   }
+  settings.append(el('p','game_status: '+hostSettings.game_status+' — controlled through Open Registration, Start Game and Reset.'));
+  settings.append(el('p','last_updated: '+(hostSettings.last_updated?new Date(hostSettings.last_updated).toLocaleString():'Not yet updated')));
+  settings.append(el('p','admin_password / reset_password: replaced by your secure host account; these are not stored as plaintext game settings.'));
   area.append(settings);
   const feedDetails=el('details');feedDetails.append(el('summary','Elimination history / game log'));
   if(!(s.feed||[]).length)feedDetails.append(el('p','No confirmed eliminations yet.'));
