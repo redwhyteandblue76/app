@@ -17,6 +17,7 @@
 <p id="foundGame" aria-live="polite"></p>
 <form id="joinForm" class="hidden"><label for="codename">Your codename (2–32 characters)</label><input id="codename" minlength="2" maxlength="32" required><button>Join game</button></form></section>
 <section id="lobby" class="hidden"><h2>GAME LOBBY</h2><div id="lobbyList"></div><p class="muted">Player list shows public codenames only. Gameplay is coming later.</p></section>
+<section id="assassinsPanel" class="hidden"><h2 id="assassinsTitle">ASSASSINS 2.0</h2><div id="assassinsContent"></div></section>
 <section id="dashboard" class="hidden"><div class="row"><h2>MY GAMES</h2><button id="signout" class="secondary" type="button">Sign out</button></div>
 <p id="identity" class="muted"></p><p>Available game credits: <strong id="creditCount">—</strong></p>
 <div id="gamesList"></div>
@@ -31,4 +32,5 @@
 <p class="muted">12ONE Games preview · Supabase Free · <a href="assassins.html">Original Assassins</a> · <a href="mafia.html">Original Mafia</a></p>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="12one-games/platform.js"></script></body></html>
+<script src="12one-games/platform.js"></script>
+<script src="12one-games/assassins.js"></script></body></html>
