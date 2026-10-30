@@ -98,6 +98,7 @@ begin
  if c.hall_field_enabled and not (trim(p_hall)=any(string_to_array(replace(c.hall_options,', ',','),','))) then raise exception 'Invalid hall'; end if;
  if exists(select 1 from public.game_memberships where game_id=g.id and user_id=(select auth.uid())) then raise exception 'Already registered on this device'; end if;
  if exists(select 1 from public.game_memberships where game_id=g.id and lower(codename)=v_code) then raise exception 'Codename already taken'; end if;
+ if exists(select 1 from public.game_memberships where game_id=g.id and lower(real_name)=lower(v_name)) then raise exception 'That real name is already registered'; end if;
  insert into public.game_memberships(game_id,user_id,codename,real_name,phone,hall)
  values(g.id,(select auth.uid()),v_code,v_name,left(trim(p_phone),40),nullif(trim(p_hall),'')) returning id into v_id;
  insert into public.mafia_players(game_id,member_id,pin_hash) values(g.id,v_id,public.crypt(p_password,public.gen_salt('bf')));
@@ -163,7 +164,7 @@ begin
   where m.game_id=p_game_id and lower(m.codename)=lower(trim(p_target));
   if v_target is null or v_target=me.id or target_role='mafia' then raise exception 'Invalid Mafia target'; end if;
   update public.mafia_players set alive=false where game_id=p_game_id and member_id=v_target;
-  delete from public.mafia_votes where game_id=p_game_id and target_id=v_target;
+  delete from public.mafia_votes where game_id=p_game_id and (target_id=v_target or voter_id=v_target);
   update public.mafia_players set mafia_last_at=now() where game_id=p_game_id and member_id=me.id;
  elsif p_action in ('detective','vote') then
   select m.id,m.real_name,q.role into v_target,target_name,target_role from public.game_memberships m
@@ -195,7 +196,7 @@ begin
   on conflict(game_id,voter_id) do update set target_name=excluded.target_name,was_mafia=excluded.was_mafia,created_at=excluded.created_at;
   update public.mafia_players set citizen_last_at=now() where game_id=p_game_id and member_id in
    (select voter_id from public.mafia_votes where game_id=p_game_id and target_id=v_target);
-  delete from public.mafia_votes where game_id=p_game_id and target_id=v_target;
+  delete from public.mafia_votes where game_id=p_game_id and (target_id=v_target or voter_id=v_target);
  else
   raise exception 'Unsupported Mafia action';
  end if;
@@ -228,13 +229,16 @@ begin
   alive=true,mafia_last_at=null,detective_last_at=null,citizen_last_at=null
   from numbered where p.game_id=p_game_id and p.member_id=numbered.member_id;
   update public.games set status='active' where id=p_game_id;
+  update public.mafia_config set game_active=true,dashboard_enabled=true where game_id=p_game_id;
   insert into public.mafia_log(game_id,event_type,message) values(p_game_id,'randomize','Host randomized Mafia roles');
   return jsonb_build_object('total',n,'mafia',n_mafia,'detectives',n_detectives,'citizens',n-n_mafia-n_detectives);
  elsif p_action='reset' then
   delete from public.mafia_votes where game_id=p_game_id;
   delete from public.mafia_vote_results where game_id=p_game_id;
+  delete from public.mafia_log where game_id=p_game_id;
   update public.mafia_players set role=null,alive=true,mafia_last_at=null,detective_last_at=null,citizen_last_at=null where game_id=p_game_id;
   update public.games set status='draft' where id=p_game_id;
+  update public.mafia_config set game_active=true,dashboard_enabled=true where game_id=p_game_id;
  elsif p_action='remove' then
   if g.status not in ('draft','registration') then raise exception 'Remove players only before game start'; end if;
   select id into target from public.game_memberships where game_id=p_game_id and lower(codename)=lower(trim(p_payload->>'codename'));
