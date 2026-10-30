@@ -38,6 +38,13 @@ async function render(){
    const [wrap,inp]=field(label,'text',s[key]||'');settings.append(wrap,button('Save '+label,async()=>{await rpc('assassins_host_setting',{p_game_id:selected,p_key:key,p_value:inp.value});await render()}));
   }
   area.append(settings);
+  const feedDetails=el('details');feedDetails.append(el('summary','Elimination history / game log'));
+  if(!(s.feed||[]).length)feedDetails.append(el('p','No confirmed eliminations yet.'));
+  for(const event of s.feed||[]){
+   const stamp=event.time?new Date(event.time).toLocaleString():'';
+   feedDetails.append(el('div',event.details+(stamp?' · '+stamp:'')));
+  }
+  area.append(feedDetails);
   if(['active','finished'].includes(s.status)){
    area.append(button('Shuffle target order (before first elimination)',async()=>{if(!confirm('Reassign target order?'))return;await rpc('assassins_host_shuffle',{p_game_id:selected});await render()}));
    area.append(button('Eliminate players without a first elimination',async()=>{if(!confirm('Eliminate all active players with zero confirmed eliminations?'))return;const n=await rpc('assassins_host_no_first_elimination',{p_game_id:selected});msg(n+' players eliminated.');await render()}));
