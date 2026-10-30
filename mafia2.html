@@ -286,6 +286,25 @@ async function api(action,params={}){
   throw Error('Unsupported game operation: '+action);
  }catch(e){return{error:e.message||String(e)}}
 }
+async function issueMafiaRecovery(){
+ const bytes=new Uint8Array(16);
+ crypto.getRandomValues(bytes);
+ const code=Array.from(bytes).map(x=>x.toString(16).padStart(2,'0')).join('');
+ await mafiaRpc('game_issue_recovery',{p_game_id:mafiaGame.id,p_token:code});
+ return code;
+}
+async function recoverMafia(){
+ const codename=document.getElementById('recoveryCodename').value.trim();
+ const code=document.getElementById('recoveryCode').value.trim().toLowerCase();
+ const output=document.getElementById('recoveryResult');
+ if(!codename||!code){output.textContent='Enter your codename and recovery code.';return}
+ try{
+  await mafiaRpc('game_recover',{p_code:GAME_CODE,p_codename:codename,p_token:code});
+  localStorage.setItem(LS_KEY,codename);
+  state.codename=codename;
+  await goTo('dashboard');
+ }catch(error){output.textContent=error.message||String(error)}
+}
 function escapeMafia(value){return String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 
 /* ================= NAV / ROUTING ================= */
@@ -411,6 +430,16 @@ async function submitSignup() {
     localStorage.setItem(LS_KEY, params.codename);
     state.codename = params.codename;
     renderNav();
+    try {
+      const recoveryCode=await issueMafiaRecovery();
+      const note=document.createElement('p');
+      note.textContent='SAVE THIS PRIVATE ACCOUNT RECOVERY CODE: '+recoveryCode+' — it is needed to restore this player on another device.';
+      out.appendChild(note);
+    }catch(error){
+      const warning=document.createElement('p');
+      warning.textContent='Registration succeeded, but recovery setup failed: '+error.message;
+      out.appendChild(warning);
+    }
     const continueBtn=document.createElement('button');
     continueBtn.className='primary';
     continueBtn.textContent='Open My Dashboard';
@@ -430,6 +459,14 @@ function renderLogin() {
       <input id="li_password" type="text" maxlength="4" inputmode="numeric">
       <button class="primary" onclick="submitLogin()">Login</button>
       <div id="li_output" class="output"></div>
+    </div>
+    <div class="card">
+      <h3>Recover a player account on another device</h3>
+      <p>Enter the private recovery code saved during registration.</p>
+      <label>Codename</label><input id="recoveryCodename" type="text">
+      <label>Recovery code</label><input id="recoveryCode" type="text" autocomplete="off">
+      <button class="secondary" onclick="recoverMafia()">Recover my account</button>
+      <div id="recoveryResult" class="output" role="status"></div>
     </div>
   `;
 }
