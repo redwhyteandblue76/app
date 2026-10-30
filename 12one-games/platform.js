@@ -30,7 +30,7 @@ async function refresh(){
  }
  $('gamesList').append(el);
  }
- if(guest){show('guestGames',true);$('guestGames').replaceChildren(...Array.from($('gamesList').children).map(n=>n.cloneNode(true)));$('guestGames').replaceChildren();for(const g of games){if(g.game_type==='assassins'){const b=node('button','Open '+g.name);b.onclick=()=>window.openAssassins(g.id).catch(fail);$('guestGames').append(b)}}}else show('guestGames',false);
+ if(guest){show('guestGames',true);$('guestGames').replaceChildren();for(const g of games){if(g.game_type==='assassins'){const b=node('button','Open '+g.name);b.onclick=()=>window.openAssassins(g.id).catch(fail);$('guestGames').append(b)}}}else show('guestGames',false);
  if(!guest){
  const [credits,admin]=await Promise.all([db.from('game_credits').select('id').is('consumed_at',null),db.rpc('is_platform_admin')]);
  if(credits.error)throw credits.error;
