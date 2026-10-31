@@ -115,6 +115,22 @@ begin
  'players',v_players,'events',v_events,'game_log',v_feed);
 end $$;
 
+create or replace function public.host_player_contacts(p_game_id uuid)
+returns jsonb language plpgsql stable security definer set search_path='' as $
+declare g public.games%rowtype; v jsonb;
+begin
+ select * into g from public.games where id=p_game_id;
+ if not found then raise exception 'Game not found';end if;
+ if g.owner_user_id is distinct from (select auth.uid()) and not public.is_platform_admin() then
+ raise exception 'Host only';end if;
+ select coalesce(jsonb_agg(jsonb_build_object('name',real_name,'codename',codename,
+ 'phone',phone,'hall',hall) order by joined_at),'[]'::jsonb)
+ into v from public.game_memberships where game_id=p_game_id;
+ return v;
+end $;
+revoke all on function public.host_player_contacts(uuid) from public,anon;
+grant execute on function public.host_player_contacts(uuid) to authenticated;
+
 revoke all on function public.host_manage_game(uuid,text,text),
  public.host_admin_directory(),public.host_export_game(uuid) from public,anon;
 grant execute on function public.host_manage_game(uuid,text,text),
