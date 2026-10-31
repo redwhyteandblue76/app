@@ -93,7 +93,7 @@ begin
  select * into g from public.games where id=p_game_id;
  if not found then raise exception 'Game not found';end if;
  if g.owner_user_id is distinct from (select auth.uid()) and not public.is_platform_admin() then raise exception 'Host only';end if;
- select coalesce(jsonb_agg(jsonb_build_object('name',m.real_name,'codename',m.codename,'phone',m.phone,'hall',m.hall,
+ select coalesce(jsonb_agg(jsonb_build_object('name',m.real_name,'codename',m.codename,'hall',m.hall,
  'role',case when g.game_type='mafia' then mp.role else null end,
  'active',case when g.game_type='mafia' then mp.alive else ap.alive end)
  order by m.joined_at),'[]'::jsonb) into v_players
