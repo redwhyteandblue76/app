@@ -47,9 +47,14 @@
   settings.append(el('p','Original Mafia settings not listed here are supported above. Player signup also requires real names and game-specific PINs.'));
   area.append(settings);
   const players=section('Private player management — real names, codenames, roles');
+  const {data:contacts}=await db.rpc('host_player_contacts',{p_game_id:gameId});
+  const phoneByCode=new Map((contacts||[]).map(p=>[p.codename?.toLowerCase(),p]));
   for(const pl of s.players){
    const line=el('div');line.className='game';
    line.append(el('strong',pl.official_name+' · '+pl.codename));
+   const info=phoneByCode.get(pl.codename?.toLowerCase());
+   if(info?.phone)line.append(el('p','Phone: '+info.phone));
+   if(info?.hall)line.append(el('p','Hall: '+info.hall));
    const role=el('select');
    for(const [v,n] of [['','Unassigned'],['citizen','Citizen'],['mafia','Mafia'],['detective','Detective']]){const o=el('option',n);o.value=v;role.append(o)}
    role.value=pl.role||'';
@@ -73,6 +78,7 @@
    await rpc('reset');await render();await refresh();
   },true));
   area.append(button('Refresh Mafia dashboard',render));
+  window.organizeHostGameView?.('mafia',area);
  }
  window.openMafia=async id=>{gameId=id;document.getElementById('assassinsPanel')?.classList.add('hidden');await render();root.scrollIntoView({behavior:'smooth',block:'start'})};
  window.refreshMafia=async()=>{if(gameId)await render()};
