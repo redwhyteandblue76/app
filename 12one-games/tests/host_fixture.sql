@@ -1,4 +1,5 @@
 -- Disposable-only fixtures to test host management; never run in Supabase.
+alter table public.games add column if not exists created_at timestamptz not null default now();
 create table if not exists auth.users (
  id uuid primary key,
  email text,
