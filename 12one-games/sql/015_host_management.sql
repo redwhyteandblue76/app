@@ -135,4 +135,31 @@ revoke all on function public.host_manage_game(uuid,text,text),
  public.host_admin_directory(),public.host_export_game(uuid) from public,anon;
 grant execute on function public.host_manage_game(uuid,text,text),
  public.host_admin_directory(),public.host_export_game(uuid) to authenticated;
+create or replace function public.host_record_event(p_game_id uuid,p_action text,p_details text default '')
+returns void language plpgsql security definer set search_path='' as $hostlog$
+declare g public.games%rowtype;
+begin
+ select * into g from public.games where id=p_game_id;
+ if not found or g.owner_user_id is distinct from (select auth.uid()) then raise exception 'Host only';end if;
+ if length(p_action)>80 or length(p_details)>400 then raise exception 'Event text too long';end if;
+ insert into public.host_events(game_id,host_id,action,game_name,details)
+ values(p_game_id,(select auth.uid()),p_action,g.name,p_details);
+end $hostlog$;
+create or replace function public.host_recent_events(p_game_id uuid)
+returns jsonb language plpgsql stable security definer set search_path='' as $hostrecent$
+declare v jsonb;
+begin
+ if not exists(select 1 from public.games where id=p_game_id and
+   (owner_user_id=(select auth.uid()) or public.is_platform_admin())) then
+   raise exception 'Host only';end if;
+ select coalesce(jsonb_agg(jsonb_build_object('time',occurred_at,'action',action,'details',details)
+ order by occurred_at desc),'[]'::jsonb) into v from
+ (select * from public.host_events where game_id=p_game_id order by occurred_at desc limit 200) e;
+ return v;
+end $hostrecent$;
+revoke all on function public.host_record_event(uuid,text,text),public.host_recent_events(uuid)
+ from public,anon;
+grant execute on function public.host_record_event(uuid,text,text),public.host_recent_events(uuid)
+ to authenticated;
+
 commit;
