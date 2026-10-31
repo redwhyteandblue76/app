@@ -1,7 +1,7 @@
 'use strict';
 const db=window.supabase.createClient('https://kzhrcwptyyyqodqlwngg.supabase.co','sb_publishable_37UbHH_v8-RyRFsEwril4A_oaEjDecl',{auth:{storageKey:'12one_host_auth'}});
 const $=id=>document.getElementById(id);
-let currentUser=null,currentGame=null,selectedHostGame=null,allHostGames=[],showArchives=false;
+let currentUser=null,currentGame=null,selectedHostGame=null,allHostGames=[],showArchives=false,adminIsHost=false;
 function msg(s){$('notice').textContent=s||''}
 function fail(e){msg(e?.message||String(e))}
 function busy(form,v){form.querySelectorAll('button').forEach(b=>b.disabled=v)}
@@ -15,7 +15,7 @@ async function refresh(){
  const guest=!!currentUser?.is_anonymous;
  show('auth',!currentUser);show('dashboard',!!currentUser&&!guest&&!selectedHostGame);show('guestPanel',guest);show('owner',false);
  $('identity').textContent=currentUser?(guest?'Guest session (this browser)':'Signed in as '+currentUser.email):'';
- if(!currentUser){selectedHostGame=null;show('lobby',false);show('assassinsPanel',false);show('mafiaPanel',false);return}
+ if(!currentUser){selectedHostGame=null;show('lobby',false);show('assassinsPanel',false);show('mafiaPanel',false);applyHostView();return}
  const {data:games,error:ge}=await db.from('games').select('id,name,game_type,game_code,status,owner_user_id,archived_at').eq('owner_user_id',currentUser.id).order('created_at',{ascending:false});if(ge)throw ge;
 
  const {data:gameCounts}=await db.rpc('host_game_counts');
@@ -29,7 +29,8 @@ async function refresh(){
  const [credits,admin]=await Promise.all([db.from('game_credits').select('id').is('consumed_at',null),db.rpc('is_platform_admin')]);
  if(credits.error)throw credits.error;
  $('creditCount').textContent=String(credits.data.length);
- show('owner',!admin.error&&admin.data===true&&!selectedHostGame);
+ adminIsHost=!admin.error&&admin.data===true;
+ show('owner',adminIsHost&&!selectedHostGame);
  if(!admin.error&&admin.data===true)renderAdminDirectory().catch(e=>msg(e.message));
  }
  if(currentGame)await loadLobby(currentGame);
@@ -100,8 +101,11 @@ const pageTitle=()=>document.querySelector('header h1');
 function applyHostView(){
  const active=!!selectedHostGame;
  show('dashboard',!!currentUser&&!currentUser.is_anonymous&&!active);
- show('owner',!active&&!$('owner').classList.contains('hidden'));
+ show('owner',!active&&adminIsHost&&!!currentUser&&!currentUser.is_anonymous);
  show('joinSection',!active);
+ show('hostWorkspace',active);show('hostHomeView',!active);
+ document.body.dataset.view=active?'game':'home';
+ if($('workspaceSubtitle'))$('workspaceSubtitle').textContent=active?selectedHostGame.game_type.toUpperCase()+' · '+selectedHostGame.game_code:'';
  show('assassinsPanel',active&&selectedHostGame.game_type==='assassins');
  show('mafiaPanel',active&&selectedHostGame.game_type==='mafia');
  if(pageTitle())pageTitle().textContent=active?selectedHostGame.name:'12one Games';
@@ -111,6 +115,7 @@ function applyHostView(){
 function backToGames(){
  selectedHostGame=null;
  show('assassinsPanel',false);show('mafiaPanel',false);
+ applyHostView();
  refresh().then(()=>{window.scrollTo({top:0,behavior:'smooth'})}).catch(fail);
 }
 async function manageGame(g){
@@ -124,7 +129,7 @@ async function manageGame(g){
 }
 function decorateGamePanel(g){
  const panel=$(g.game_type==='assassins'?'assassinsPanel':'mafiaPanel');
- let bar=panel.querySelector('.game-toolbar');
+ let bar=panel.querySelector(':scope > .game-toolbar:not(.host-action-bar)');
  if(!bar){bar=node('div');bar.className='game-toolbar';panel.prepend(bar)}
  bar.replaceChildren();
  bar.append(makeButton('← All games',backToGames,'secondary'));
@@ -222,6 +227,7 @@ $('saveProfile')?.addEventListener('click',async()=>{
  if(error)return fail(error);
  msg('Profile name saved.');await refresh();
 });
+$('backToDashboard')?.addEventListener('click',backToGames);
 $('gameSearch')?.addEventListener('input',renderGameCards);
 $('gameFilter')?.addEventListener('change',renderGameCards);
 
