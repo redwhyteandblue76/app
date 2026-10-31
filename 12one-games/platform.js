@@ -137,6 +137,18 @@ function decorateGamePanel(g){
   actions.append(makeButton('Permanently delete',()=>deleteHostedGame(g),'danger'));
  }
  panel.append(actions);
+ const targetActivity=panel.querySelector(':scope #'+(g.game_type==='assassins'?'assassinsContent':'mafiaContent')+' > .host-tab[data-tab="activity"]');
+ if(targetActivity){
+  let section=targetActivity.querySelector('.host-audit');
+  if(section)section.remove();
+  section=node('div');section.className='host-audit';section.append(node('h3','Host activity history'));
+  targetActivity.prepend(section);
+  db.rpc('host_recent_events',{p_game_id:g.id}).then(({data,error})=>{
+   if(error){section.append(node('p','Activity history unavailable until migration 015 is installed.'));return}
+   if(!data?.length)section.append(node('p','No host activity recorded yet.'));
+   for(const event of data||[])section.append(node('p',new Date(event.time).toLocaleString()+' · '+event.details));
+  }).catch(fail);
+ }
 }
 function renderGameCards(){
  const target=$('gamesList');target.replaceChildren();
