@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assassins</title>
+<style>
+  body {
+    font-family: 'Courier New', monospace;
+    background-color: #000;
+    color: #fff;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+  }
+  #container { width: 100%; max-width: 500px; margin: 0 auto; padding: 0 20px; box-sizing: border-box; }
+  h2 { text-align: center; }
+  .form-section {
+    background-color: #222;
+    padding: 20px;
+    border: 2px solid #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    width: 100%;
+    margin-bottom: 20px;
+    box-sizing: border-box;
+  }
+  label { display: block; width: 100%; margin-bottom: 6px; }
+  input, select {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #fff;
+    border-radius: 4px;
+    background-color: #444;
+    color: #fff;
+    margin-bottom: 12px;
+    box-sizing: border-box;
+    font-family: 'Courier New', monospace;
+  }
+  button {
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    background-color: #555;
+    color: #fff;
+    cursor: pointer;
+    width: 100%;
+    font-family: 'Courier New', monospace;
+    margin-top: 6px;
+  }
+  button:hover { background-color: #444; }
+  button:disabled { background-color: #333; cursor: not-allowed; opacity: 0.6; }
+  .output {
+    margin-top: 12px;
+    padding: 10px;
+    border: 1px solid #fff;
+    background-color: #333;
+    border-radius: 4px;
+    font-weight: bold;
+    white-space: pre-wrap;
+    text-align: center;
+    display: none;
+  }
+  .output.error { border-color: #ff5555; color: #ff8888; }
+  .output.success { border-color: #55ff55; color: #88ff88; }
+  .loading { display: none; text-align: center; margin-top: 10px; }
+  .spinner {
+    border: 4px solid rgba(255,255,255,0.3);
+    border-top: 4px solid #fff;
+    border-radius: 50%;
+    width: 28px; height: 28px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 8px;
+  }
+  @keyframes spin { 0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);} }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+  th, td { border: 1px solid #555; padding: 6px; text-align: left; }
+  th { background-color: #333; }
+  .status-active { color: #88ff88; }
+  .status-eliminated { color: #ff8888; }
+
+  #navbar {
+    width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+    padding: 10px 0;
+    background-color: #111;
+    border-bottom: 2px solid #fff;
+    margin-bottom: 16px;
+  }
+  #navbar a {
+    display: inline-block;
+    color: #fff;
+    text-decoration: none;
+    padding: 8px 12px;
+    border: 1px solid #555;
+    border-radius: 4px;
+    font-size: 13px;
+    margin: 4px;
+  }
+  #navbar a:hover {
+    background-color: #333;
+  }
+
+  /* Restrained improvements: same monochrome look, better spacing and navigation. */
+  #navbar{display:flex;flex-wrap:wrap;justify-content:center;gap:5px;padding:10px}
+  #navbar a{margin:0;text-decoration:none}
+  #navbar a[aria-current="page"]{background:#fff;color:#000}
+  #navbar button{width:auto;margin:0;padding:8px 12px;border:1px solid #777;font-size:13px;background:#333}
+  #navbar button:hover{background:#555}
+  /* Readable text links against the dark background; keep navigation buttons unchanged. */
+  #container a:not(.action-links a){color:#fff;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+  #container a:not(.action-links a):hover,#container a:not(.action-links a):focus-visible{color:#ddd;text-decoration-thickness:2px}
+  .rule-block{border-bottom:1px solid #444;padding:12px 0}
+  .rule-block:last-child{border-bottom:0}
+  .rule-block h3{margin:0 0 9px}
+  .rule-block p,.rule-block li{line-height:1.65}
+  .rule-block ul,.rule-block ol{padding-left:22px}
+  .subtle{color:#bbb;font-size:14px;line-height:1.6}
+  .status-line{border:1px solid #555;padding:12px;margin:14px 0;text-align:center}
+  .action-links{display:flex;flex-wrap:wrap;gap:8px}
+  .action-links a{flex:1;min-width:125px;display:block;text-align:center;padding:12px 8px;border:1px solid #777;color:#fff;text-decoration:none}
+  .action-links a:hover{background:#333}
+  .admin-group{border-top:1px solid #555;margin-top:20px;padding-top:12px}
+  .admin-tabs{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 16px}
+  .admin-tabs button{width:auto;flex:1;min-width:90px;border:1px solid #777}
+  .admin-tabs button[aria-pressed="true"]{background:#fff;color:#111}
+  .admin-panel[hidden]{display:none!important}
+  .admin-stat{border:1px solid #555;padding:10px;flex:1;min-width:85px;text-align:center}
+  .admin-stats{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+  .admin-stat strong{display:block;font-size:20px}
+  .admin-table-wrap{overflow-x:auto}
+  .admin-table{min-width:520px}
+  .admin-table td{vertical-align:middle}
+  .admin-table button{width:auto;padding:6px 9px;font-size:12px;margin:3px}
+  .admin-table .remove-player{border:1px solid #b55;color:#ffaaaa;background:#421b1b}
+  .admin-table .remove-player:disabled{opacity:.5}
+  .admin-search{margin-top:8px}
+  .admin-help{color:#bbb;font-size:12px;line-height:1.5}
+  @media(max-width:480px){#container{padding:0 12px}#navbar a{font-size:12px;padding:7px}}
+</style>
+<link rel="stylesheet" href="site-footer.css">
+<script src="site-footer.js" defer></script>
+</head>
+<body>
+<div id="navbar" aria-label="Assassins navigation"></div>
+<div id="container">
+  <div id="app"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+// 12ONE v2: game-code isolation. Never call the original shared Apps Script backend.
+const GAME_CODE = new URLSearchParams(location.search).get('game')?.trim().toUpperCase() || '';
+const GAME_PAGE = 'assassins2.html' + (GAME_CODE ? '?game=' + encodeURIComponent(GAME_CODE) : '');
+let gameContext = null;
+let v2db = null;
+async function initializeGameContext() {
+  if (!GAME_CODE) throw Error('Missing game code. Open the link provided by your host.');
+  if (!window.supabase) throw Error('Unable to load the game service.');
+  v2db = window.supabase.createClient('https://kzhrcwptyyyqodqlwngg.supabase.co','sb_publishable_37UbHH_v8-RyRFsEwril4A_oaEjDecl',{auth:{storageKey:'12one_assassins_'+GAME_CODE}});
+  const session = await v2db.auth.getSession();
+  if (session.error) throw session.error;
+  if (!session.data.session) {
+    const guest = await v2db.auth.signInAnonymously();
+    if (guest.error) throw guest.error;
+  }
+  const {data,error}=await v2db.rpc('assassins_v2_public',{p_code:GAME_CODE});
+  if (error) throw error;
+  gameContext = data;
+}
+// Until each original action is mapped and tested, fail closed rather than mixing game data.
+async function callBackend(action, params = {}) {
+  if (!gameContext || !v2db) throw Error('Game not initialized');
+  if (action === 'getPublicStatus') {
+    const {data,error}=await v2db.rpc('assassins_v2_public',{p_code:GAME_CODE});
+    if(error) throw error;
+    gameContext=data;
+    const registration=data.status==='registration' && data.signup_enabled!==false && !data.master_lock;
+    return {masterLock:data.master_lock?'TRUE':'FALSE',signupOffMessage:data.signup_off_message||'Registration is closed.',dashboardOffMessage:data.dashboard_off_message||'Dashboard unavailable.',eliminateOffMessage:data.eliminate_off_message||'Eliminations are disabled.',masterLockMessage:data.master_lock_message||'Game unavailable.',paused:data.paused?'TRUE':'FALSE',signupEnabled:registration?'TRUE':'FALSE',dashboardEnabled:data.dashboard_enabled?'TRUE':'FALSE',eliminateEnabled:data.eliminate_enabled?'TRUE':'FALSE',hallFieldEnabled:data.hall_enabled?'TRUE':'FALSE',hallOptions:data.hall_options||'',phoneFieldEnabled:data.phone_enabled?'TRUE':'FALSE',instructionsEnabled:data.instructions_enabled?'TRUE':'FALSE',instructionVerificationEnabled:data.instruction_verification_enabled?'TRUE':'FALSE',instructionsText:data.instructions_text||'',gameStatus:data.status};
+  }
+  if (action === 'submitForm') {
+    const result = await v2db.rpc('assassins_join_with_pin',{p_code:GAME_CODE,p_codename:params.codename,p_real_name:params.real_name,p_pin:params.pin,p_phone:params.phone||'',p_hall:params.hall||'',p_accepted:params.instructionsAccepted==='true'});
+    return result.error?{success:false,message:result.error.message}:{success:true,message:'Registration complete'};
+  }
+  if (['verifyCitizen1','findMyTarget','eliminateTarget','getPublicFeed'].includes(action)) {
+    if (action === 'getPublicFeed') {
+      const {data,error}=await v2db.rpc('assassins_v2_public',{p_code:GAME_CODE});
+      return error?{success:false,feed:[],message:error.message}:{success:true,feed:data.feed||[]};
+    }
+    const state = await v2db.rpc('assassins_state',{p_game_id:gameContext.id});
+    if (state.error) return {success:false,message:state.error.message,feed:[]};
+    const st = state.data;
+    // Codenames are never authentication credentials: only the current user's own membership works.
+    if (!st.my_codename || st.my_codename.toLowerCase() !== String(params.codename||'').toLowerCase()) return {success:false,message:'This codename is not registered to your current session.'};
+    if (action === 'verifyCitizen1') return {success:true,message:'Codename verified for this session.'};
+    if (!st.my_alive) return {success:false,message:'You have been eliminated.'};
+    if (action === 'findMyTarget') return {success:true,message:st.my_target?'Your target is '+st.my_target+'.':'No active target available.'};
+    if (action === 'eliminateTarget') {
+      const result = await v2db.rpc('assassins_confirm',{p_game_id:gameContext.id,p_target_codename:params.targetCodename});
+      return result.error?{success:false,message:result.error.message}:{success:true,message:'Elimination confirmed. '+(result.data?.next_target?'Next target: '+result.data.next_target:'')};
+    }
+  }
+  throw Error('This original game feature is being migrated to game-specific Supabase storage: '+action);
+}
+
+function normalizeCodenameInput(value) {
+  return value.trim().toLowerCase();
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+  
+function showOutput(el, message, type) {
+  el.textContent = message;
+  el.className = 'output ' + (type || '');
+  el.style.display = 'block';
+}
+
+function setLoading(loadingEl, isLoading) {
+  loadingEl.style.display = isLoading ? 'block' : 'none';
+}
+
+// ---- Mafia-style navigation and initial routing ----
+const params = new URLSearchParams(window.location.search);
+const view = params.get('view');
+const app = document.getElementById('app');
+const CODENAME_KEY = 'assassins2_remembered_' + GAME_CODE;
+const rememberedCodename = () => localStorage.getItem(CODENAME_KEY) || '';
+let publicStatus = null;
+const isEnabled = key => publicStatus && publicStatus.masterLock !== 'TRUE' && publicStatus[key] === 'TRUE';
+
+function renderNav(activeView) {
+  const nav = document.getElementById('navbar');
+  const items = [{name:'Home',view:''}];
+  if (isEnabled('dashboardEnabled')) items.push({name:rememberedCodename()?'My Dashboard':'Sign In',view:'dashboard'});
+  if (isEnabled('signupEnabled') && !rememberedCodename()) items.push({name:'Sign Up',view:'signup'});
+  items.push({name:'Rules',view:'rules'},{name:'Elimination Feed',view:'feed'});
+  nav.innerHTML = items.map(item =>
+    '<a href="' + (item.view ? GAME_PAGE+'&view='+item.view : GAME_PAGE) + '"' +
+    (item.view === activeView ? ' aria-current="page"' : '') + '>' + item.name + '</a>'
+  ).join('') + (rememberedCodename() ? '<button type="button" id="topLogout">Log Out</button>' : '');
+  const logout = document.getElementById('topLogout');
+  if (logout) logout.addEventListener('click', async () => {
+    // Clear the authenticated player as well as the displayed codename.
+    const {error:signOutError}=await v2db.auth.signOut();
+    if(signOutError){alert('Unable to sign out: '+signOutError.message);return}
+    const {error:guestError}=await v2db.auth.signInAnonymously();
+    if(guestError){alert('Unable to start a fresh player session: '+guestError.message);return}
+    localStorage.removeItem(CODENAME_KEY);
+    window.location.href = GAME_PAGE+'&view=dashboard';
+  });
+}
+
+async function initialize() {
+  app.innerHTML = '<div class="form-section" style="text-align:center;">Loading game status…</div>';
+  try { publicStatus = await callBackend('getPublicStatus'); }
+  catch(e) {
+    renderNav(view || '');
+    app.innerHTML = '<div class="form-section">Unable to load game settings. Please refresh and try again.</div>';
+    return;
+  }
+  // If a saved codename exists, the root URL opens the dashboard when enabled.
+  const selected = view || (rememberedCodename() && isEnabled('dashboardEnabled') ? 'dashboard' : (isEnabled('signupEnabled') ? 'signup' : ''));
+  renderNav(selected);
+  if (publicStatus.masterLock==='TRUE') {
+    app.textContent=publicStatus.masterLockMessage;
+  } else if (selected === 'signup' && !isEnabled('signupEnabled')) {
+    app.textContent=publicStatus.signupOffMessage;
+  } else if (selected === 'dashboard' && !isEnabled('dashboardEnabled')) {
+    app.textContent=publicStatus.dashboardOffMessage;
+  } else if (selected === 'signup') renderSignup();
+  else if (selected === 'dashboard') renderDashboard();
+  else if (selected === 'feed') renderFeed();
+  else if (selected === 'rules') renderRules();
+  else if (selected === 'admin') { app.textContent='Administration is available through the host dashboard.'; }
+  else renderLanding();
+}
+initializeGameContext().then(initialize).catch(err => { document.getElementById('app').textContent = err.message; });
+
+async function renderLanding() {
+  app.innerHTML = `
+    <h2>Welcome to Assassins</h2>
+    <div class="form-section" id="landingBox">
+      <p style="text-align:center;">Find your target. Tag them with a sock. Confirm the elimination using their codename.</p>
+      <div class="status-line" id="gameStatus">Checking game status…</div>
+      <div class="action-links">
+        ${isEnabled('dashboardEnabled') ? '<a href="' + GAME_PAGE + '&view=dashboard">Player Dashboard / Sign In</a>' : ''}
+        ${isEnabled('signupEnabled') && !rememberedCodename() ? '<a href="' + GAME_PAGE + '&view=signup">Sign Up</a>' : ''}
+        <a href="${GAME_PAGE}&view=rules">How to Play</a>
+      </div>
+      <p class="subtle" style="text-align:center;">${rememberedCodename() ? 'Codename saved on this device. Open the dashboard to continue.' : 'Already registered? Enter your codename on the dashboard.'}</p>
+    </div>`;
+  const status = document.getElementById('gameStatus');
+  try {
+    const d = publicStatus;
+    const names = {draft:'Not started',registration:'Registration open',active:'Game active',finished:'Game ended'};
+    status.textContent = d.paused === 'TRUE' ? 'Game paused' :
+      (names[d.gameStatus] || 'Game status unavailable') +
+      ' · Sign-ups ' + (d.signupEnabled === 'TRUE' ? 'open' : 'closed') +
+      ' · Dashboard ' + (d.dashboardEnabled === 'TRUE' ? 'open' : 'closed');
+  } catch(e) { status.textContent = 'Unable to load game status. Please try again later.'; }
+}
+
+async function renderRules() {
+  app.innerHTML = `
+    <h2>Rules &amp; Instructions</h2>
+    <div class="form-section">
+      <p class="subtle">Read these rules before playing. The administrator may post additional instructions below.</p>
+      <div class="rule-block"><h3>The Overview</h3><p>Your mission is to find your assigned target and tag them with a sock. When you successfully tag your target, they must reveal their codename. Enter that codename in the Player Dashboard to confirm the elimination and receive your next target.</p></div>
+      <div class="rule-block"><h3>How to Join</h3><p><a href="${GAME_PAGE}&view=signup">Sign up here</a> while registration is open. Choose a codename and keep it private.</p></div>
+      <div class="rule-block"><h3>Once the Game Begins</h3><ol>
+        <li>Do not reveal your codename except to the player who successfully eliminates you.</li>
+        <li>Open the <a href="${GAME_PAGE}&view=dashboard">Player Dashboard</a>, enter your codename, and select <strong>Find My Target</strong>.</li>
+        <li>Find your assigned target and tag them with a sock in a permitted location.</li>
+        <li>Ask the eliminated player for their codename. They must provide it after a valid elimination.</li>
+        <li>Return to the dashboard, choose <strong>Eliminate a Player</strong>, enter their codename, and confirm.</li>
+        <li>Receive your next target and continue playing.</li></ol></div>
+      <div class="rule-block"><h3>Safe Zones</h3><p>Neither eliminations nor attempts are permitted:</p><ul>
+        <li>During class</li><li>During Campus Community</li><li>During Convocation</li>
+        <li>On a dorm hall</li><li>At work</li>
+        <li>During leadership responsibilities, including RA/RS/CGL connect classes and RHLMs</li></ul></div>
+      <div class="rule-block"><h3>Safe Items</h3><p>The designated safe item protects you only while it is <strong>IN YOUR HAND</strong>. Safe items may change frequently; check the group chat for the latest item.</p></div>
+      <div class="rule-block"><h3>How to Win</h3><p>There are two winners: the final surviving player and the player with the most confirmed eliminations.</p></div>
+      <div class="rule-block"><h3>Play Safely</h3><p>Use only soft socks, avoid the face, respect personal boundaries, and do not chase anyone into unsafe or restricted areas. If an elimination is disputed, contact the game administrator.</p></div>
+      <div class="rule-block"><h3>Administrator Instructions</h3><div id="adminRules" style="white-space:pre-wrap;">Loading current instructions…</div></div>
+    </div>`;
+  try {
+    const d = publicStatus;
+    document.getElementById('adminRules').textContent =
+      d.instructionsEnabled === 'TRUE' && d.instructionsText ? d.instructionsText :
+      'No additional instructions are currently posted.';
+  } catch(e) { document.getElementById('adminRules').textContent='Unable to load administrator instructions right now.'; }
+}
+
+// ============================================================
+// SIGNUP VIEW
+// ============================================================
+async function renderSignup() {
+  app.innerHTML = `<div class="form-section" id="signupLoadingBox"><p style="text-align:center;">Loading...</p></div>`;
+
+  let hallEnabled = false;
+  let hallOptions = [];
+  let phoneEnabled = false;
+  let instructionsEnabled = false;
+  let instructionVerificationEnabled = false;
+  let instructionsText = '';
+  try {
+    const status = publicStatus;
+    if (status.masterLock === 'TRUE') {
+      document.getElementById('signupLoadingBox').innerHTML = `<p style="text-align:center;">The game is temporarily down. Check back soon.</p>`;
+      return;
+    }
+    hallEnabled = status.hallFieldEnabled === 'TRUE';
+    hallOptions = (status.hallOptions || '').split(',').map(h => h.trim()).filter(Boolean);
+    phoneEnabled = status.phoneFieldEnabled === 'TRUE';
+    instructionsEnabled = status.instructionsEnabled === 'TRUE';
+    instructionVerificationEnabled = status.instructionVerificationEnabled === 'TRUE';
+    instructionsText = status.instructionsText || '';
+  } catch (err) {
+    // If the status check fails, fall through and just show signup without hall/phone/instructions info.
+  }
+
+  const hallFieldHtml = hallEnabled ? `
+      <label>Hall:</label>
+      <select id="hall" required>
+        <option value="" disabled selected>Select your hall...</option>
+        ${hallOptions.map(h => `<option value="${escapeHtml(h)}">${escapeHtml(h)}</option>`).join('')}
+      </select>
+  ` : '';
+
+  const phoneFieldHtml = phoneEnabled ? `
+      <label>Phone:</label>
+      <input type="text" id="phone" required>
+  ` : '';
+
+  const instructionsBlockHtml = instructionsEnabled ? `
+    <div class="form-section" style="border-color:#ffcc55;">
+      <h2 style="margin-top:0;">Instructions</h2>
+      <div style="white-space:pre-wrap; font-size:14px; line-height:1.5;">${escapeHtml(instructionsText)}</div>
+    </div>
+  ` : '';
+
+  const checkboxHtml = (instructionsEnabled && instructionVerificationEnabled) ? `
+      <label style="display:flex; align-items:flex-start; gap:8px; font-weight:normal;">
+        <input type="checkbox" id="instructionsAccepted" style="width:auto; margin:4px 0 0;">
+        <span>I have read and understand the instructions above.</span>
+      </label>
+  ` : '';
+
+  app.innerHTML = `
+    <h2>Assassins Sign-Up</h2>
+    ${instructionsBlockHtml}
+    <div class="form-section">
+      <label>Codename (letters and numbers only, no spaces):</label>
+      <input type="text" id="codename" autocapitalize="off" autocomplete="off" required>
+      <label>Choose a private 4-digit PIN:</label>
+      <input type="password" id="signupPin" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="new-password" required>
+      <label>First and Last Name:</label>
+      <input type="text" id="real_name" required>
+      ${phoneFieldHtml}
+      ${hallFieldHtml}
+      ${checkboxHtml}
+      <button id="submitBtn">Submit</button>
+      <div class="loading" id="loading"><div class="spinner"></div>Submitting...</div>
+      <div class="output" id="output"></div>
+    </div>
+  `;
+
+  document.getElementById('submitBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('submitBtn');
+    const loading = document.getElementById('loading');
+    const output = document.getElementById('output');
+    output.style.display = 'none';
+
+    const codename = normalizeCodenameInput(document.getElementById('codename').value);
+    const real_name = document.getElementById('real_name').value.trim();
+    const pin = document.getElementById('signupPin').value.trim();
+    const phoneField = document.getElementById('phone');
+    const phone = phoneField ? phoneField.value.trim() : '';
+    const hallField = document.getElementById('hall');
+    const hall = hallField ? hallField.value : '';
+    const instructionsCheckbox = document.getElementById('instructionsAccepted');
+    const instructionsAccepted = instructionsCheckbox ? instructionsCheckbox.checked : true;
+
+    if (!codename || !real_name || (phoneEnabled && !phone) || (hallEnabled && !hall)) {
+      showOutput(output, 'Please fill in all fields.', 'error');
+      return;
+    }
+    if (!/^[a-z0-9]+$/.test(codename)) {
+      showOutput(output, 'Codename must contain only letters and numbers, no spaces.', 'error');
+      return;
+    }
+    if (!/^[0-9]{4}$/.test(pin)) { showOutput(output, 'Choose a four-digit PIN.', 'error'); return; }
+    if (instructionVerificationEnabled && !instructionsAccepted) {
+      showOutput(output, 'Please confirm you have read and understand the instructions.', 'error');
+      return;
+    }
+
+    btn.disabled = true;
+    setLoading(loading, true);
+    try {
+      const submitParams = { codename, real_name, pin };
+      if (phoneEnabled) submitParams.phone = phone;
+      if (hallEnabled) submitParams.hall = hall;
+      if (instructionVerificationEnabled) submitParams.instructionsAccepted = String(instructionsAccepted);
+      const data = await callBackend('submitForm', submitParams);
+      setLoading(loading, false);
+      btn.disabled = false;
+      if (data.success) {
+        showOutput(output, `Welcome, ${real_name}! Your codename is "${codename}". Remember your four-digit PIN to sign in on any device.`, 'success');
+        document.getElementById('codename').value = '';
+        document.getElementById('real_name').value = '';
+        document.getElementById('signupPin').value = '';
+        if (phoneField) phoneField.value = '';
+        if (hallField) hallField.selectedIndex = 0;
+        if (instructionsCheckbox) instructionsCheckbox.checked = false;
+        localStorage.setItem(CODENAME_KEY, codename);
+        renderNav('signup');
+        const next = document.createElement('a');
+        next.href = GAME_PAGE + '&view=dashboard';
+        next.textContent = 'Open your player dashboard';
+        next.style.display = 'block';
+        next.style.marginTop = '12px';
+        output.appendChild(next);
+      } else {
+        showOutput(output, data.message, 'error');
+      }
+    } catch (err) {
+      setLoading(loading, false);
+      btn.disabled = false;
+      showOutput(output, 'Network error — please try again. (' + err.message + ')', 'error');
+    }
+  });
+}
+
+// ============================================================
+// DASHBOARD VIEW
+// ============================================================
+function renderDashboard() {
+  app.innerHTML = `
+    <h2>Player Dashboard</h2>
+    <div class="form-section" id="codenameSection">
+      <label>Input your codename:</label>
+      <input type="text" id="codename" autocapitalize="off" autocomplete="off" required>
+      <label>4-digit PIN:</label><input type="password" id="signinPin" maxlength="4" inputmode="numeric" autocomplete="off">
+      <button id="verifyBtn">Sign In</button>
+      <div class="loading" id="verifyLoading"><div class="spinner"></div>Loading...</div>
+      <div class="output" id="verifyOutput"></div>
+    </div>
+    <div class="form-section" id="legacyPinSection" style="display:none;">
+      <p>Already registered before PINs were introduced? Set your PIN from your original browser session.</p>
+      <label>Choose a 4-digit PIN:</label><input type="password" id="legacyPin" maxlength="4" inputmode="numeric">
+      <button type="button" id="setLegacyPin">Set My PIN</button>
+      <div id="legacyPinStatus" role="status"></div>
+    </div>
+    <div class="form-section" id="actionSection" style="display:none;">
+      <p class="subtle">Your codename is verified. Find your target or report a confirmed elimination.</p>
+      <button id="findTargetBtn">Find My Target</button>
+      <button id="eliminateBtn">Eliminate a Player</button>
+      <div class="loading" id="actionLoading"><div class="spinner"></div>Loading...</div>
+      <div class="output" id="actionOutput"></div>
+    </div>
+    <div class="form-section" id="eliminateSection" style="display:none;">
+      <label>Input target codename:</label>
+      <input type="text" id="targetCodename" autocapitalize="off" autocomplete="off" required>
+      <button id="confirmStep1Btn">Eliminate</button>
+      <div id="confirmStep2" style="display:none;">
+        <p style="text-align:center;">Are you sure? This cannot be undone.</p>
+        <button id="confirmStep2Btn">Yes, confirm elimination</button>
+        <button id="cancelBtn">Cancel</button>
+      </div>
+      <div class="loading" id="eliminateLoading"><div class="spinner"></div>Processing...</div>
+      <div class="output" id="eliminateOutput"></div>
+    </div>
+  `;
+
+  document.getElementById('setLegacyPin').addEventListener('click',async()=>{
+    const status=document.getElementById('legacyPinStatus');
+    const pin=document.getElementById('legacyPin').value.trim();
+    if(!/^[0-9]{4}$/.test(pin)){status.textContent='Use exactly four digits.';return}
+    const {error}=await v2db.rpc('assassins_set_my_pin',{p_game_id:gameContext.id,p_pin:pin});
+    status.textContent=error?error.message:'PIN saved. You can now sign in on another device.';
+    if(!error){document.getElementById('legacyPin').value='';document.getElementById('legacyPinSection').style.display='none'}
+  });
+  // Offer a PIN setup only to players with an existing session from pre-PIN registration.
+  v2db.rpc('assassins_state',{p_game_id:gameContext.id}).then(({data})=>{
+    if(data?.my_codename)document.getElementById('legacyPinSection').style.display='block';
+  }).catch(()=>{});
+  const codeInput = document.getElementById('codename');
+  codeInput.value = rememberedCodename();
+  const getCodename = () => normalizeCodenameInput(codeInput.value);
+
+  document.getElementById('verifyBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('verifyBtn');
+    const loading = document.getElementById('verifyLoading');
+    const output = document.getElementById('verifyOutput');
+    output.style.display = 'none';
+
+    const codename = getCodename();
+    if (!codename) { showOutput(output, 'Please enter your codename.', 'error'); return; }
+    const pin=document.getElementById('signinPin').value.trim();
+    if(!/^[0-9]{4}$/.test(pin)){showOutput(output,'Enter your four-digit PIN.','error');return}
+
+    btn.disabled = true;
+    setLoading(loading, true);
+    try {
+      const {data:authenticated,error:loginError}=await v2db.rpc('game_player_sign_in',{p_code:GAME_CODE,p_codename:codename,p_pin:pin});
+      if(loginError)throw loginError;
+      const data=authenticated?await callBackend('verifyCitizen1',{codename}):{success:false,message:'Incorrect codename or PIN.'};
+      setLoading(loading, false);
+      btn.disabled = false;
+      showOutput(output, data.message, data.success ? 'success' : 'error');
+      if (data.success) {
+        localStorage.setItem(CODENAME_KEY, codename);
+        renderNav('dashboard');
+        document.getElementById('actionSection').style.display = 'block';
+      } else {
+        document.getElementById('actionSection').style.display = 'none';
+      }
+    } catch (err) {
+      setLoading(loading, false);
+      btn.disabled = false;
+      showOutput(output, err.message || 'Sign-in error — please try again.', 'error');
+    }
+  });
+
+  document.getElementById('findTargetBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('findTargetBtn');
+    const loading = document.getElementById('actionLoading');
+    const output = document.getElementById('actionOutput');
+    output.style.display = 'none';
+
+    btn.disabled = true;
+    setLoading(loading, true);
+    try {
+      const data = await callBackend('findMyTarget', { codename: getCodename() });
+      setLoading(loading, false);
+      btn.disabled = false;
+      showOutput(output, data.message, data.success === false ? 'error' : 'success');
+    } catch (err) {
+      setLoading(loading, false);
+      btn.disabled = false;
+      showOutput(output, 'Network error — please try again.', 'error');
+    }
+  });
+
+  document.getElementById('eliminateBtn').addEventListener('click', () => {
+    document.getElementById('eliminateSection').style.display = 'block';
+  });
+
+  document.getElementById('confirmStep1Btn').addEventListener('click', () => {
+    const target = document.getElementById('targetCodename').value.trim();
+    if (!target) return;
+    document.getElementById('confirmStep2').style.display = 'block';
+    document.getElementById('confirmStep1Btn').style.display = 'none';
+  });
+
+  document.getElementById('cancelBtn').addEventListener('click', () => {
+    document.getElementById('confirmStep2').style.display = 'none';
+    document.getElementById('confirmStep1Btn').style.display = 'block';
+  });
+
+  document.getElementById('confirmStep2Btn').addEventListener('click', async () => {
+    const btn = document.getElementById('confirmStep2Btn');
+    const loading = document.getElementById('eliminateLoading');
+    const output = document.getElementById('eliminateOutput');
+    output.style.display = 'none';
+
+    const targetCodename = normalizeCodenameInput(document.getElementById('targetCodename').value);
+    btn.disabled = true;
+    setLoading(loading, true);
+    try {
+      const data = await callBackend('eliminateTarget', { codename: getCodename(), targetCodename });
+      setLoading(loading, false);
+      btn.disabled = false;
+      showOutput(output, data.message, data.success ? 'success' : 'error');
+      document.getElementById('confirmStep2').style.display = 'none';
+      document.getElementById('confirmStep1Btn').style.display = 'block';
+    } catch (err) {
+      setLoading(loading, false);
+      btn.disabled = false;
+      showOutput(output, 'Network error — please try again.', 'error');
+    }
+  });
+}
+
+// ============================================================
+// FEED VIEW (public elimination history)
+// ============================================================
+function renderFeed() {
+  app.innerHTML = `
+    <h2>Elimination Feed</h2>
+    <div class="form-section">
+      <button id="refreshBtn">Refresh</button>
+      <div class="loading" id="feedLoading"><div class="spinner"></div>Loading...</div>
+      <div id="feedList"></div>
+    </div>
+  `;
+
+  async function load() {
+    const loading = document.getElementById('feedLoading');
+    const list = document.getElementById('feedList');
+    setLoading(loading, true);
+    list.innerHTML = '';
+    try {
+      const data = await callBackend('getPublicFeed');
+      setLoading(loading, false);
+      if (!data.feed || data.feed.length === 0) {
+        list.innerHTML = '<p style="text-align:center;">No eliminations yet.</p>';
+        return;
+      }
+      list.innerHTML = data.feed.map(row =>
+        `<div class="output" style="display:block;">${escapeHtml(row.details || '')}</div>`
+      ).join('');
+    } catch (err) {
+      setLoading(loading, false);
+      list.innerHTML = '<p style="text-align:center; color:#ff8888;">Error loading feed.</p>';
+    }
+  }
+
+  document.getElementById('refreshBtn').addEventListener('click', load);
+  load();
+}
+
+</script>
+</body>
+</html>

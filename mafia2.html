@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Continuous Mafia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --card: #161616;
+    --card-border: rgba(95, 179, 217, 0.22);
+    --accent: #5fb3d9;
+    --accent-dim: #3d7c94;
+    --danger: #c23b3b;
+    --danger-dim: #7a2626;
+    --text: #e8e8e8;
+    --muted: #8a8a8a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    margin: 0;
+    min-height: 100vh;
+  }
+  h1, h2, .oswald {
+    font-family: 'Oswald', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .mono, input, select {
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  header {
+    background: #0f0f0f;
+    border-bottom: 2px solid var(--card-border);
+    padding: 16px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  header h1 { font-size: 17px; margin: 0; font-weight: 600; color: var(--text); }
+  header h1 span { color: var(--accent); }
+  nav { display: flex; gap: 8px; flex-wrap: wrap; }
+  nav button {
+    background: transparent; color: var(--muted); border: 1px solid #333;
+    padding: 8px 16px; border-radius: 3px; cursor: pointer;
+    font-family: 'Oswald', sans-serif; font-size: 12px; letter-spacing: 0.08em;
+    text-transform: uppercase; transition: all 0.15s;
+  }
+  nav button:hover { border-color: var(--accent); color: var(--text); }
+  nav button.active { background: var(--accent); color: #08181e; border-color: var(--accent); font-weight: 600; }
+
+  #announcement {
+    background: #12181a; border-bottom: 1px solid var(--card-border);
+    color: var(--accent); text-align: center;
+    padding: 9px; font-size: 13.5px; display: none; letter-spacing: 0.02em;
+  }
+
+  main {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 30px 16px 60px;
+  }
+  .card {
+    background-color: var(--card); padding: 24px;
+    border: 1px solid var(--card-border); border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    width: 100%; max-width: 380px; margin-bottom: 20px;
+    position: relative;
+  }
+  .card h2 {
+    margin-top: 0; text-align: center; font-size: 17px; font-weight: 500;
+    color: var(--text); padding-bottom: 10px; border-bottom: 1px solid #262626; margin-bottom: 16px;
+  }
+  .tab {
+    position: absolute; top: -11px; left: 20px;
+    background: var(--bg); padding: 2px 10px;
+    font-family: 'Oswald', sans-serif; font-size: 10.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; border: 1px solid;
+  }
+  .tab.mafia { color: var(--danger); border-color: var(--danger); }
+  .tab.detective, .tab.citizen { color: var(--accent); border-color: var(--accent); }
+
+  label { display: block; margin-top: 12px; margin-bottom: 4px; font-size: 12.5px; color: var(--muted); font-family: 'Inter', sans-serif; letter-spacing: 0.02em; }
+  input, select {
+    width: 100%; padding: 10px; border: 1px solid #333; border-radius: 3px;
+    background-color: #0d0d0d; color: var(--text); font-size: 14px;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--accent); }
+  button.primary {
+    padding: 11px; border: none; border-radius: 3px; background-color: var(--accent);
+    color: #08181e; cursor: pointer; margin-top: 16px; width: 100%;
+    font-family: 'Oswald', sans-serif; font-weight: 600; letter-spacing: 0.06em;
+    text-transform: uppercase; font-size: 13.5px; transition: background 0.15s;
+  }
+  button.primary:hover { background-color: #7fc4e6; }
+  button.secondary {
+    padding: 8px; border: 1px solid #444; border-radius: 3px; background: transparent;
+    color: var(--muted); cursor: pointer; margin-top: 8px; width: 100%;
+    font-family: 'Oswald', sans-serif; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  button.secondary:hover { border-color: var(--accent); color: var(--text); }
+  button.danger { background-color: var(--danger); color: #fff; }
+  button.danger:hover { background-color: #d64f4f; }
+  .output {
+    margin-top: 10px; padding: 10px; border: 1px solid #333;
+    background-color: #0d0d0d; border-radius: 3px; font-weight: 500;
+    white-space: pre-wrap; text-align: center; font-size: 13.5px; display: none;
+    font-family: 'Inter', sans-serif;
+  }
+  .output.show { display: block; }
+  .output.error { border-color: var(--danger); color: #e88; }
+  .output.success { border-color: var(--accent); color: var(--accent); }
+  .instructions {
+    background: #0f1416; border-left: 3px solid var(--accent);
+    padding: 10px 12px; font-size: 12.5px; line-height: 1.55; margin-bottom: 16px;
+    white-space: pre-wrap; color: #c8d8de; font-family: 'Inter', sans-serif;
+  }
+  .status-line { font-size: 13px; color: var(--muted); text-align: center; margin-top: 6px; font-family: 'Inter', sans-serif; }
+  .player-list-item {
+    padding: 8px 0; border-bottom: 1px solid #262626; font-size: 13.5px;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    font-family: 'Inter', sans-serif;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; font-family: 'Inter', sans-serif; }
+  th, td { border: 1px solid #2a2a2a; padding: 6px; text-align: left; }
+  th { background: #1a1a1a; font-family: 'Oswald', sans-serif; letter-spacing: 0.04em; text-transform: uppercase; font-size: 10.5px; color: var(--muted); }
+  .small-note { font-size: 11px; color: #666; margin-top: 6px; text-align: center; font-family: 'Inter', sans-serif; }
+
+  /* ==== STAMP — signature element ==== */
+  .stamp {
+    display: inline-block;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border: 2px solid;
+    border-radius: 2px;
+    transform: rotate(-6deg);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .stamp.active {
+    color: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px rgba(95,179,217,0.35) inset;
+  }
+  .stamp.eliminated {
+    color: var(--danger);
+    border-color: var(--danger);
+    transform: rotate(-8deg);
+    box-shadow: 0 0 0 1px rgba(194,59,59,0.35) inset;
+  }
+
+  /* ==== MOBILE: wrap instead of overflow ==== */
+  .player-list-item > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+  .instructions, .output, td, th { overflow-wrap: anywhere; }
+  textarea { max-width: 100%; }
+  @media (max-width: 640px) {
+    main { padding: 20px 10px 40px; }
+    .card { padding: 16px; }
+    header { padding: 12px; }
+    nav button { padding: 7px 10px; }
+    .player-list-item { flex-wrap: wrap; }
+    table.stack, table.stack tbody, table.stack tr, table.stack td { display: block; width: 100%; }
+    table.stack thead { display: none; }
+    table.stack tr { border: 1px solid #2a2a2a; border-radius: 4px; margin-bottom: 10px; padding: 6px; }
+    table.stack td { border: none; padding: 4px 2px; }
+    table.stack td:empty { display: none; }
+    table.stack td[data-label]::before {
+      content: attr(data-label); display: block; font-size: 10px; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px;
+    }
+    table.stack td button { margin-top: 4px; }
+  }
+</style>
+<link rel="stylesheet" href="site-footer.css">
+<script src="site-footer.js" defer></script>
+</head>
+<body>
+
+<header>
+  <h1>Continuous <span>Mafia</span></h1>
+  <nav id="navBar"></nav>
+</header>
+<div id="announcement"></div>
+
+<main id="main"></main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+/* ================= CONFIG ================= */
+// Mafia v2 is isolated while its per-game backend and roles are implemented.
+// Never connect the new player page to the original shared Google Apps Script.
+const GAME_CODE = new URLSearchParams(location.search).get('game')?.trim().toUpperCase() || '';
+const LS_KEY = 'mafia2_codename_' + GAME_CODE;
+
+/* ================= STATE ================= */
+let state = {
+  view: null,
+  codename: localStorage.getItem(LS_KEY) || null,
+  isAdminMode: false,
+  dashboard: null,
+  publicSettings: null
+};
+
+/* ================= RETURN-TO-DASHBOARD HELPER ================= */
+function scheduleReturnToDashboard(outEl, seconds) {
+  seconds = seconds || 8;
+  let remaining = seconds;
+  const noteId = 'return_note_' + Math.random().toString(36).slice(2);
+  outEl.insertAdjacentHTML('afterend', `<div class="small-note" id="${noteId}">Returning to dashboard in ${remaining}s...</div>`);
+  const noteEl = document.getElementById(noteId);
+  const interval = setInterval(() => {
+    remaining--;
+    if (noteEl) noteEl.textContent = `Returning to dashboard in ${remaining}s...`;
+    if (remaining <= 0) clearInterval(interval);
+  }, 1000);
+  setTimeout(() => goTo('dashboard'), seconds * 1000);
+}
+
+/* ================= API HELPER ================= */
+let mafiaDB=null, mafiaGame=null;
+async function bootstrapMafia(){
+ if(!GAME_CODE) throw Error('Missing game code. Use the link from your host.');
+ if(!window.supabase) throw Error('The game service could not load.');
+ mafiaDB=window.supabase.createClient('https://kzhrcwptyyyqodqlwngg.supabase.co','sb_publishable_37UbHH_v8-RyRFsEwril4A_oaEjDecl',{auth:{storageKey:'12one_mafia_'+GAME_CODE}});
+ const {data:session,error:sessionError}=await mafiaDB.auth.getSession();
+ if(sessionError) throw sessionError;
+ if(!session.session){
+  const {error}=await mafiaDB.auth.signInAnonymously();
+  if(error) throw error;
+ }
+ const {data,error}=await mafiaDB.rpc('mafia_public',{p_code:GAME_CODE});
+ if(error) throw error;
+ mafiaGame=data;
+}
+async function mafiaRpc(name,args){
+ const {data,error}=await mafiaDB.rpc(name,args);
+ if(error) throw error;
+ return data;
+}
+// All player operations use the current authenticated session and its specific game id.
+// No Mafia 2.0 operation reaches the original game's Google Apps Script.
+async function api(action,params={}){
+ try{
+  if(!mafiaDB||!mafiaGame) throw Error('Game connection not established.');
+  const id=mafiaGame.id;
+  if(action==='getPublicSettings'||action==='getPlayerList'){
+   const data=await mafiaRpc('mafia_public',{p_code:GAME_CODE});
+   mafiaGame=data;
+   return action==='getPlayerList'?{players:data.players||[]}:data;
+  }
+  if(action==='signup'){
+   await mafiaRpc('mafia_join',{p_code:GAME_CODE,p_real_name:params.officialName,p_codename:params.codename,p_password:params.password,p_phone:params.phone||'',p_hall:params.hall||''});
+   return {success:'Registered'};
+  }
+  if(action==='login'){
+   const ok=await mafiaRpc('game_player_sign_in',{p_code:GAME_CODE,p_codename:params.codename,p_pin:params.password});
+   return ok?{success:true}:{error:'Incorrect codename or PIN.'};
+  }
+  if(action==='getDashboard'){
+   const data=await mafiaRpc('mafia_state',{p_game_id:id});
+   if(!data.codename||data.codename.toLowerCase()!==String(params.codename||'').toLowerCase())return{error:'Session does not match this player.'};
+   return data;
+  }
+  const verification={verifyMafiaTarget:['mafia','targetCodename'],verifyDetectiveTarget:['detective','targetOfficialName'],verifyCitizenTarget:['vote','targetOfficialName']};
+  if(verification[action]){
+   const [type,key]=verification[action];
+   const valid=await mafiaRpc('mafia_verify',{p_game_id:id,p_type:type,p_target:params[key]||''});
+   return valid?{success:true}:{error:'Target could not be verified.'};
+  }
+  const actions={mafiaEliminate:['mafia','targetCodename'],detectiveGuess:['detective','targetOfficialName'],citizenVote:['vote','targetOfficialName'],citizenRetractVote:['retract',null]};
+  if(actions[action]){
+   const [type,key]=actions[action];
+   return await mafiaRpc('mafia_action',{p_game_id:id,p_action:type,p_codename:params.codename,p_password:params.password,p_target:key?params[key]:''});
+  }
+  throw Error('Unsupported game operation: '+action);
+ }catch(e){return{error:e.message||String(e)}}
+}
+function escapeMafia(value){return String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+
+/* ================= NAV / ROUTING ================= */
+function renderNav() {
+  const nav = document.getElementById('navBar');
+  nav.innerHTML = '';
+  if (state.codename) {
+    nav.innerHTML = `
+      <button class="${state.view==='dashboard'?'active':''}" onclick="goTo('dashboard')">My Dashboard</button>
+      <button class="${state.view==='playerlist'?'active':''}" onclick="goTo('playerlist')">Player List</button>
+      <button class="${state.view==='instructions'?'active':''}" onclick="goTo('instructions')">Instructions</button>
+      <button onclick="logout()">Log Out</button>
+    `;
+  } else {
+    nav.innerHTML = `
+      <button class="${state.view==='setup'?'active':''}" onclick="goTo('setup')">Set Up</button>
+      <button class="${state.view==='login'?'active':''}" onclick="goTo('login')">Login</button>
+      <button class="${state.view==='playerlist'?'active':''}" onclick="goTo('playerlist')">Player List</button>
+      <button class="${state.view==='instructions'?'active':''}" onclick="goTo('instructions')">Instructions</button>
+    `;
+  }
+}
+
+async function logout() {
+  // A player belongs to their anonymous Supabase user, not just localStorage.
+  // Rotate that user explicitly when switching players on a shared browser.
+  const {error:signOutError}=await mafiaDB.auth.signOut();
+  if(signOutError){alert('Unable to sign out: '+signOutError.message);return}
+  const {error:guestError}=await mafiaDB.auth.signInAnonymously();
+  if(guestError){alert('Unable to start a fresh player session: '+guestError.message);return}
+  localStorage.removeItem(LS_KEY);
+  state.codename=null;
+  state.dashboard=null;
+  goTo('login');
+}
+
+async function goTo(view) {
+  state.view = view;
+  renderNav();
+  if (view === 'dashboard') await renderDashboard();
+  else if (view === 'setup') await renderSetup();
+  else if (view === 'login') renderLogin();
+  else if (view === 'playerlist') await renderPlayerList();
+  else if (view === 'instructions') await renderInstructions();
+}
+
+async function renderInstructions() {
+  document.getElementById('main').innerHTML = `<div class="card"><div class="output show">Loading instructions...</div></div>`;
+  const s = await api('getPublicSettings', {});
+  state.publicSettings = s;
+  document.getElementById('main').innerHTML = `
+    <div class="card" style="max-width:600px;">
+      <h2>How to Play</h2>
+      <div class="instructions" style="margin-bottom:0;">${escapeMafia(s.gameInstructions || 'No instructions have been set yet.').replace(/\n/g, '<br>')}</div>
+    </div>`;
+}
+
+async function renderPlayerList() {
+  document.getElementById('main').innerHTML = `<div class="card"><div class="output show">Loading player list...</div></div>`;
+  const data = await api('getPlayerList', {});
+  const items = (data.players || []).map(line => {
+    const eliminated = line.includes('eliminated');
+    const name = line.split(' is currently active.')[0].split(' was eliminated')[0];
+    return `<div class="player-list-item"><span>${escapeMafia(name)}</span><span class="stamp ${eliminated ? 'eliminated' : 'active'}">${eliminated ? 'Eliminated' : 'Active'}</span></div>`;
+  }).join('');
+  document.getElementById('main').innerHTML = `
+    <div class="card">
+      <h2>Player List</h2>
+      <button class="secondary" onclick="renderPlayerList()">Refresh</button>
+      <div style="margin-top:12px; max-height:400px; overflow-y:auto;">${items || 'No players yet.'}</div>
+    </div>`;
+}
+
+async function init() {
+  const s = await api('getPublicSettings', {});
+  state.publicSettings = s;
+  if (s.announcement) {
+    const el = document.getElementById('announcement');
+    el.textContent = '📣 ' + s.announcement;
+    el.style.display = 'block';
+  }
+  renderNav();
+  if (state.codename) goTo('dashboard');
+  else goTo(s.setupEnabled ? 'setup' : 'login');
+}
+
+/* ================= SETUP ================= */
+async function renderSetup() {
+  const hallEnabled = state.publicSettings.hallFieldEnabled;
+  const halls = (state.publicSettings.hallOptions || []).map(h => `<option value="${escapeMafia(h.trim())}">${escapeMafia(h.trim())}</option>`).join('');
+  const enabled = state.publicSettings.setupEnabled;
+  document.getElementById('main').innerHTML = `
+    <div class="card">
+      <h2>Sign Up</h2>
+      ${enabled ? '' : '<div class="output show error">Signups are currently closed.</div>'}
+      <div style="${enabled ? '' : 'opacity:0.4; pointer-events:none;'}">
+        <label>Real First and Last Name:</label>
+        <input id="su_name" type="text">
+        <label>Codename (creative, no spaces, keep it secret!):</label>
+        <input id="su_codename" type="text">
+        <label>Choose a 4-digit password (remember this — it's needed for every action):</label>
+        <input id="su_password" type="text" maxlength="4" inputmode="numeric" placeholder="e.g. 4821">
+        <label>Phone:</label>
+        <input id="su_phone" type="tel">
+        ${hallEnabled ? `<label>Hall:</label><select id="su_hall">${halls}</select>` : ''}
+        <button class="primary" onclick="submitSignup()">Submit</button>
+      </div>
+      <div id="su_output" class="output"></div>
+    </div>
+  `;
+}
+
+async function submitSignup() {
+  const params = {
+    officialName: document.getElementById('su_name').value.trim(),
+    codename: document.getElementById('su_codename').value.trim(),
+    password: document.getElementById('su_password').value.trim(),
+    phone: document.getElementById('su_phone').value.trim()
+  };
+  const hallField = document.getElementById('su_hall');
+  if (hallField) params.hall = hallField.value;
+  const out = document.getElementById('su_output');
+  out.className = 'output show'; out.textContent = 'Submitting...';
+  const data = await api('signup', params);
+  if (data.error) {
+    out.className = 'output show error'; out.textContent = data.error;
+  } else {
+    out.className = 'output show success';
+    out.textContent = 'Registration complete. Use your codename and 4-digit PIN to sign in from any device.';
+    localStorage.setItem(LS_KEY, params.codename);
+    state.codename = params.codename;
+    renderNav();
+    const continueBtn=document.createElement('button');
+    continueBtn.className='primary';
+    continueBtn.textContent='Open My Dashboard';
+    continueBtn.addEventListener('click',()=>goTo('dashboard'));
+    out.after(continueBtn);
+  }
+}
+
+/* ================= LOGIN ================= */
+function renderLogin() {
+  document.getElementById('main').innerHTML = `
+    <div class="card">
+      <h2>Login</h2>
+      <label>Codename:</label>
+      <input id="li_codename" type="text">
+      <label>4-digit Password:</label>
+      <input id="li_password" type="text" maxlength="4" inputmode="numeric">
+      <button class="primary" onclick="submitLogin()">Login</button>
+      <div id="li_output" class="output"></div>
+    </div>
+  `;
+}
+
+async function submitLogin() {
+  const codename = document.getElementById('li_codename').value.trim();
+  const password = document.getElementById('li_password').value.trim();
+  const out = document.getElementById('li_output');
+  out.className = 'output show'; out.textContent = 'Checking...';
+  const data = await api('login', { codename, password });
+  if (data.error) {
+    out.className = 'output show error'; out.textContent = data.error;
+    return;
+  }
+  localStorage.setItem(LS_KEY, codename);
+  state.codename = codename;
+  renderNav();
+  goTo('dashboard');
+}
+
+/* ================= DASHBOARD ================= */
+async function renderDashboard() {
+  document.getElementById('main').innerHTML = `<div class="card"><div class="output show">Loading your dashboard...</div></div>`;
+  const data = await api('getDashboard', { codename: state.codename });
+  if (data.error) {
+    localStorage.removeItem(LS_KEY);
+    state.codename = null;
+    renderNav();
+    goTo('login');
+    return;
+  }
+  state.dashboard = data;
+  renderDashboardBody();
+}
+
+function cooldownLine(cd) {
+  if (!cd) return '';
+  return cd.ready
+    ? `<div class="status-line">✅ Ready to act now.</div>`
+    : `<div class="status-line">⏳ On cooldown — ${cd.remaining} remaining.</div>`;
+}
+
+function renderDashboardBody() {
+  const d = state.dashboard;
+  let html = `<div class="card"><h2>Welcome, ${escapeMafia(d.official_name)}</h2>`;
+
+  if (!d.gameActive) {
+    html += `<div class="output show">The game has ended. Thanks for playing!</div></div>`;
+    document.getElementById('main').innerHTML = html;
+    return;
+  }
+  if (!d.dashboardEnabled) {
+    html += `<div class="output show">The dashboard is temporarily disabled by the admin. Check back soon.</div></div>`;
+    document.getElementById('main').innerHTML = html;
+    return;
+  }
+  if (d.status !== 'active') {
+    html += `<div class="output show error">You have been eliminated. Please do not discuss gameplay with active players — just say "check the website."</div></div>`;
+    document.getElementById('main').innerHTML = html;
+    return;
+  }
+  if (!d.role) {
+    html += `<div class="output show">Your role hasn't been assigned yet. Check back once the admin starts the game.</div></div>`;
+    document.getElementById('main').innerHTML = html;
+    return;
+  }
+
+  html += `<div class="instructions">${escapeMafia(d.roleInstructions || '').replace(/\n/g,'<br>')}</div></div>`;
+
+  if (d.role === 'mafia') html += mafiaSection(d);
+  if (d.role === 'detective') html += detectiveSection(d);
+
+  const canVote = !!d.allowCitizenVotes;
+  if (canVote) html += citizenSection(d);
+
+  document.getElementById('main').innerHTML = html;
+}
+
+function mafiaSection(d) {
+  const team = (d.mafiaTeam || []).map(m => {
+    const eliminated = m.status !== 'active';
+    return `<div class="player-list-item"><span>${escapeMafia(m.official_name)}</span><span class="stamp ${eliminated ? 'eliminated' : 'active'}">${eliminated ? 'Eliminated' : 'Active'}</span></div>`;
+  }).join('');
+  return `
+    <div class="card">
+      <span class="tab mafia">Mafia</span>
+      <h2>Your Team</h2>
+      <div style="max-height:220px; overflow-y:auto;">${team || 'No teammates found.'}</div>
+    </div>
+    <div class="card">
+      <span class="tab mafia">Mafia</span>
+      <h2>Eliminate a Player</h2>
+      ${cooldownLine(d.mafiaCooldown)}
+      <label>Target's codename:</label>
+      <input id="m_target">
+      <button class="primary" onclick="mafiaVerify()">Verify Target</button>
+      <div id="m_verify_out" class="output"></div>
+      <div id="m_confirm" style="display:none; margin-top:10px;">
+        <label>Your password:</label>
+        <input id="m_password" maxlength="4" inputmode="numeric">
+        <button class="primary danger" onclick="mafiaEliminate()">Eliminate Target</button>
+      </div>
+      <div id="m_final_out" class="output"></div>
+    </div>`;
+}
+async function mafiaVerify() {
+  const target = document.getElementById('m_target').value.trim();
+  const out = document.getElementById('m_verify_out');
+  out.className = 'output show'; out.textContent = 'Checking...';
+  const data = await api('verifyMafiaTarget', { targetCodename: target });
+  if (data.error) { out.className = 'output show error'; out.textContent = data.error; document.getElementById('m_confirm').style.display='none'; return; }
+  out.className = 'output show success'; out.textContent = 'Target verified.';
+  document.getElementById('m_confirm').style.display = 'block';
+}
+async function mafiaEliminate() {
+  const target = document.getElementById('m_target').value.trim();
+  const password = document.getElementById('m_password').value.trim();
+  const out = document.getElementById('m_final_out');
+  out.className = 'output show'; out.textContent = 'Processing...';
+  const data = await api('mafiaEliminate', { codename: state.codename, password, targetCodename: target });
+  if (data.error) { out.className = 'output show error'; out.textContent = data.error; return; }
+  out.className = 'output show success'; out.textContent = data.success;
+  scheduleReturnToDashboard(out, 8);
+}
+
+function detectiveSection(d) {
+  return `
+    <div class="card">
+      <span class="tab detective">Detective</span>
+      <h2>Guess a Suspect</h2>
+      ${cooldownLine(d.detectiveCooldown)}
+      <label>Target's real name:</label>
+      <input id="dt_target">
+      <button class="primary" onclick="detectiveVerify()">Verify Target</button>
+      <div id="dt_verify_out" class="output"></div>
+      <div id="dt_confirm" style="display:none; margin-top:10px;">
+        <label>Your password:</label>
+        <input id="dt_password" maxlength="4" inputmode="numeric">
+        <button class="primary" onclick="detectiveGuess()">Submit Guess</button>
+      </div>
+      <div id="dt_final_out" class="output"></div>
+    </div>`;
+}
+async function detectiveVerify() {
+  const target = document.getElementById('dt_target').value.trim();
+  const out = document.getElementById('dt_verify_out');
+  out.className = 'output show'; out.textContent = 'Checking...';
+  const data = await api('verifyDetectiveTarget', { targetOfficialName: target });
+  if (data.error) { out.className = 'output show error'; out.textContent = data.error; document.getElementById('dt_confirm').style.display='none'; return; }
+  out.className = 'output show success'; out.textContent = 'Target verified.';
+  document.getElementById('dt_confirm').style.display = 'block';
+}
+async function detectiveGuess() {
+  const target = document.getElementById('dt_target').value.trim();
+  const password = document.getElementById('dt_password').value.trim();
+  const out = document.getElementById('dt_final_out');
+  out.className = 'output show'; out.textContent = 'Processing...';
+  const data = await api('detectiveGuess', { codename: state.codename, password, targetOfficialName: target });
+  if (data.error) { out.className = 'output show error'; out.textContent = data.error; return; }
+  out.className = 'output show success'; out.textContent = data.success;
+  scheduleReturnToDashboard(out, 8);
+}
+
+function voteResultBanner(d) {
+  const r = d.lastVoteResult;
+  if (!r) return '';
+  const when = r.time ? new Date(r.time).toLocaleString() : '';
+  const good = r.wasMafia;
+  return `
+    <div class="output show ${good ? 'success' : 'error'}" style="margin-bottom:14px;">
+      ${good ? '🎉 Your vote worked!' : '⚠️ Wrong call.'}
+      The vote against ${escapeMafia(r.targetName)} went through, and they ${good ? 'WERE a mafia member. Nice work!' : 'were NOT a mafia member. An innocent player was eliminated.'}
+      ${when ? `<div class="small-note">${when}</div>` : ''}
+    </div>`;
+}
+
+function citizenSection(d) {
+  if (d.activeVote) {
+    return `
+      <div class="card">
+        <span class="tab citizen">Vote</span>
+        <h2>Your Active Vote</h2>
+        <div class="status-line">Voting against: <b>${escapeMafia(d.activeVote.targetOfficialName)}</b></div>
+        <div class="status-line">Votes so far: ${d.activeVote.votesSoFar} / ${d.activeVote.votesRequired}</div>
+        <div class="small-note">Votes expire automatically after a while if the threshold isn't reached.</div>
+        <label>Your password (to retract):</label>
+        <input id="c_password_retract" maxlength="4" inputmode="numeric">
+        <button class="primary secondary" onclick="citizenRetract()">Retract My Vote</button>
+        <div id="c_retract_out" class="output"></div>
+      </div>`;
+  }
+  return `
+    <div class="card">
+      <span class="tab citizen">Vote</span>
+      <h2>Cast a Vote</h2>
+      ${voteResultBanner(d)}
+      ${cooldownLine(d.citizenCooldown)}
+      <label>Suspect's real name:</label>
+      <input id="c_target">
+      <button class="primary" onclick="citizenVerify()">Verify Target</button>
+      <div id="c_verify_out" class="output"></div>
+      <div id="c_confirm" style="display:none; margin-top:10px;">
+        <label>Your password:</label>
+        <input id="c_password" maxlength="4" inputmode="numeric">
+        <button class="primary" onclick="citizenVote()">Cast Vote</button>
+      </div>
+      <div id="c_final_out" class="output"></div>
+    </div>`;
+}
+async function citizenVerify() {
+  const target = document.getElementById('c_target').value.trim();
+  const out = document.getElementById('c_verify_out');
+  out.className = 'output show'; out.textContent = 'Checking...';
+  const data = await api('verifyCitizenTarget', { targetOfficialName: target });
+  if (data.error) { out.className = 'output show error'; out.textContent = data.error; document.getElementById('c_confirm').style.display='none'; return; }
+  out.className = 'output show success'; out.textContent = 'Target verified.';
+  document.getElementById('c_confirm').style.display = 'block';
+}
+async function citizenVote() {
+  const target = document.getElementById('c_target').value.trim();
+  const password = document.getElementById('c_password').value.trim();
+  const out = document.getElementById('c_final_out');
+  out.className = 'output show'; out.textContent = 'Processing...';
+  const data = await api('citizenVote', { codename: state.codename, password, targetOfficialName: target });
+  if (data.error) { out.className = 'output show error'; out.textContent = data.error; return; }
+  out.className = 'output show success';
+  out.textContent = data.success + (data.votesSoFar ? ` (${data.votesSoFar}/${data.votesRequired})` : '');
+  scheduleReturnToDashboard(out, 8);
+}
+async function citizenRetract() {
+  const password = document.getElementById('c_password_retract').value.trim();
+  const out = document.getElementById('c_retract_out');
+  out.className = 'output show'; out.textContent = 'Processing...';
+  const data = await api('citizenRetractVote', { codename: state.codename, password });
+  if (data.error) { out.className = 'output show error'; out.textContent = data.error; return; }
+  out.className = 'output show success'; out.textContent = data.success;
+  scheduleReturnToDashboard(out, 5);
+}
+
+/* ================= BOOT ================= */
+bootstrapMafia().then(init).catch(e=>{document.getElementById('main').textContent=e.message||String(e)});
+
+</script>
+</body>
+</html>
