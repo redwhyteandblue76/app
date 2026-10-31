@@ -11,7 +11,8 @@ create table if not exists public.platform_admins(user_id uuid primary key);
 create table if not exists public.game_credits(
  id uuid primary key default gen_random_uuid(),
  consumed_by_game_id uuid references public.games(id),
- consumed_at timestamptz
+ consumed_at timestamptz,
+ constraint credit_consumption_consistent check ((consumed_by_game_id is null and consumed_at is null) or (consumed_by_game_id is not null and consumed_at is not null))
 );
 create or replace function public.is_platform_admin()
 returns boolean language sql stable as $auth$
