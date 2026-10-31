@@ -21,10 +21,13 @@ async function render(){
  if(s.host){heading('HOST MANAGEMENT');
   if(s.status==='registration')area.append(button('Start game',async()=>{if(!confirm('Start the game?'))return;await rpc('assassins_start',{p_game_id:selected});await refresh();await render()}));
   const hostPlayers=await rpc('assassins_host_players',{p_game_id:selected});
+  const contacts=await rpc('host_player_contacts',{p_game_id:selected});
+  const contactByCodename=new Map((contacts||[]).map(p=>[p.codename?.toLowerCase(),p]));
   area.append(el('p','Host controls are private to this page. Player gameplay takes place on assassins2.html.'));
   const details=el('details');const summary=el('summary','Private host player list (includes codenames)');details.append(summary);
   for(const p of hostPlayers){
-   const line=el('div',p.name+' · '+p.codename+' · '+(p.alive?'Active':'Eliminated')+' · '+p.kills+' eliminations'+(p.hall?' · '+p.hall:'')+(p.phone?' · Phone: '+p.phone:''));
+   const contact=contactByCodename.get(p.codename?.toLowerCase())||{};
+   const line=el('div',p.name+' · '+p.codename+' · '+(p.alive?'Active':'Eliminated')+' · '+p.kills+' eliminations'+(contact.hall?' · '+contact.hall:'')+(contact.phone?' · Phone: '+contact.phone:''));
    line.className='game';
    if(['draft','registration'].includes(s.status))line.append(button('Remove',async()=>{if(!confirm('Remove '+p.name+'?'))return;await rpc('assassins_remove_player',{p_game_id:selected,p_codename:p.codename});await render()}));
    if(['active','finished'].includes(s.status))line.append(button(p.alive?'Mark eliminated':'Reactivate',async()=>{if(!confirm('Change status for '+p.name+'?'))return;await rpc('assassins_host_status',{p_game_id:selected,p_member_id:p.id,p_alive:!p.alive});await render()}));
