@@ -48,7 +48,7 @@ async function render(){
      const mapped=key==='hall_field_enabled'?'hall_enabled':key==='phone_field_enabled'?'phone_enabled':key;
      await rpc('assassins_host_setting',{p_game_id:selected,p_key:mapped,p_value:String(inp.checked)});
      await db.rpc('host_record_event',{p_game_id:selected,p_action:'setting',p_details:label});
-     await render();
+     msg(label+' saved.');await render();
     }catch(e){inp.checked=old;fail(e)}finally{inp.disabled=false}
    };
    wrap.append(inp);settings.append(wrap);
@@ -62,7 +62,7 @@ async function render(){
   ]){
    const wrap=el('label',label+' ('+key+')');const inp=el(key.includes('message')||key==='instructions_text'?'textarea':'input');
    inp.value=hostSettings[key]??'';inp.style.width='100%';wrap.append(inp);settings.append(wrap);
-   settings.append(button('Save '+label,async()=>{await rpc('assassins_host_setting',{p_game_id:selected,p_key:key,p_value:inp.value});await render()}));
+   settings.append(button('Save '+label,async()=>{await rpc('assassins_host_setting',{p_game_id:selected,p_key:key,p_value:inp.value});msg(label+' saved.');await render()}));
   }
   settings.append(el('p','game_status: '+hostSettings.game_status+' — controlled through Open Registration, Start Game and Reset.'));
   settings.append(el('p','last_updated: '+(hostSettings.last_updated?new Date(hostSettings.last_updated).toLocaleString():'Not yet updated')));
