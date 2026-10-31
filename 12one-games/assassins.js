@@ -66,6 +66,25 @@ async function render(){
   settings.append(el('p','game_status: '+hostSettings.game_status+' — controlled through Open Registration, Start Game and Reset.'));
   settings.append(el('p','last_updated: '+(hostSettings.last_updated?new Date(hostSettings.last_updated).toLocaleString():'Not yet updated')));
   settings.append(el('p','admin_password / reset_password: replaced by your secure host account; these are not stored as plaintext game settings.'));
+
+  // Group settings by host-facing purpose instead of one long technical list.
+  const settingBuckets={registration:el('details'),gameplay:el('details'),experience:el('details'),advanced:el('details')};
+  const settingLabels={registration:'Registration',gameplay:'Gameplay rules',experience:'Instructions & messages',advanced:'Advanced & information'};
+  for(const [key,group] of Object.entries(settingBuckets)){
+   group.className='settings-list';group.append(el('summary',settingLabels[key]));group.open=(key==='registration'||key==='gameplay');
+  }
+  let lastBucket='registration';
+  for(const child of [...settings.children]){
+   if(child.tagName==='SUMMARY')continue;
+   const t=child.textContent.toLowerCase();
+   if(child.tagName==='LABEL'){
+    lastBucket=/instruction|message|announcement|dashboard off|dashboard disabled/.test(t)?'experience':
+      /cooldown|vote|elimination|target|pause|game active|master lock|game actions/.test(t)?'gameplay':
+      /admin.password|reset.password/.test(t)?'advanced':'registration';
+   }else if(child.tagName==='P')lastBucket='advanced';
+   settingBuckets[lastBucket].append(child);
+  }
+  settings.append(...Object.values(settingBuckets));
   area.append(settings);
   const feedDetails=el('details');feedDetails.append(el('summary','Elimination history / game log'));
   if(!(s.feed||[]).length)feedDetails.append(el('p','No confirmed eliminations yet.'));
