@@ -1,5 +1,5 @@
 'use strict';
-const db=window.supabase.createClient('https://kzhrcwptyyyqodqlwngg.supabase.co','sb_publishable_37UbHH_v8-RyRFsEwril4A_oaEjDecl',{auth:{storageKey:'12one_host_auth'}});
+const db=window.supabase.createClient('https://dfsthxttqxbmafhykfqh.supabase.co','sb_publishable_OFz4bRAe0_9jgoGXp4xXIQ_Nr7STWWR',{auth:{storageKey:'12one_host_auth'}});
 const $=id=>document.getElementById(id);
 let currentUser=null,currentGame=null,selectedHostGame=null,allHostGames=[],showArchives=false;
 function msg(s){$('notice').textContent=s||''}
