@@ -116,7 +116,7 @@ begin
 end $$;
 
 create or replace function public.host_player_contacts(p_game_id uuid)
-returns jsonb language plpgsql stable security definer set search_path='' as $
+returns jsonb language plpgsql stable security definer set search_path='' as $$
 declare g public.games%rowtype; v jsonb;
 begin
  select * into g from public.games where id=p_game_id;
@@ -127,7 +127,7 @@ begin
  'phone',phone,'hall',hall) order by joined_at),'[]'::jsonb)
  into v from public.game_memberships where game_id=p_game_id;
  return v;
-end $;
+end $$;
 revoke all on function public.host_player_contacts(uuid) from public,anon;
 grant execute on function public.host_player_contacts(uuid) to authenticated;
 
