@@ -32,6 +32,7 @@ async function refresh(){
  if(window.refreshAssassins)await window.refreshAssassins();
  if(window.refreshMafia)await window.refreshMafia();
  applyHostView();
+ if(selectedHostGame)decorateGamePanel(selectedHostGame);
 }
 async function lookup(){
  const code=$('joinCode').value.trim().toUpperCase();
@@ -47,6 +48,39 @@ async function loadLobby(id){
  $('lobbyList').append(node('p',data.length+' player(s) registered'));
  for(const p of data)$('lobbyList').append(node('div',p.real_name));
 }
+
+
+let activeHostTab='overview';
+window.organizeHostGameView=function(type,area){
+ if(!area)return;
+ const children=[...area.children].filter(n=>!n.classList.contains('host-tabs')&&!n.classList.contains('host-tab'));
+ if(!children.length)return;
+ let nav=document.createElement('nav');nav.className='host-tabs';nav.setAttribute('aria-label','Game management sections');
+ const groups={overview:document.createElement('div'),players:document.createElement('div'),settings:document.createElement('div'),activity:document.createElement('div')};
+ for(const [key,node] of Object.entries(groups)){node.className='host-tab';node.dataset.tab=key}
+ let current='overview';
+ for(const child of children){
+  const summary=child.tagName==='DETAILS'?child.querySelector('summary')?.textContent?.toLowerCase()||'':'';
+  const heading=/^H[234]$/.test(child.tagName)?child.textContent?.toLowerCase()||'':'';
+  if(summary.includes('player')||heading.includes('registered player'))current='players';
+  else if(summary.includes('setting')||summary.includes('original assassins'))current='settings';
+  else if(summary.includes('log')||summary.includes('elimination history')||heading.includes('elimination feed'))current='activity';
+  else if(summary.includes('start game')||heading.includes('host management'))current='overview';
+  groups[current].append(child);
+ }
+ const tabs=[['overview','Overview'],['players','Players'],['settings','Settings'],['activity','Activity']];
+ for(const [id,label] of tabs){
+  const btn=document.createElement('button');btn.type='button';btn.textContent=label;btn.className='secondary';
+  btn.onclick=()=>{activeHostTab=id;window.organizeHostTabState(area)};
+  btn.dataset.tab=id;nav.append(btn);
+ }
+ area.prepend(nav,...Object.values(groups));
+ window.organizeHostTabState(area);
+};
+window.organizeHostTabState=function(area){
+ for(const tab of area.querySelectorAll(':scope > .host-tab'))tab.hidden=tab.dataset.tab!==activeHostTab;
+ for(const btn of area.querySelectorAll(':scope > .host-tabs > button'))btn.setAttribute('aria-selected',String(btn.dataset.tab===activeHostTab));
+};
 
 const makeButton=(label,fn,cls='secondary')=>{const b=node('button',label);b.className=cls;b.type='button';b.onclick=fn;return b};
 const pageTitle=()=>document.querySelector('header h1');
@@ -67,7 +101,7 @@ function backToGames(){
  refresh().then(()=>{window.scrollTo({top:0,behavior:'smooth'})}).catch(fail);
 }
 async function manageGame(g){
- selectedHostGame=g;msg('');
+ selectedHostGame=g;activeHostTab='overview';msg('');
  show('assassinsPanel',false);show('mafiaPanel',false);
  applyHostView();
  if(g.game_type==='assassins')await window.openAssassins(g.id);
@@ -83,7 +117,9 @@ function decorateGamePanel(g){
  bar.append(makeButton('← All games',backToGames,'secondary'));
  const status=node('span',g.game_type+' · '+g.game_code+' · '+g.status);status.className='status-chip';bar.append(status);
  const share=makeButton('Copy join link',()=>{navigator.clipboard.writeText(linkFor(g.game_code,g.game_type)).then(()=>msg('Join link copied.')).catch(e=>fail(e))});bar.append(share);
- const actions=node('div');actions.className='game-toolbar';
+ let actions=panel.querySelector(':scope > .host-action-bar');
+ if(actions)actions.remove();
+ actions=node('div');actions.className='game-toolbar host-action-bar';
  actions.append(makeButton('Export game records',()=>exportHostedGame(g)));
  actions.append(makeButton('Rename',()=>changeGameName(g)));
  if(g.status!=='finished')actions.append(makeButton('End game',()=>gameCommand(g,'end'),'danger'));
