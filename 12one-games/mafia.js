@@ -6,7 +6,7 @@
  const el=(tag,txt)=>{const n=document.createElement(tag);if(txt!==undefined)n.textContent=String(txt);return n};
  const rpc=async(action,payload={})=>{const {data,error}=await db.rpc('mafia_host',{p_game_id:gameId,p_action:action,p_payload:payload});if(error)throw error;return data};
  const notice=message=>{const n=document.getElementById('notice');n.textContent=message};
- const button=(label,cb,danger=false)=>{const b=el('button',label);b.className=danger?'secondary':'';b.onclick=async()=>{b.disabled=true;try{await cb()}catch(e){notice(e.message||String(e))}finally{b.disabled=false}};return b};
+ const button=(label,cb,danger=false)=>{const b=el('button',label);b.className=danger?'secondary':'';b.onclick=async()=>{b.disabled=true;try{await cb();if(!/^Refresh/.test(label)&&gameId)await db.rpc('host_record_event',{p_game_id:gameId,p_action:'host_action',p_details:label})}catch(e){notice(e.message||String(e))}finally{b.disabled=false}};return b};
  const label=(title,field)=>{const w=el('label',title);w.append(field);return w};
  const input=(type='text',value='')=>{const n=el('input');n.type=type;n.value=String(value??'');return n};
  const section=title=>{const details=el('details');details.append(el('summary',title));details.style.margin='16px 0';return details};
@@ -31,7 +31,7 @@
   const settings=section('Game settings');
   for(const [key,title] of boolSettings){
    const check=input('checkbox');check.checked=!!s.settings[key];check.style.width='auto';
-   check.onchange=async()=>{check.disabled=true;try{await rpc('setting',{key,value:String(check.checked)});notice(title+' updated.');await render()}catch(e){notice(e.message||String(e));check.checked=!check.checked}finally{check.disabled=false}};
+   check.onchange=async()=>{check.disabled=true;try{await rpc('setting',{key,value:String(check.checked)});notice(title+' updated.');await db.rpc('host_record_event',{p_game_id:gameId,p_action:'setting',p_details:title});await render()}catch(e){notice(e.message||String(e));check.checked=!check.checked}finally{check.disabled=false}};
    settings.append(label(title+' ',check));
   }
   for(const [key,title] of textSettings){
@@ -45,11 +45,35 @@
   }
   settings.append(el('p','adminPassword: replaced with host-account authentication. No shared game password is stored.'));
   settings.append(el('p','Original Mafia settings not listed here are supported above. Player signup also requires real names and game-specific PINs.'));
+
+  // Group settings by host-facing purpose instead of one long technical list.
+  const settingBuckets={registration:el('details'),gameplay:el('details'),experience:el('details'),advanced:el('details')};
+  const settingLabels={registration:'Registration',gameplay:'Gameplay rules',experience:'Instructions & messages',advanced:'Advanced & information'};
+  for(const [key,group] of Object.entries(settingBuckets)){
+   group.className='settings-list';group.append(el('summary',settingLabels[key]));group.open=(key==='registration'||key==='gameplay');
+  }
+  let lastBucket='registration';
+  for(const child of [...settings.children]){
+   if(child.tagName==='SUMMARY')continue;
+   const t=child.textContent.toLowerCase();
+   if(child.tagName==='LABEL'){
+    lastBucket=/instruction|message|announcement|dashboard off|dashboard disabled/.test(t)?'experience':
+      /cooldown|vote|elimination|target|pause|game active|master lock|game actions/.test(t)?'gameplay':
+      /admin.password|reset.password/.test(t)?'advanced':'registration';
+   }else if(child.tagName==='P')lastBucket='advanced';
+   settingBuckets[lastBucket].append(child);
+  }
+  settings.append(...Object.values(settingBuckets));
   area.append(settings);
   const players=section('Private player management — real names, codenames, roles');
+  const {data:contacts}=await db.rpc('host_player_contacts',{p_game_id:gameId});
+  const phoneByCode=new Map((contacts||[]).map(p=>[p.codename?.toLowerCase(),p]));
   for(const pl of s.players){
    const line=el('div');line.className='game';
    line.append(el('strong',pl.official_name+' · '+pl.codename));
+   const info=phoneByCode.get(pl.codename?.toLowerCase());
+   if(info?.phone)line.append(el('p','Phone: '+info.phone));
+   if(info?.hall)line.append(el('p','Hall: '+info.hall));
    const role=el('select');
    for(const [v,n] of [['','Unassigned'],['citizen','Citizen'],['mafia','Mafia'],['detective','Detective']]){const o=el('option',n);o.value=v;role.append(o)}
    role.value=pl.role||'';
@@ -73,6 +97,7 @@
    await rpc('reset');await render();await refresh();
   },true));
   area.append(button('Refresh Mafia dashboard',render));
+  window.organizeHostGameView?.('mafia',area);
  }
  window.openMafia=async id=>{gameId=id;document.getElementById('assassinsPanel')?.classList.add('hidden');await render();root.scrollIntoView({behavior:'smooth',block:'start'})};
  window.refreshMafia=async()=>{if(gameId)await render()};
