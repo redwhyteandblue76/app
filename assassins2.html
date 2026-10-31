@@ -242,9 +242,14 @@ function renderNav(activeView) {
     (item.view === activeView ? ' aria-current="page"' : '') + '>' + item.name + '</a>'
   ).join('') + (rememberedCodename() ? '<button type="button" id="topLogout">Log Out</button>' : '');
   const logout = document.getElementById('topLogout');
-  if (logout) logout.addEventListener('click', () => {
+  if (logout) logout.addEventListener('click', async () => {
+    // Clear the authenticated player as well as the displayed codename.
+    const {error:signOutError}=await v2db.auth.signOut();
+    if(signOutError){alert('Unable to sign out: '+signOutError.message);return}
+    const {error:guestError}=await v2db.auth.signInAnonymously();
+    if(guestError){alert('Unable to start a fresh player session: '+guestError.message);return}
     localStorage.removeItem(CODENAME_KEY);
-    window.location.href = GAME_PAGE;
+    window.location.href = GAME_PAGE+'&view=dashboard';
   });
 }
 
