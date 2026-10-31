@@ -125,13 +125,19 @@ function backToGames(){
  refresh().then(()=>{window.scrollTo({top:0,behavior:'smooth'})}).catch(fail);
 }
 async function manageGame(g){
+ if(!g||!['assassins','mafia'].includes(g.game_type))throw Error('Unknown game type.');
  selectedHostGame=g;activeHostTab='overview';msg('');
- show('assassinsPanel',false);show('mafiaPanel',false);
  applyHostView();
- if(g.game_type==='assassins')await window.openAssassins(g.id);
- else await window.openMafia(g.id);
- decorateGamePanel(g);
- window.scrollTo({top:0,behavior:'smooth'});
+ try{
+  if(g.game_type==='assassins')await window.openAssassins(g.id);
+  else await window.openMafia(g.id);
+  decorateGamePanel(g);
+  document.getElementById('hostWorkspace')?.scrollIntoView({block:'start'});
+ }catch(error){
+  selectedHostGame=null;
+  applyHostView();
+  throw new Error('Unable to open '+g.name+': '+(error?.message||String(error)));
+ }
 }
 function decorateGamePanel(g){
  const panel=$(g.game_type==='assassins'?'assassinsPanel':'mafiaPanel');
