@@ -162,4 +162,23 @@ revoke all on function public.host_record_event(uuid,text,text),public.host_rece
 grant execute on function public.host_record_event(uuid,text,text),public.host_recent_events(uuid)
  to authenticated;
 
+create or replace function public.host_game_counts()
+returns jsonb language plpgsql stable security definer set search_path='' as $counts$
+declare v jsonb;
+begin
+ if (select auth.uid()) is null then raise exception 'Host sign-in required';end if;
+ select coalesce(jsonb_agg(jsonb_build_object('id',g.id,
+ 'total',(select count(*) from public.game_memberships m where m.game_id=g.id),
+ 'active',(select count(*) from public.game_memberships m
+ left join public.assassins_players a on a.game_id=m.game_id and a.member_id=m.id
+ left join public.mafia_players p on p.game_id=m.game_id and p.member_id=m.id
+ where m.game_id=g.id and (case when g.game_type='assassins' then coalesce(a.alive,true)
+ else coalesce(p.alive,true) end))
+ ) order by g.created_at desc),'[]'::jsonb) into v
+ from public.games g where g.owner_user_id=(select auth.uid());
+ return v;
+end $counts$;
+revoke all on function public.host_game_counts() from public,anon;
+grant execute on function public.host_game_counts() to authenticated;
+
 commit;
