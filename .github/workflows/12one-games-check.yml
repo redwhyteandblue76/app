@@ -54,3 +54,6 @@ jobs:
           done
           psql -h localhost -U postgres -d games_test -v ON_ERROR_STOP=1 -f 12one-games/tests/smoke.sql
           psql -h localhost -U postgres -d games_test -v ON_ERROR_STOP=1 -f 12one-games/tests/pin_login_smoke.sql
+          psql -h localhost -U postgres -d games_test -v ON_ERROR_STOP=1 -f 12one-games/tests/host_fixture.sql
+          psql -h localhost -U postgres -d games_test -v ON_ERROR_STOP=1 -f 12one-games/sql/015_host_management.sql
+          psql -h localhost -U postgres -d games_test -v ON_ERROR_STOP=1 -f 12one-games/tests/host_management_smoke.sql
