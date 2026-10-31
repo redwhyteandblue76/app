@@ -37,7 +37,7 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           from pglast import parse_sql
-          for name in ['008_assassins_v2_public.sql','009_assassins_host_parity.sql','010_mafia_game.sql','011_settings_parity.sql','012_mafia_settings_parity.sql','013_player_recovery.sql','014_player_pin_login.sql','production_upgrade_008_to_014.sql']:
+          for name in ['008_assassins_v2_public.sql','009_assassins_host_parity.sql','010_mafia_game.sql','011_settings_parity.sql','012_mafia_settings_parity.sql','013_player_recovery.sql','014_player_pin_login.sql','production_upgrade_008_to_014.sql','015_host_management.sql']:
               file=Path('12one-games/sql')/name
               parse_sql(file.read_text())
               print('PASS', file)
