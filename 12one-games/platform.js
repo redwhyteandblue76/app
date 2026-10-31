@@ -24,6 +24,8 @@ async function refresh(){
  renderGameCards();
 
  if(!guest){
+ const {data:profile}=await db.from('host_profiles').select('full_name').eq('user_id',currentUser.id).maybeSingle();
+ if($('profileName')&&document.activeElement!==$('profileName'))$('profileName').value=profile?.full_name||currentUser.user_metadata?.full_name||'';
  const [credits,admin]=await Promise.all([db.from('game_credits').select('id').is('consumed_at',null),db.rpc('is_platform_admin')]);
  if(credits.error)throw credits.error;
  $('creditCount').textContent=String(credits.data.length);
@@ -212,6 +214,14 @@ async function renderAdminDirectory(){
   games.append(line);
  }
 }
+$('saveProfile')?.addEventListener('click',async()=>{
+ if(!currentUser||currentUser.is_anonymous)return msg('Sign in as a host first.');
+ const name=$('profileName').value.trim();
+ if(name.length<2||name.length>120)return msg('Enter a full name between 2 and 120 characters.');
+ const {error}=await db.from('host_profiles').upsert({user_id:currentUser.id,full_name:name});
+ if(error)return fail(error);
+ msg('Profile name saved.');await refresh();
+});
 $('gameSearch')?.addEventListener('input',renderGameCards);
 $('gameFilter')?.addEventListener('change',renderGameCards);
 
