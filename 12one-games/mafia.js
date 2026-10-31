@@ -45,6 +45,25 @@
   }
   settings.append(el('p','adminPassword: replaced with host-account authentication. No shared game password is stored.'));
   settings.append(el('p','Original Mafia settings not listed here are supported above. Player signup also requires real names and game-specific PINs.'));
+
+  // Group settings by host-facing purpose instead of one long technical list.
+  const settingBuckets={registration:el('details'),gameplay:el('details'),experience:el('details'),advanced:el('details')};
+  const settingLabels={registration:'Registration',gameplay:'Gameplay rules',experience:'Instructions & messages',advanced:'Advanced & information'};
+  for(const [key,group] of Object.entries(settingBuckets)){
+   group.className='settings-list';group.append(el('summary',settingLabels[key]));group.open=(key==='registration'||key==='gameplay');
+  }
+  let lastBucket='registration';
+  for(const child of [...settings.children]){
+   if(child.tagName==='SUMMARY')continue;
+   const t=child.textContent.toLowerCase();
+   if(child.tagName==='LABEL'){
+    lastBucket=/instruction|message|announcement|dashboard off|dashboard disabled/.test(t)?'experience':
+      /cooldown|vote|elimination|target|pause|game active|master lock|game actions/.test(t)?'gameplay':
+      /admin.password|reset.password/.test(t)?'advanced':'registration';
+   }else if(child.tagName==='P')lastBucket='advanced';
+   settingBuckets[lastBucket].append(child);
+  }
+  settings.append(...Object.values(settingBuckets));
   area.append(settings);
   const players=section('Private player management — real names, codenames, roles');
   const {data:contacts}=await db.rpc('host_player_contacts',{p_game_id:gameId});
