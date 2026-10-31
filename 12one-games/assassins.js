@@ -5,7 +5,7 @@ const area=document.getElementById('assassinsContent');
 const el=(tag,text)=>{const n=document.createElement(tag);n.textContent=text??'';return n};
 const rpc=async(name,args)=>{const {data,error}=await db.rpc(name,args);if(error)throw error;return data};
 let selected=null;
-const button=(label,fn)=>{const b=el('button',label);b.className='secondary';b.onclick=async()=>{b.disabled=true;try{await fn()}catch(e){fail(e)}finally{b.disabled=false}};return b};
+const button=(label,fn)=>{const b=el('button',label);b.className='secondary';b.onclick=async()=>{b.disabled=true;try{await fn();if(!/^(Refresh|Start game)/.test(label)&&selected){await db.rpc('host_record_event',{p_game_id:selected,p_action:'host_action',p_details:label})}}catch(e){fail(e)}finally{b.disabled=false}};return b};
 const field=(label,type='text',value='')=>{const wrap=el('label',label);const inp=el('input');inp.type=type;inp.value=value;wrap.append(inp);return [wrap,inp]};
 const heading=t=>area.append(el('h3',t));
 async function render(){
@@ -47,6 +47,7 @@ async function render(){
     try{
      const mapped=key==='hall_field_enabled'?'hall_enabled':key==='phone_field_enabled'?'phone_enabled':key;
      await rpc('assassins_host_setting',{p_game_id:selected,p_key:mapped,p_value:String(inp.checked)});
+     await db.rpc('host_record_event',{p_game_id:selected,p_action:'setting',p_details:label});
      await render();
     }catch(e){inp.checked=old;fail(e)}finally{inp.disabled=false}
    };
