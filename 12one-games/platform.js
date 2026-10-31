@@ -108,7 +108,7 @@ function applyHostView(){
  const active=!!selectedHostGame;
  show('dashboard',!!currentUser&&!currentUser.is_anonymous&&!active);
  show('owner',!active&&adminIsHost&&!!currentUser&&!currentUser.is_anonymous);
- show('joinSection',!active);
+ show('joinSection',!active&&!currentUser);
  show('hostWorkspace',active);show('hostHomeView',!active);
  document.body.dataset.view=active?'game':'home';
  if($('workspaceSubtitle'))$('workspaceSubtitle').textContent=active?selectedHostGame.game_type.toUpperCase()+' · '+selectedHostGame.game_code:'';
@@ -152,6 +152,16 @@ function decorateGamePanel(g){
   actions.append(makeButton('Permanently delete',()=>deleteHostedGame(g),'danger'));
  }
  panel.append(actions);
+ const area=$(g.game_type==='assassins'?'assassinsContent':'mafiaContent');
+ const overview=area?.querySelector(':scope > .host-tab[data-tab="overview"]');
+ if(overview){
+  overview.querySelector('.stats')?.remove();
+  const stats=node('div');stats.className='stats';
+  for(const [title,value] of [['Total players',g.total??'—'],['Active players',g.active??'—'],['Game status',g.status]]){
+   const tile=node('div');tile.className='stat';tile.append(node('strong',String(value)),node('span',title));stats.append(tile);
+  }
+  overview.prepend(stats);
+ }
  const targetActivity=panel.querySelector(':scope #'+(g.game_type==='assassins'?'assassinsContent':'mafiaContent')+' > .host-tab[data-tab="activity"]');
  if(targetActivity){
   let section=targetActivity.querySelector('.host-audit');
