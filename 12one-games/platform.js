@@ -18,7 +18,9 @@ async function refresh(){
  if(!currentUser){selectedHostGame=null;show('lobby',false);show('assassinsPanel',false);show('mafiaPanel',false);return}
  const {data:games,error:ge}=await db.from('games').select('id,name,game_type,game_code,status,owner_user_id,archived_at').eq('owner_user_id',currentUser.id).order('created_at',{ascending:false});if(ge)throw ge;
 
- allHostGames=games;
+ const {data:gameCounts}=await db.rpc('host_game_counts');
+ const byId=new Map((gameCounts||[]).map(x=>[x.id,x]));
+ allHostGames=games.map(g=>({...g,...(byId.get(g.id)||{})}));
  renderGameCards();
 
  if(!guest){
@@ -160,6 +162,7 @@ function renderGameCards(){
   const card=node('article');card.className='game';
   const tag=node('small',g.game_type.toUpperCase()+' · '+g.status+(g.archived_at?' · archived':''));tag.className='muted';card.append(tag);
   card.append(node('h3',g.name),node('p','Game code: '+g.game_code));
+  if(g.total!==undefined)card.append(node('p',g.total+' players · '+g.active+' active'));
   const buttons=node('div');buttons.className='game-toolbar';
   buttons.append(makeButton('Manage game',()=>manageGame(g).catch(fail)));
   buttons.append(makeButton('Copy join link',()=>navigator.clipboard.writeText(linkFor(g.game_code,g.game_type)).then(()=>msg('Join link copied.')).catch(fail)));
