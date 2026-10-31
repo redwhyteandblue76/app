@@ -71,7 +71,8 @@ window.organizeHostGameView=function(type,area){
   else if(summary.includes('setting')||summary.includes('original assassins'))current='settings';
   else if(summary.includes('log')||summary.includes('elimination history')||heading.includes('elimination feed'))current='activity';
   else if(summary.includes('start game')||heading.includes('host management'))current='overview';
-  groups[current].append(child);
+  if(child.tagName==='BUTTON'&&/^(Reset|Full wipe|Shuffle|Eliminate players|Refresh)/i.test(child.textContent||''))groups.overview.append(child);
+  else groups[current].append(child);
  }
  const playerSearch=document.createElement('input');
  playerSearch.type='search';playerSearch.placeholder='Search player names, codenames, or halls';
@@ -81,7 +82,12 @@ window.organizeHostGameView=function(type,area){
   for(const line of groups.players.querySelectorAll('.game'))line.hidden=!!needle&&!line.textContent.toLowerCase().includes(needle);
  };
  groups.players.prepend(playerSearch);
+ for(const details of groups.players.querySelectorAll('details'))details.open=true;
+ for(const details of groups.activity.querySelectorAll('details'))details.open=true;
  for(const d of groups.settings.querySelectorAll('details'))d.open=true;
+ for(const [key,title] of [['overview','Game overview'],['players','Player management'],['settings','Game settings'],['activity','Game activity']]){
+  const h=document.createElement('h3');h.textContent=title;groups[key].prepend(h);
+ }
  const tabs=[['overview','Overview'],['players','Players'],['settings','Settings'],['activity','Activity']];
  for(const [id,label] of tabs){
   const btn=document.createElement('button');btn.type='button';btn.textContent=label;btn.className='secondary';
