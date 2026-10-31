@@ -6,7 +6,7 @@
  const el=(tag,txt)=>{const n=document.createElement(tag);if(txt!==undefined)n.textContent=String(txt);return n};
  const rpc=async(action,payload={})=>{const {data,error}=await db.rpc('mafia_host',{p_game_id:gameId,p_action:action,p_payload:payload});if(error)throw error;return data};
  const notice=message=>{const n=document.getElementById('notice');n.textContent=message};
- const button=(label,cb,danger=false)=>{const b=el('button',label);b.className=danger?'secondary':'';b.onclick=async()=>{b.disabled=true;try{await cb()}catch(e){notice(e.message||String(e))}finally{b.disabled=false}};return b};
+ const button=(label,cb,danger=false)=>{const b=el('button',label);b.className=danger?'secondary':'';b.onclick=async()=>{b.disabled=true;try{await cb();if(!/^Refresh/.test(label)&&gameId)await db.rpc('host_record_event',{p_game_id:gameId,p_action:'host_action',p_details:label})}catch(e){notice(e.message||String(e))}finally{b.disabled=false}};return b};
  const label=(title,field)=>{const w=el('label',title);w.append(field);return w};
  const input=(type='text',value='')=>{const n=el('input');n.type=type;n.value=String(value??'');return n};
  const section=title=>{const details=el('details');details.append(el('summary',title));details.style.margin='16px 0';return details};
@@ -31,7 +31,7 @@
   const settings=section('Game settings');
   for(const [key,title] of boolSettings){
    const check=input('checkbox');check.checked=!!s.settings[key];check.style.width='auto';
-   check.onchange=async()=>{check.disabled=true;try{await rpc('setting',{key,value:String(check.checked)});notice(title+' updated.');await render()}catch(e){notice(e.message||String(e));check.checked=!check.checked}finally{check.disabled=false}};
+   check.onchange=async()=>{check.disabled=true;try{await rpc('setting',{key,value:String(check.checked)});notice(title+' updated.');await db.rpc('host_record_event',{p_game_id:gameId,p_action:'setting',p_details:title});await render()}catch(e){notice(e.message||String(e));check.checked=!check.checked}finally{check.disabled=false}};
    settings.append(label(title+' ',check));
   }
   for(const [key,title] of textSettings){
