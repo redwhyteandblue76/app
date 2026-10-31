@@ -309,9 +309,16 @@ function renderNav() {
   }
 }
 
-function logout() {
+async function logout() {
+  // A player belongs to their anonymous Supabase user, not just localStorage.
+  // Rotate that user explicitly when switching players on a shared browser.
+  const {error:signOutError}=await mafiaDB.auth.signOut();
+  if(signOutError){alert('Unable to sign out: '+signOutError.message);return}
+  const {error:guestError}=await mafiaDB.auth.signInAnonymously();
+  if(guestError){alert('Unable to start a fresh player session: '+guestError.message);return}
   localStorage.removeItem(LS_KEY);
-  state.codename = null;
+  state.codename=null;
+  state.dashboard=null;
   goTo('login');
 }
 
