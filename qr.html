@@ -319,9 +319,31 @@
   @media (max-width: 480px) {
     .field-row, .grid-controls { grid-template-columns: 1fr; }
   }
+
+.support-backdrop{position:fixed;inset:0;z-index:1000;background:rgba(10,15,25,.48);display:flex;align-items:center;justify-content:center;padding:20px}
+.support-backdrop[hidden]{display:none}
+.support-dialog{background:var(--surface);color:var(--ink);border:1px solid var(--border);border-radius:18px;padding:28px;width:min(100%,420px);box-shadow:0 20px 60px rgba(0,0,0,.2);text-align:center}
+.support-dialog h2{font-size:21px;margin-bottom:12px}
+.support-dialog p{color:var(--muted);font-size:14px;line-height:1.65;margin:0 0 22px}
+.support-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
+.support-actions a,.support-actions button{font:600 13px 'Inter',sans-serif;padding:11px 16px;border-radius:9px;cursor:pointer;text-decoration:none}
+.support-actions a{color:var(--accent-ink);background:var(--accent);border:1px solid var(--accent)}
+.support-actions button{background:var(--surface-2);color:var(--ink);border:1px solid var(--border)}
+.support-actions a:focus-visible,.support-actions button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 </style>
+<link rel="stylesheet" href="site-footer.css">
 </head>
 <body>
+<div class="support-backdrop" id="supportBackdrop" hidden>
+  <div class="support-dialog" role="dialog" aria-modal="true" aria-labelledby="supportTitle" aria-describedby="supportDescription">
+    <h2 id="supportTitle">Thanks for using my QR generator!</h2>
+    <p id="supportDescription">This tool is completely free to use. If you'd like to support the developer, I'd really appreciate it!</p>
+    <div class="support-actions">
+      <a href="https://ko-fi.com/12one" id="supportLink" target="_blank" rel="noopener noreferrer">Support my work</a>
+      <button type="button" id="supportDismiss">Not this time</button>
+    </div>
+  </div>
+</div>
 <div class="page">
 
   <div class="topbar">
@@ -1009,6 +1031,34 @@
     toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
   }
 
+
+  // Show support prompt only after the QR export or copy succeeds.
+  const supportBackdrop = $('supportBackdrop');
+  const supportDismiss = $('supportDismiss');
+  const supportLink = $('supportLink');
+  let supportReturnFocus = null;
+  function showSupportPrompt() {
+    if (!supportBackdrop.hidden) return;
+    supportReturnFocus = document.activeElement;
+    supportBackdrop.hidden = false;
+    supportDismiss.focus();
+  }
+  function closeSupportPrompt() {
+    supportBackdrop.hidden = true;
+    if (supportReturnFocus && typeof supportReturnFocus.focus === 'function') supportReturnFocus.focus();
+  }
+  supportDismiss.addEventListener('click', closeSupportPrompt);
+  supportLink.addEventListener('click', closeSupportPrompt);
+  supportBackdrop.addEventListener('click', e => { if (e.target === supportBackdrop) closeSupportPrompt(); });
+  document.addEventListener('keydown', e => {
+    if (supportBackdrop.hidden) return;
+    if (e.key === 'Escape') { closeSupportPrompt(); return; }
+    if (e.key === 'Tab') {
+      if (e.shiftKey && document.activeElement === supportLink) { e.preventDefault(); supportDismiss.focus(); }
+      else if (!e.shiftKey && document.activeElement === supportDismiss) { e.preventDefault(); supportLink.focus(); }
+    }
+  });
+
   // ---------- Downloads ----------
   $('downloadPng').addEventListener('click', () => {
     if (!lastPayload) { showToast('Nothing to download yet'); return; }
@@ -1017,6 +1067,7 @@
     link.href = canvas.toDataURL('image/png');
     link.click();
     showToast('PNG downloaded');
+    showSupportPrompt();
   });
 
   $('downloadSvg').addEventListener('click', () => {
@@ -1044,6 +1095,7 @@
     link.click();
     URL.revokeObjectURL(url);
     showToast('SVG downloaded');
+    showSupportPrompt();
   });
 
   // ---------- Copy to clipboard ----------
@@ -1058,6 +1110,7 @@
       try {
         await navigator.clipboard.write([ new ClipboardItem({ 'image/png': blob }) ]);
         showToast('Copied to clipboard');
+    showSupportPrompt();
       } catch (err) {
         showToast('Clipboard blocked — try downloading instead');
       }
@@ -1133,6 +1186,7 @@
         ? `Done — ${ok} zipped, ${failures} skipped (too long to encode).`
         : `Done — ${ok} QR code${ok === 1 ? '' : 's'} zipped.`;
       showToast('ZIP downloaded');
+    showSupportPrompt();
     } catch (err) {
       status.textContent = 'Something went wrong building the ZIP.';
       showToast('ZIP export failed');
@@ -1146,5 +1200,6 @@
   render();
 })();
 </script>
+<script src="site-footer.js"></script>
 </body>
 </html>
