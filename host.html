@@ -1,7 +1,115 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>12one Games | Host Dashboard</title>
-<style>:root{--bg:#0b1424;--panel:#16253b;--panel2:#20334e;--line:#3d5670;--accent:#83c9f0;--text:#f0f5fa;--muted:#bcc9d7;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 100% 0%,#1b3454,var(--bg) 48%);color:var(--text);font:15px/1.6 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}main{max-width:1080px;margin:auto;padding:28px 20px 72px}header{display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:25px}h1{font-size:28px;letter-spacing:-.9px;margin:0}h2{font-size:21px;letter-spacing:-.3px;margin:0 0 12px}h3{font-size:17px}section{background:var(--panel);border:1px solid var(--line);border-radius:17px;padding:22px;margin:18px 0;box-shadow:0 12px 28px #0002}p{margin:8px 0 15px;color:var(--muted)}label{display:block;margin:12px 0 5px}input,select,button,textarea{font:inherit;border-radius:9px;max-width:100%}input,select,textarea{padding:10px 12px;background:#101e32;color:white;border:1px solid #55708a;width:100%}textarea{min-height:100px}button{padding:10px 15px;cursor:pointer;background:var(--accent);color:#0b1928;border:1px solid transparent;font-weight:650;margin:6px 6px 6px 0}button.secondary{background:var(--panel2);color:white;border-color:#526a84}button.danger{background:#5c2d39;color:#fff;border-color:#a56470}button:hover{filter:brightness(1.1)}button:disabled{opacity:.55;cursor:wait}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #a6dfff;outline-offset:3px}.row{display:flex;gap:11px;align-items:center;flex-wrap:wrap}.row>*{flex:1}.muted{color:var(--muted);font-size:13px}.hidden{display:none!important}#notice:not(:empty){position:sticky;top:5px;z-index:10;background:#21455e;border:1px solid #699fc6;border-radius:12px;padding:12px;margin:12px 0;white-space:pre-wrap}.game{background:var(--panel2);padding:16px;border:1px solid var(--line);border-radius:12px;margin:9px 0}.game strong{font-size:17px}a{color:#a5dbfc}.games-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:12px}.games-grid .game{margin:0}.game-view{min-height:60vh}.host-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0}.host-tabs button{margin:0}.host-tabs button[aria-selected=true]{background:#e0f4ff}.host-tab[hidden]{display:none!important}.stats{display:flex;flex-wrap:wrap;gap:10px}.stat{background:#0f2035;padding:12px 17px;border-radius:10px}.stat strong{display:block;font-size:24px}.back-host{margin-bottom:16px}details{margin:12px 0;padding:13px;background:#101f34;border:1px solid var(--line);border-radius:10px}summary{cursor:pointer;font-weight:650}details .game{background:#1c2e47}.settings-list label:has(input[type=checkbox]){display:flex;align-items:center;justify-content:space-between;gap:12px}.settings-list input[type=checkbox]{width:19px;height:19px}.danger-zone{border:1px solid #a76370;border-radius:12px;padding:14px;margin-top:18px}code{overflow-wrap:anywhere}@media(max-width:650px){main{padding:15px 12px 45px}section{padding:15px}h1{font-size:24px}.row>*{flex:1 1 100%}.games-grid{grid-template-columns:1fr}.host-tabs{flex-wrap:nowrap;overflow-x:auto}.host-tabs button{white-space:nowrap}button{min-height:43px}}.workspace-breadcrumb{display:flex;align-items:center;gap:14px;margin:0 0 24px}.workspace-breadcrumb button{flex:none}.workspace-breadcrumb span{color:var(--muted)}#hostWorkspace{min-height:75vh}#hostWorkspace>.game-view{max-width:none;margin:0;border:0;box-shadow:none;padding:0;background:transparent}#hostWorkspace .host-tabs{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 0}#hostWorkspace .host-tabs button{padding:12px 19px;border-radius:10px}.host-tab{background:var(--panel);border:1px solid var(--line);padding:22px;border-radius:15px;min-height:340px}.host-tab>.game{margin:12px 0}.host-action-bar{padding:16px 0;margin-top:24px;border-top:1px solid var(--line)}body[data-view="game"] #hostHomeView,body[data-view="game"] #homeIntro,body[data-view="game"] #joinSection,body[data-view="game"] #lobby,body[data-view="game"] #auth,body[data-view="game"] #guestPanel,body[data-view="game"] .app-footer{display:none!important}body[data-view="game"] #hostWorkspace{display:block!important}body[data-view="home"] #hostWorkspace{display:none!important}body[data-view="home"] #hostHomeView{display:block!important}@media(max-width:650px){.host-tab{padding:14px}.workspace-breadcrumb{margin-bottom:15px}}</style><link rel="stylesheet" href="site-footer.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>:root{--bg:#0b1424;--panel:#16253b;--panel2:#20334e;--line:#3d5670;--accent:#83c9f0;--text:#f0f5fa;--muted:#bcc9d7;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 100% 0%,#1b3454,var(--bg) 48%);color:var(--text);font:15px/1.6 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}main{max-width:1080px;margin:auto;padding:28px 20px 72px}header{display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:25px}h1{font-size:28px;letter-spacing:-.9px;margin:0}h2{font-size:21px;letter-spacing:-.3px;margin:0 0 12px}h3{font-size:17px}section{background:var(--panel);border:1px solid var(--line);border-radius:17px;padding:22px;margin:18px 0;box-shadow:0 12px 28px #0002}p{margin:8px 0 15px;color:var(--muted)}label{display:block;margin:12px 0 5px}input,select,button,textarea{font:inherit;border-radius:9px;max-width:100%}input,select,textarea{padding:10px 12px;background:#101e32;color:white;border:1px solid #55708a;width:100%}textarea{min-height:100px}button{padding:10px 15px;cursor:pointer;background:var(--accent);color:#0b1928;border:1px solid transparent;font-weight:650;margin:6px 6px 6px 0}button.secondary{background:var(--panel2);color:white;border-color:#526a84}button.danger{background:#5c2d39;color:#fff;border-color:#a56470}button:hover{filter:brightness(1.1)}button:disabled{opacity:.55;cursor:wait}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #a6dfff;outline-offset:3px}.row{display:flex;gap:11px;align-items:center;flex-wrap:wrap}.row>*{flex:1}.muted{color:var(--muted);font-size:13px}.hidden{display:none!important}#notice:not(:empty){position:sticky;top:5px;z-index:10;background:#21455e;border:1px solid #699fc6;border-radius:12px;padding:12px;margin:12px 0;white-space:pre-wrap}.game{background:var(--panel2);padding:16px;border:1px solid var(--line);border-radius:12px;margin:9px 0}.game strong{font-size:17px}a{color:#a5dbfc}.games-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:12px}.games-grid .game{margin:0}.game-view{min-height:60vh}.host-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0}.host-tabs button{margin:0}.host-tabs button[aria-selected=true]{background:#e0f4ff}.host-tab[hidden]{display:none!important}.stats{display:flex;flex-wrap:wrap;gap:10px}.stat{background:#0f2035;padding:12px 17px;border-radius:10px}.stat strong{display:block;font-size:24px}.back-host{margin-bottom:16px}details{margin:12px 0;padding:13px;background:#101f34;border:1px solid var(--line);border-radius:10px}summary{cursor:pointer;font-weight:650}details .game{background:#1c2e47}.settings-list label:has(input[type=checkbox]){display:flex;align-items:center;justify-content:space-between;gap:12px}.settings-list input[type=checkbox]{width:19px;height:19px}.danger-zone{border:1px solid #a76370;border-radius:12px;padding:14px;margin-top:18px}code{overflow-wrap:anywhere}@media(max-width:650px){main{padding:15px 12px 45px}section{padding:15px}h1{font-size:24px}.row>*{flex:1 1 100%}.games-grid{grid-template-columns:1fr}.host-tabs{flex-wrap:nowrap;overflow-x:auto}.host-tabs button{white-space:nowrap}button{min-height:43px}}.workspace-breadcrumb{display:flex;align-items:center;gap:14px;margin:0 0 24px}.workspace-breadcrumb button{flex:none}.workspace-breadcrumb span{color:var(--muted)}#hostWorkspace{min-height:75vh}#hostWorkspace>.game-view{max-width:none;margin:0;border:0;box-shadow:none;padding:0;background:transparent}#hostWorkspace .host-tabs{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 0}#hostWorkspace .host-tabs button{padding:12px 19px;border-radius:10px}.host-tab{background:var(--panel);border:1px solid var(--line);padding:22px;border-radius:15px;min-height:340px}.host-tab>.game{margin:12px 0}.host-action-bar{padding:16px 0;margin-top:24px;border-top:1px solid var(--line)}body[data-view="game"] #hostHomeView,body[data-view="game"] #homeIntro,body[data-view="game"] #joinSection,body[data-view="game"] #lobby,body[data-view="game"] #auth,body[data-view="game"] #guestPanel,body[data-view="game"] .app-footer{display:none!important}body[data-view="game"] #hostWorkspace{display:block!important}body[data-view="home"] #hostWorkspace{display:none!important}body[data-view="home"] #hostHomeView{display:block!important}@media(max-width:650px){.host-tab{padding:14px}.workspace-breadcrumb{margin-bottom:15px}}
+/* 12one shared host branding: red-first, teal-secondary, light workspace */
+:root {
+  color-scheme: light;
+  --bg: #FAF8F4;
+  --panel: #FFFFFF;
+  --panel2: #F4EEE8;
+  --line: #DDD8D3;
+  --accent: #9B2226;
+  --text: #001219;
+  --muted: #46565B;
+  --red: #9B2226;
+  --red-bright: #AE2012;
+  --teal: #005F73;
+  --cyan: #0A9396;
+  --aqua: #94D2BD;
+  --vanilla: #E9D8A6;
+}
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.65 'Montserrat', system-ui, sans-serif;
+}
+main { max-width: 1120px; }
+header {
+  background: linear-gradient(115deg, #9B2226, #AE2012);
+  border: 0;
+  border-radius: 0 0 18px 18px;
+  color: #FFFFFF;
+  margin: -28px -20px 24px;
+  padding: 27px 28px;
+  box-shadow: 0 12px 30px #9B222620;
+}
+header h1 { font-weight: 800; letter-spacing: -.8px; }
+header .muted { color: #F7E4DC; font-weight: 700; letter-spacing: .13em; }
+h1, h2, h3 { color: inherit; font-weight: 700; }
+h2 { font-size: 20px; }
+section {
+  border-color: var(--line);
+  box-shadow: 0 5px 22px #0012190A;
+}
+p { color: var(--muted); }
+label { font-weight: 500; }
+input, select, textarea {
+  background: #FFFFFF;
+  color: var(--text);
+  border: 1px solid #BBB9B2;
+}
+input::placeholder, textarea::placeholder { color: #627074; }
+button {
+  background: var(--red);
+  color: #FFFFFF;
+  font-weight: 700;
+  transition: filter .15s ease, transform .15s ease;
+}
+button.secondary {
+  background: #F4EEE8;
+  color: var(--teal);
+  border-color: #C6D6D3;
+}
+button.danger {
+  background: #862126;
+  color: #FFFFFF;
+  border-color: #862126;
+}
+button:hover:not(:disabled) { filter: brightness(.94); }
+button:active:not(:disabled) { transform: translateY(1px); }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible,
+summary:focus-visible, a:focus-visible { outline: 3px solid var(--cyan); outline-offset: 3px; }
+input[type=checkbox] { accent-color: var(--red); }
+#notice:not(:empty) {
+  background: #EAF5F1;
+  color: #003F45;
+  border-color: var(--cyan);
+}
+.game {
+  background: #F8F4EF;
+  border-color: #E5DDD6;
+}
+.game strong { color: var(--text); }
+a { color: var(--teal); text-underline-offset: 3px; }
+a:hover { color: var(--red); }
+.host-tabs button[aria-selected=true] {
+  background: var(--red);
+  color: #FFFFFF;
+  border-color: var(--red);
+}
+.stat { background: #F4EEE8; border: 1px solid var(--line); }
+details { background: #FAF8F4; border-color: var(--line); }
+details .game { background: #FFFFFF; }
+.danger-zone { border-color: #B65C60; background: #FFF7F5; }
+#hostWorkspace .host-tabs {
+  background: var(--bg);
+  border-bottom-color: var(--line);
+}
+.host-tab { background: var(--panel); border-color: var(--line); }
+.host-action-bar { border-top-color: var(--line); }
+.workspace-breadcrumb span { color: var(--muted); }
+#hostWorkspace>.game-view { background: transparent; }
+.site-legal-footer { color: #46565B; font-family: 'Montserrat', system-ui, sans-serif; }
+.site-legal-footer a:hover, .site-legal-footer a:focus-visible { color: var(--red); }
+@media (max-width: 650px) {
+  header { margin: -15px -12px 20px; padding: 22px 16px; flex-wrap: wrap; }
+  header h1 { font-size: 23px; }
+}
+</style><link rel="stylesheet" href="site-footer.css">
 <script src="site-footer.js" defer></script>
 </head><body><main>
 <header><h1>12one Games</h1><span class="muted">HOST DASHBOARD</span></header>
