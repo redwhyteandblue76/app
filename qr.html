@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Austin's QR Generator</title>
+<title>12one • QR Generator</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root[data-theme="light"] {
     --bg: #F6F6F3;
@@ -330,6 +330,64 @@
 .support-actions a{color:var(--accent-ink);background:var(--accent);border:1px solid var(--accent)}
 .support-actions button{background:var(--surface-2);color:var(--ink);border:1px solid var(--border)}
 .support-actions a:focus-visible,.support-actions button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+
+/* 12one visual alignment (QR function, generation defaults, and scripts unchanged) */
+:root[data-theme="light"] {
+  --bg: #FAF8F4;
+  --surface: #FFFFFF;
+  --surface-2: #F1EAE3;
+  --ink: #001219;
+  --muted: #46565B;
+  --border: #DEDAD4;
+  --accent: #9B2226;
+  --accent-ink: #FFFFFF;
+  --accent-2: #005F73;
+  --warn: #BB3E03;
+  --shadow: 0 1px 2px rgba(0,18,25,.05), 0 12px 28px rgba(0,18,25,.07);
+}
+:root[data-theme="dark"] {
+  --bg: #001219;
+  --surface: #10262C;
+  --surface-2: #20373D;
+  --ink: #FDF9F3;
+  --muted: #C5D0D0;
+  --border: #3A5558;
+  --accent: #E9D8A6;
+  --accent-ink: #001219;
+  --accent-2: #94D2BD;
+  --warn: #EE9B00;
+  --shadow: 0 1px 2px rgba(0,0,0,.35), 0 14px 34px rgba(0,0,0,.4);
+}
+body, h1, h2, input[type="text"], input[type="tel"], input[type="email"],
+input[type="url"], textarea, select, .support-actions a, .support-actions button {
+  font-family: 'Montserrat', system-ui, sans-serif;
+}
+.brand-subtitle { font-weight: 500; }
+.page { max-width: 1080px; padding-top: 0; }
+.topbar {
+  background: #9B2226;
+  color: #FFFFFF;
+  margin: 0 -24px;
+  padding: 26px 24px;
+  border-radius: 0 0 18px 18px;
+}
+.brand h1 { font-size: clamp(18px, 3vw, 23px); font-weight: 800; }
+.brand-subtitle { color: #E9D8A6; }
+.brand-mark { background: #AE2012; border: 1px solid #FFFFFF40; }
+.brand-mark::before, .brand-mark::after { border-color: #E9D8A6; }
+.theme-toggle { background: #FFFFFF14; border-color: #FFFFFF6B; color: #FFFFFF; }
+.theme-toggle:hover { background: #FFFFFF29; }
+.tagline { margin-top: 24px; }
+:where(button, a, input, textarea, select):focus-visible { outline: 3px solid #0A9396; outline-offset: 3px; }
+.btn-primary:hover, .support-actions a:hover { filter: brightness(1.08); }
+.support-backdrop { background: rgba(0,18,25,.62); }
+.support-dialog { border-top: 5px solid #9B2226; }
+@media (max-width: 480px) {
+  .topbar { padding: 20px 24px; }
+  .brand { gap: 9px; }
+  .brand-mark { width: 31px; height: 31px; }
+}
+
 </style>
 <link rel="stylesheet" href="site-footer.css">
 </head>
@@ -349,7 +407,7 @@
   <div class="topbar">
     <div class="brand">
       <span class="brand-mark"></span>
-      <h1>Austin's QR Generator</h1>
+      <h1>12one <span class="brand-subtitle">QR Generator</span></h1>
     </div>
     <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">🌙</button>
   </div>
