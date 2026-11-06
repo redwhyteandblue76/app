@@ -2,235 +2,39 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>12one Games | Play, Connect, Belong</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#9b2226">
+<meta name="description" content="Play Assassins and Mafia on 12one Games. Free community games, hosted with purpose.">
+<title>12one Games | Play Together</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --paper: #e9e2cf;
-    --ink: #1c1a16;
-    --folder: #15130f;
-    --folder-edge: #2a251c;
-    --stamp-red: #a3312a;
-    --stamp-red-dim: #6e211c;
-    --accent-blue: #4f7f8c;
-    --muted: #8a8270;
-    --tape: #cbbf9c;
-  }
-  * { box-sizing: border-box; }
-  html, body {
-    margin: 0; padding: 0; min-height: 100vh;
-    background:
-      radial-gradient(ellipse at top left, #221f19 0%, #100f0c 55%),
-      #100f0c;
-    color: var(--paper);
-    font-family: 'Inter', sans-serif;
-  }
-  body { position: relative; overflow-x: hidden; }
-
-  /* subtle desk-texture noise via layered gradients */
-  body::before {
-    content: '';
-    position: fixed; inset: 0;
-    background-image:
-      repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0px, transparent 1px, transparent 2px, rgba(255,255,255,0.015) 3px);
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  main {
-    position: relative; z-index: 1;
-    max-width: 880px; margin: 0 auto;
-    padding: 64px 22px 90px;
-  }
-
-  header { text-align: center; margin-bottom: 8px; }
-
-  .eyebrow {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11.5px;
-    letter-spacing: 0.32em;
-    text-transform: uppercase;
-    color: var(--muted);
-    display: inline-flex; align-items: center; gap: 10px;
-  }
-  .eyebrow::before, .eyebrow::after {
-    content: ''; width: 26px; height: 1px; background: var(--folder-edge);
-  }
-
-  h1 {
-    font-family: 'Special Elite', cursive;
-    font-weight: 400;
-    font-size: clamp(38px, 8vw, 64px);
-    margin: 18px 0 6px;
-    letter-spacing: 0.01em;
-    color: var(--paper);
-    text-shadow: 0 2px 0 rgba(0,0,0,0.4);
-  }
-  h1 span {
-    color: var(--stamp-red);
-  }
-
-  .subhead {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 13.5px;
-    color: var(--muted);
-    max-width: 460px;
-    margin: 0 auto 46px;
-    line-height: 1.6;
-  }
-
-  /* ===== dossier stack ===== */
-  .dossier-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 30px;
-  }
-  @media (max-width: 680px) {
-    .dossier-grid { grid-template-columns: 1fr; }
-  }
-
-  .file {
-    position: relative;
-    background: var(--folder);
-    border: 1px solid var(--folder-edge);
-    border-radius: 3px;
-    padding: 26px 24px 24px;
-    text-decoration: none;
-    color: inherit;
-    display: block;
-    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
-  }
-  .file:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 16px 40px rgba(0,0,0,0.5);
-  }
-
-  .tab {
-    position: absolute;
-    top: -13px; left: 22px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    padding: 3px 10px;
-    background: var(--folder);
-    border: 1px solid var(--folder-edge);
-  }
-  .file.assassin .tab { color: var(--paper); border-color: var(--paper); }
-  .file.mafia .tab { color: var(--accent-blue); border-color: var(--accent-blue); }
-
-  .file:hover.assassin { border-color: var(--paper); }
-  .file:hover.mafia { border-color: var(--accent-blue); }
-
-  .stamp {
-    position: absolute;
-    top: 18px; right: 18px;
-    font-family: 'Special Elite', cursive;
-    font-size: 11px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--stamp-red);
-    border: 2px solid var(--stamp-red);
-    border-radius: 2px;
-    padding: 3px 8px;
-    transform: rotate(-7deg);
-    opacity: 0.85;
-  }
-
-  .file h2 {
-    font-family: 'Special Elite', cursive;
-    font-weight: 400;
-    font-size: 26px;
-    margin: 20px 0 8px;
-  }
-
-  .file p.desc {
-    font-size: 13.5px;
-    line-height: 1.6;
-    color: #c9c2ae;
-    margin: 0 0 18px;
-    min-height: 62px;
-  }
-
-  .file .meta {
-    display: flex; gap: 14px; flex-wrap: wrap;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    border-top: 1px dashed var(--folder-edge);
-    padding-top: 12px;
-  }
-  .file .meta b { color: var(--paper); }
-
-  .enter {
-    margin-top: 16px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    display: inline-flex; align-items: center; gap: 8px;
-  }
-  .file.assassin .enter { color: var(--paper); }
-  .file.mafia .enter { color: var(--accent-blue); }
-  .enter::after { content: '→'; transition: transform 0.2s ease; }
-  .file:hover .enter::after { transform: translateX(4px); }
-
-  .game-tagline {
-    text-align: center;
-    margin-top: 56px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.05em;
-    color: #4d4838;
-  }
-
-/* Shared 12one brand: warm ivory, deep navy, muted burgundy */
-:root{--paper:#173344;--ink:#173344;--folder:#fffdf9;--folder-edge:#e2dcd4;--stamp-red:#8b3446;--stamp-red-dim:#8b3446;--accent-blue:#286579;--muted:#596c73;--tape:#e8dcd1}
-html,body{background:#f6f3ee;color:#173344;font-family:Montserrat,Inter,system-ui,sans-serif}
-body::before{background:radial-gradient(ellipse at top right,rgba(139,52,70,.055),transparent 55%);}
-main{max-width:940px;padding:60px 22px 85px}
-header{margin-bottom:32px}.eyebrow{font-family:Montserrat,Inter,sans-serif;color:#8b3446;font-size:12px;letter-spacing:.14em;font-weight:700}.eyebrow::before,.eyebrow::after{background:#d9c7cb}
-h1,.file h2{font-family:Montserrat,Inter,sans-serif;font-weight:800;letter-spacing:-.035em;text-shadow:none}h1{font-size:clamp(42px,7vw,70px)}h1 span{color:#8b3446}.subhead{font-family:Montserrat,Inter,sans-serif;font-size:16px;color:#596c73;max-width:600px;margin-bottom:40px}
-.dossier-grid{gap:20px}.file{background:#fffdf9;color:#173344;border:1px solid #e2dcd4;border-radius:14px;padding:27px;box-shadow:0 8px 28px rgba(22,48,63,.07)}.file:hover{border-color:#8b3446;box-shadow:0 14px 30px rgba(22,48,63,.11)}
-.tab{background:#fffdf9;border-color:#d6c9c9;border-radius:6px;color:#8b3446!important;font-family:Montserrat,Inter,sans-serif;font-weight:700}.file h2{font-size:26px;margin:12px 0}.file p.desc{color:#52666b;font-size:14px;min-height:80px}.file .meta{font-family:Montserrat,Inter,sans-serif;color:#617279;border-top:1px solid #e2dcd4}.file .meta b{color:#173344}.enter{font-family:Montserrat,Inter,sans-serif;color:#8b3446!important;font-weight:800;letter-spacing:.025em}.game-tagline{color:#596c73;font:600 13px Montserrat,Inter,sans-serif}
-@media(max-width:680px){.file p.desc{min-height:0}main{padding-top:45px}}
-</style>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Oswald:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site-footer.css">
+<style>
+:root{--red:#9b2226;--red-dark:#741a22;--navy:#173344;--muted:#586a72;--border:#e5ddd5;--cream:#f7f4ef}
+*{box-sizing:border-box}body{margin:0;background:var(--cream);color:var(--navy);font:15px/1.7 Montserrat,system-ui,sans-serif;min-height:100vh}a{text-underline-offset:3px}a:focus-visible{outline:3px solid #9b2226;outline-offset:4px}
+.site-nav{background:var(--red-dark);color:#fff}.nav-inner{display:flex;align-items:center;justify-content:space-between;gap:20px;max-width:1080px;margin:auto;padding:17px 24px}.wordmark{font-size:24px;font-weight:900;letter-spacing:-.07em;text-decoration:none;color:#fff}.wordmark span{color:#f9d9c8}.nav-links{display:flex;flex-wrap:wrap;gap:20px}.nav-links a{font-size:13px;font-weight:700;color:white;text-decoration:none}.nav-links a:hover{text-decoration:underline}
+main{max-width:1080px;margin:auto;padding:60px 24px 75px}.intro{max-width:800px;margin:0 0 46px}.eyebrow{font-size:12px;letter-spacing:.16em;color:var(--red);font-weight:900;text-transform:uppercase;margin:0 0 12px}h1{font-weight:900;font-size:clamp(40px,6vw,65px);letter-spacing:-.055em;line-height:1.1;margin:0 0 19px}h1 span{color:var(--red)}.intro p:last-child{font-size:17px;color:var(--muted);max-width:650px;margin:0}
+.games-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}.game{display:flex;flex-direction:column;position:relative;border-radius:15px;min-height:345px;padding:30px;transition:transform .2s,box-shadow .2s;border:1px solid transparent;text-decoration:none}.game:hover{transform:translateY(-4px);box-shadow:0 17px 34px #0002}.game .tag{font-size:11px;font-weight:800;letter-spacing:.17em;text-transform:uppercase;margin-bottom:33px}.game h2{font-size:clamp(34px,4vw,48px);margin:0 0 12px;line-height:1.08}.game p{font-size:14px;line-height:1.7;max-width:380px;margin:0 0 27px}.game .play{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;margin-top:auto}.game .play::after{content:'→';font-size:20px;transition:transform .2s}.game:hover .play::after{transform:translateX(5px)}
+.game.assassins{background:#050505;color:#fff;border-color:#3b3b3b;font-family:'IBM Plex Mono','Courier New',monospace}.game.assassins::before{content:'';height:4px;width:47px;background:#fff;position:absolute;top:0;left:30px}.game.assassins h2{font-family:'Courier New',monospace;text-transform:uppercase;letter-spacing:-.05em;font-weight:800}.game.assassins p{color:#c8c8c8}.game.assassins .tag{color:#bfbfbf}
+.game.mafia{background:radial-gradient(ellipse at 100% 0%,#1c313b 0%,#101416 60%,#090b0c 100%);color:#ebf4f7;border-color:#375667}.game.mafia .tag,.game.mafia .play{color:#5fb3d9}.game.mafia h2{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.045em;font-weight:600}.game.mafia h2 span{color:#5fb3d9}.game.mafia p{color:#a8bdc6}
+.classics{margin:26px 0 0;text-align:center;font-size:12px;color:#778087}.classics a{color:#596b73;text-decoration:underline;text-decoration-color:#adb7b8}.classics a:hover{color:var(--red)}.classics span{margin:0 9px;color:#bbb}
+.host-cta{margin-top:55px;border-top:1px solid var(--border);padding-top:30px;display:flex;align-items:center;justify-content:space-between;gap:16px}.host-cta h2{margin:0 0 5px;font-size:21px;letter-spacing:-.02em}.host-cta p{color:var(--muted);font-size:14px;margin:0}.host-cta a{display:inline-block;background:var(--red);color:white;border-radius:8px;text-decoration:none;font-size:13px;font-weight:800;padding:12px 20px;white-space:nowrap}.host-cta a:hover{background:var(--red-dark)}
+@media(max-width:740px){main{padding:43px 18px 55px}.games-grid{grid-template-columns:1fr}.game{min-height:310px;padding:25px}.host-cta{align-items:start;flex-direction:column}.nav-inner{padding:16px 18px}.nav-links{gap:10px}.nav-links a{font-size:12px}}
+</style>
 <script src="site-footer.js" defer></script>
 </head>
 <body>
+<header class="site-nav"><nav class="nav-inner" aria-label="Main navigation"><a class="wordmark" href="https://12one.page" aria-label="12one mission">12<span>one</span></a><div class="nav-links"><a href="index.html">Home</a><a href="host.html">Host a game</a><a href="https://12one.page">Our mission</a></div></nav></header>
 <main>
-  <header>
-    <div class="eyebrow">12one · In full surrender</div>
-    <h1>12one <span>Games</span></h1>
-    <p class="subhead">A place to connect, laugh, and build community. Choose a game, invite your friends, and enjoy the moment.</p>
-  </header>
-
-  <div class="dossier-grid">
-    <a class="file assassin" href="assassins.html">
-      <div class="tab">Game 01</div>
-      
-      <h2>Assassin</h2>
-      <p class="desc">Every player has one target. Eliminate them, inherit their target, and keep going until one assassin remains standing.</p>
-      <div class="meta"><span>Mode: <b>Elimination chain</b></span><span>Players: <b>Any size</b></span></div>
-      <div class="enter">Play game</div>
-    </a>
-
-    <a class="file mafia" href="mafia.html">
-      <div class="tab">Game 02</div>
-      
-      <h2>Continuous Mafia</h2>
-      <p class="desc">Mafia, detective, and citizens hidden among the group. Vote, investigate, and eliminate — the game keeps running until one side wins.</p>
-      <div class="meta"><span>Mode: <b>Hidden roles</b></span><span>Players: <b>Signup required</b></span></div>
-      <div class="enter">Play game</div>
-    </a>
-  </div>
-
-  <div class="game-tagline">Made for community. Created with purpose.</div>
+<section class="intro"><p class="eyebrow">12one · In full surrender</p><h1>12one <span>Games</span></h1><p>Free games built for connection and community. Choose a game, invite your people, and make memories together.</p></section>
+<div class="games-grid">
+<a class="game assassins" href="assassins2.html" aria-label="Play Assassins">
+<div class="tag">12one Games / 01</div><h2>Assassins</h2><p>Receive a secret target, make your move, and stay in the game. Who will be the last assassin standing?</p><span class="play">Play Assassins</span></a>
+<a class="game mafia" href="mafia2.html" aria-label="Play Continuous Mafia">
+<div class="tag">12one Games / 02</div><h2>Continuous <span>Mafia</span></h2><p>Hidden roles. Secret investigations. Group decisions. Join the ongoing game of strategy and deduction.</p><span class="play">Play Mafia</span></a>
+</div>
+<p class="classics">Looking for the originals? <a href="assassins.html">Assassins Classic</a><span>·</span><a href="mafia.html">Mafia Classic</a></p>
+<section class="host-cta"><div><h2>Want to host?</h2><p>Create your own game and invite your group to play.</p></div><a href="host.html">Host a game</a></section>
 </main>
-</body>
-</html>
+</body></html>
