@@ -249,7 +249,7 @@ async function mafiaRpc(name,args){
  return data;
 }
 // All player operations use the current authenticated session and its specific game id.
-// No Mafia 2.0 operation reaches the original game's Google Apps Script.
+// No flagship Mafia operation reaches the original game's Google Apps Script.
 async function api(action,params={}){
  try{
   if(!mafiaDB||!mafiaGame) throw Error('Game connection not established.');
