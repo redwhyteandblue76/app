@@ -132,7 +132,7 @@ details .game { background: #FFFFFF; }
 <div id="gamesList" class="games-grid"></div>
 <details><summary>Redeem a game invitation</summary><form id="redeemForm"><label for="invite">Invitation code</label><input id="invite" autocomplete="off" maxlength="32" pattern="[A-Fa-f0-9]{32}" required><button>Redeem code</button></form></details>
 <details id="newGamePanel"><summary>+ Create a game</summary><form id="createForm"><label for="gameName">Game name</label><input id="gameName" maxlength="100" required>
-<label for="gameType">Game type</label><select id="gameType"><option value="assassins">Assassins 2.0</option><option value="mafia">Mafia 2.0</option></select>
+<label for="gameType">Game type</label><select id="gameType"><option value="assassins">Assassins</option><option value="mafia">Mafia</option></select>
 <button>Create game (uses 1 credit)</button></form>
 <p class="muted">Each new game uses one credit. Open registration when ready for players.</p></details></section>
 <section id="owner" class="hidden"><h2>Platform administration</h2><p>Issue a single-use invitation. Each code grants one game credit. Copy it now: the database stores only its hash.</p>
@@ -142,4 +142,4 @@ details .game { background: #FFFFFF; }
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="12one-games/platform.js?v=20261031-workspace-fix-2"></script>
-<script src="12one-games/assassins.js?v=20261106-registration-rpc-fix"></script><script src="12one-games/mafia.js?v=20261031-workspace-fix-2"></script></body></html>
+<script src="12one-games/assassins.js?v=20261106-flagship"></script><script src="12one-games/mafia.js?v=20261106-flagship"></script></body></html>
