@@ -8,6 +8,26 @@ let selected=null;
 const button=(label,fn)=>{const b=el('button',label);b.className='secondary';b.onclick=async()=>{b.disabled=true;try{await fn();if(!/^(Refresh|Start game)/.test(label)&&selected){await db.rpc('host_record_event',{p_game_id:selected,p_action:'host_action',p_details:label})}}catch(e){fail(e)}finally{b.disabled=false}};return b};
 const field=(label,type='text',value='')=>{const wrap=el('label',label);const inp=el('input');inp.type=type;inp.value=value;wrap.append(inp);return [wrap,inp]};
 const heading=t=>area.append(el('h3',t));
+async function openRegistration(){
+ const attempts=[
+  ()=>db.rpc('assassins_open_registration',{p_game_id:selected}),
+  ()=>db.rpc('host_manage_game',{p_game_id:selected,p_action:'open_registration',p_value:''}),
+  ()=>db.rpc('host_manage_game',{p_game_id:selected,p_action:'registration',p_value:''}),
+  ()=>db.rpc('assassins_host_setting',{p_game_id:selected,p_key:'game_status',p_value:'registration'})
+ ];
+ let lastError;
+ for(const attempt of attempts){
+  const result=await attempt();
+  if(result.error){lastError=result.error;continue}
+  const current=await rpc('assassins_state',{p_game_id:selected});
+  if(current.status==='registration'){
+   msg('Registration is open. Share the join link with your players.');
+   await refresh();await render();return;
+  }
+ }
+ throw new Error('Could not open registration through the installed database functions. '+(lastError?.message||'Please check the Supabase game lifecycle migration.'));
+}
+
 async function render(){
  if(!selected)return;
  const s=await rpc('assassins_state',{p_game_id:selected});
@@ -19,7 +39,11 @@ async function render(){
  if(s.instructions_enabled){heading('INSTRUCTIONS');area.append(el('p',s.instructions_text||'No instructions posted.'))}
  area.append(el('p',s.players.length+' registered player(s)'));
  if(s.host){heading('HOST MANAGEMENT');
-  if(s.status==='registration')area.append(button('Start game',async()=>{if(!confirm('Start the game?'))return;await rpc('assassins_start',{p_game_id:selected});await refresh();await render()}));
+  if(s.status==='draft'){
+    area.append(el('p','This game is a draft. Open registration to allow players to join before starting.'));
+    area.append(button('Open registration',openRegistration));
+   }
+   if(s.status==='registration')area.append(button('Start game',async()=>{if(!confirm('Start the game?'))return;await rpc('assassins_start',{p_game_id:selected});await refresh();await render()}));
   const hostPlayers=await rpc('assassins_host_players',{p_game_id:selected});
   const contacts=await rpc('host_player_contacts',{p_game_id:selected});
   const contactByCodename=new Map((contacts||[]).map(p=>[p.codename?.toLowerCase(),p]));
