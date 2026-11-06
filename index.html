@@ -2,101 +2,37 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>12one</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#9B2226">
+<meta name="description" content="12one — in full surrender. Explore free community games, creative tools and the mission behind them.">
+<title>12one | In Full Surrender</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg: #0a0a0a;
-    --card: #161616;
-    --card-border: rgba(95, 179, 217, 0.22);
-    --accent: #5fb3d9;
-    --text: #e8e8e8;
-    --muted: #8a8a8a;
-  }
-  * { box-sizing: border-box; }
-  body {
-    font-family: 'Inter', sans-serif;
-    background-color: var(--bg);
-    color: var(--text);
-    margin: 0;
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-  }
-  h1, .oswald {
-    font-family: 'Oswald', sans-serif;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
-  .card {
-    background-color: var(--card);
-    padding: 28px 26px;
-    border: 1px solid var(--card-border);
-    border-radius: 6px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
-    width: 100%;
-    max-width: 400px;
-    text-align: center;
-    position: relative;
-  }
-  .tab {
-    position: absolute;
-    top: -11px;
-    left: 24px;
-    background: var(--bg);
-    padding: 2px 10px;
-    font-family: 'Oswald', sans-serif;
-    font-size: 10.5px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--accent);
-    border: 1px solid var(--accent);
-  }
-  h1 {
-    font-size: 19px;
-    font-weight: 600;
-    margin: 4px 0 14px;
-    color: var(--text);
-  }
-  h1 span { color: var(--accent); }
-  p {
-    margin: 0 0 22px;
-    line-height: 1.6;
-    color: var(--muted);
-    font-size: 14px;
-  }
-  a.home-link {
-    display: inline-block;
-    padding: 11px 20px;
-    border: none;
-    border-radius: 3px;
-    background-color: var(--accent);
-    color: #08181e;
-    text-decoration: none;
-    font-family: 'Oswald', sans-serif;
-    font-weight: 600;
-    font-size: 13px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    transition: background-color 0.15s;
-  }
-  a.home-link:hover { background-color: #7fc4e6; }
-</style>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site-footer.css">
-<style>body{flex-direction:column}.site-legal-footer{flex-shrink:0}</style>
+<style>
+:root{--red:#9b2226;--red-dark:#741a22;--rust:#aa4b3e;--teal:#286579;--ink:#173344;--muted:#596973;--border:#e5ddd5;--cream:#f7f4ef;--paper:#fffdf9}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-height:100vh;background:var(--cream);color:var(--ink);font:15px/1.7 Montserrat,system-ui,sans-serif}
+a{color:inherit;text-underline-offset:3px}a:focus-visible{outline:3px solid var(--teal);outline-offset:4px}
+header{background:var(--red-dark);color:#fff}nav{max-width:1080px;margin:auto;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.brand{font-weight:900;font-size:25px;letter-spacing:-.07em;text-decoration:none}.brand span{color:#f8d8c7}
+.nav-links{display:flex;gap:22px;align-items:center;flex-wrap:wrap}.nav-links a{font-weight:650;font-size:13px;text-decoration:none}.nav-links a:hover{text-decoration:underline}
+main{max-width:1080px;margin:auto;padding:0 24px 70px}.hero{padding:76px 0 55px;max-width:850px}.eyebrow{font-size:12px;letter-spacing:.18em;font-weight:800;text-transform:uppercase;color:var(--red);margin:0 0 15px}
+h1{font-size:clamp(43px,7vw,76px);line-height:1.08;letter-spacing:-.055em;margin:0 0 21px;font-weight:900}h1 em{font-style:normal;color:var(--red)}
+.lead{font-size:clamp(16px,2vw,20px);max-width:730px;color:#455d69;line-height:1.75;margin:0 0 29px}
+.actions{display:flex;gap:12px;flex-wrap:wrap}.btn{display:inline-flex;align-items:center;justify-content:center;padding:13px 20px;min-height:47px;border-radius:8px;border:1px solid var(--red);background:var(--red);color:#fff;text-decoration:none;font-weight:800;font-size:13px}.btn:hover{background:var(--red-dark)}.btn.alt{background:transparent;color:var(--red)}.btn.alt:hover{background:#f1e6e3}
+.panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.panel{background:var(--paper);border:1px solid var(--border);border-radius:15px;padding:30px;box-shadow:0 7px 22px #1733440a}
+.panel .mini{font-size:11px;color:var(--red);font-weight:800;text-transform:uppercase;letter-spacing:.13em}.panel h2{font-size:25px;letter-spacing:-.035em;margin:12px 0 9px}.panel p{color:var(--muted);margin:0 0 22px}.panel a{color:var(--red);font-weight:800;text-decoration:none}.panel a:hover{text-decoration:underline}
+.mission{border-left:4px solid var(--red);padding:15px 0 15px 22px;margin:45px 0 0}.mission p{font-size:15px;color:var(--muted);margin:9px 0 0}.mission strong{font-size:17px}
+@media(max-width:690px){main{padding:0 18px 40px}.hero{padding:50px 0 42px}.panels{grid-template-columns:1fr}.panel{padding:23px}.nav-links{gap:12px}}
+</style>
 <script src="site-footer.js" defer></script>
 </head>
 <body>
-  <div class="card">
-    <span class="tab">Status</span>
-    <h1>Welcome to the 12<span>one</span> web app</h1>
-    <p>Not much to see here. Check your URL to make sure you have the right extension, or return to home.</p>
-    <a class="home-link" href="https://www.12one.page">Return to 12one.page</a>
-  </div>
-</body>
-</html>
+<header><nav aria-label="Main navigation"><a class="brand" href="https://12one.page" aria-label="12one Mission">12<span>one</span></a><div class="nav-links"><a href="games.html">Games</a><a href="host.html">Host a game</a><a href="https://12one.page">Our mission</a></div></nav></header>
+<main>
+<section class="hero" aria-labelledby="welcome"><p class="eyebrow">12one · Romans 12:1</p><h1 id="welcome">In full <em>surrender.</em></h1><p class="lead">To worship the Lord in everything I do and lead others in full surrender to Him. 12one is a home for small, purposeful projects — including free games that help people come together.</p><div class="actions"><a class="btn" href="games.html">Explore 12one Games</a><a class="btn alt" href="https://12one.page">Discover the mission</a></div></section>
+<section class="panels" aria-label="Explore 12one"><article class="panel"><span class="mini">Play together</span><h2>12one Games</h2><p>Bring your group together with Assassins, Mafia and more. Join a game or explore the classics.</p><a href="games.html">Browse games →</a></article><article class="panel"><span class="mini">Bring your people</span><h2>Host a game</h2><p>Create and manage your own game, invite players, and keep the experience organized in one place.</p><a href="host.html">Open host dashboard →</a></article></section>
+<section class="mission"><strong>Surrendered to Christ. Rooted in Scripture. Invested in people.</strong><p>12one is guided by the mission of Romans 12:1. The games are free to enjoy; the greater purpose is to encourage genuine community.</p></section>
+</main>
+</body></html>
