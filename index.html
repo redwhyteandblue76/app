@@ -3,36 +3,38 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#9B2226">
-<meta name="description" content="12one — in full surrender. Explore free community games, creative tools and the mission behind them.">
-<title>12one | In Full Surrender</title>
+<meta name="theme-color" content="#9b2226">
+<meta name="description" content="Play Assassins and Mafia on 12one Games. Free community games, hosted with purpose.">
+<title>12one Games | Play Together</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Oswald:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site-footer.css">
 <style>
-:root{--red:#9b2226;--red-dark:#741a22;--rust:#aa4b3e;--teal:#286579;--ink:#173344;--muted:#596973;--border:#e5ddd5;--cream:#f7f4ef;--paper:#fffdf9}
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-height:100vh;background:var(--cream);color:var(--ink);font:15px/1.7 Montserrat,system-ui,sans-serif}
-a{color:inherit;text-underline-offset:3px}a:focus-visible{outline:3px solid var(--teal);outline-offset:4px}
-header{background:var(--red-dark);color:#fff}nav{max-width:1080px;margin:auto;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
-.brand{font-weight:900;font-size:25px;letter-spacing:-.07em;text-decoration:none}.brand span{color:#f8d8c7}
-.nav-links{display:flex;gap:22px;align-items:center;flex-wrap:wrap}.nav-links a{font-weight:650;font-size:13px;text-decoration:none}.nav-links a:hover{text-decoration:underline}
-main{max-width:1080px;margin:auto;padding:0 24px 70px}.hero{padding:76px 0 55px;max-width:850px}.eyebrow{font-size:12px;letter-spacing:.18em;font-weight:800;text-transform:uppercase;color:var(--red);margin:0 0 15px}
-h1{font-size:clamp(43px,7vw,76px);line-height:1.08;letter-spacing:-.055em;margin:0 0 21px;font-weight:900}h1 em{font-style:normal;color:var(--red)}
-.lead{font-size:clamp(16px,2vw,20px);max-width:730px;color:#455d69;line-height:1.75;margin:0 0 29px}
-.actions{display:flex;gap:12px;flex-wrap:wrap}.btn{display:inline-flex;align-items:center;justify-content:center;padding:13px 20px;min-height:47px;border-radius:8px;border:1px solid var(--red);background:var(--red);color:#fff;text-decoration:none;font-weight:800;font-size:13px}.btn:hover{background:var(--red-dark)}.btn.alt{background:transparent;color:var(--red)}.btn.alt:hover{background:#f1e6e3}
-.panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.panel{background:var(--paper);border:1px solid var(--border);border-radius:15px;padding:30px;box-shadow:0 7px 22px #1733440a}
-.panel .mini{font-size:11px;color:var(--red);font-weight:800;text-transform:uppercase;letter-spacing:.13em}.panel h2{font-size:25px;letter-spacing:-.035em;margin:12px 0 9px}.panel p{color:var(--muted);margin:0 0 22px}.panel a{color:var(--red);font-weight:800;text-decoration:none}.panel a:hover{text-decoration:underline}
-.mission{border-left:4px solid var(--red);padding:15px 0 15px 22px;margin:45px 0 0}.mission p{font-size:15px;color:var(--muted);margin:9px 0 0}.mission strong{font-size:17px}
-@media(max-width:690px){main{padding:0 18px 40px}.hero{padding:50px 0 42px}.panels{grid-template-columns:1fr}.panel{padding:23px}.nav-links{gap:12px}}
+:root{--red:#9b2226;--red-dark:#741a22;--navy:#173344;--muted:#586a72;--border:#e5ddd5;--cream:#f7f4ef}
+*{box-sizing:border-box}body{margin:0;background:var(--cream);color:var(--navy);font:15px/1.7 Montserrat,system-ui,sans-serif;min-height:100vh}a{text-underline-offset:3px}a:focus-visible{outline:3px solid #9b2226;outline-offset:4px}
+.site-nav{background:var(--red-dark);color:#fff}.nav-inner{display:flex;align-items:center;justify-content:space-between;gap:20px;max-width:1080px;margin:auto;padding:17px 24px}.wordmark{font-size:24px;font-weight:900;letter-spacing:-.07em;text-decoration:none;color:#fff}.wordmark span{color:#f9d9c8}.nav-links{display:flex;flex-wrap:wrap;gap:20px}.nav-links a{font-size:13px;font-weight:700;color:white;text-decoration:none}.nav-links a:hover{text-decoration:underline}
+main{max-width:1080px;margin:auto;padding:60px 24px 75px}.intro{max-width:800px;margin:0 0 46px}.eyebrow{font-size:12px;letter-spacing:.16em;color:var(--red);font-weight:900;text-transform:uppercase;margin:0 0 12px}h1{font-weight:900;font-size:clamp(40px,6vw,65px);letter-spacing:-.055em;line-height:1.1;margin:0 0 19px}h1 span{color:var(--red)}.intro p:last-child{font-size:17px;color:var(--muted);max-width:650px;margin:0}
+.games-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}.game{display:flex;flex-direction:column;position:relative;border-radius:15px;min-height:345px;padding:30px;transition:transform .2s,box-shadow .2s;border:1px solid transparent;text-decoration:none}.game:hover{transform:translateY(-4px);box-shadow:0 17px 34px #0002}.game .tag{font-size:11px;font-weight:800;letter-spacing:.17em;text-transform:uppercase;margin-bottom:33px}.game h2{font-size:clamp(34px,4vw,48px);margin:0 0 12px;line-height:1.08}.game p{font-size:14px;line-height:1.7;max-width:380px;margin:0 0 27px}.game .play{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;margin-top:auto}.game .play::after{content:'→';font-size:20px;transition:transform .2s}.game:hover .play::after{transform:translateX(5px)}
+.game.assassins{background:#050505;color:#fff;border-color:#3b3b3b;font-family:'IBM Plex Mono','Courier New',monospace}.game.assassins::before{content:'';height:4px;width:47px;background:#fff;position:absolute;top:0;left:30px}.game.assassins h2{font-family:'Courier New',monospace;text-transform:uppercase;letter-spacing:-.05em;font-weight:800}.game.assassins p{color:#c8c8c8}.game.assassins .tag{color:#bfbfbf}
+.game.mafia{background:radial-gradient(ellipse at 100% 0%,#1c313b 0%,#101416 60%,#090b0c 100%);color:#ebf4f7;border-color:#375667}.game.mafia .tag,.game.mafia .play{color:#5fb3d9}.game.mafia h2{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.045em;font-weight:600}.game.mafia h2 span{color:#5fb3d9}.game.mafia p{color:#a8bdc6}
+.classics{margin:26px 0 0;text-align:center;font-size:12px;color:#778087}.classics a{color:#596b73;text-decoration:underline;text-decoration-color:#adb7b8}.classics a:hover{color:var(--red)}.classics span{margin:0 9px;color:#bbb}
+
+@media(max-width:740px){main{padding:43px 18px 55px}.games-grid{grid-template-columns:1fr}.game{min-height:310px;padding:25px}.nav-inner{padding:16px 18px}.nav-links{gap:10px}.nav-links a{font-size:12px}}
 </style>
 <script src="site-footer.js" defer></script>
 </head>
 <body>
-<header><nav aria-label="Main navigation"><a class="brand" href="https://12one.page" aria-label="12one Mission">12<span>one</span></a><div class="nav-links"><a href="games.html">Games</a><a href="host.html">Host a game</a><a href="https://12one.page">Our mission</a></div></nav></header>
+<header class="site-nav"><nav class="nav-inner" aria-label="Main navigation"><a class="wordmark" href="https://12one.page" aria-label="12one mission">12<span>one</span></a><div class="nav-links"><a href="https://12one.page">Our mission</a></div></nav></header>
 <main>
-<section class="hero" aria-labelledby="welcome"><p class="eyebrow">12one · Romans 12:1</p><h1 id="welcome">In full <em>surrender.</em></h1><p class="lead">To worship the Lord in everything I do and lead others in full surrender to Him. 12one is a home for small, purposeful projects — including free games that help people come together.</p><div class="actions"><a class="btn" href="games.html">Explore 12one Games</a><a class="btn alt" href="https://12one.page">Discover the mission</a></div></section>
-<section class="panels" aria-label="Explore 12one"><article class="panel"><span class="mini">Play together</span><h2>12one Games</h2><p>Bring your group together with Assassins, Mafia and more. Join a game or explore the classics.</p><a href="games.html">Browse games →</a></article><article class="panel"><span class="mini">Bring your people</span><h2>Host a game</h2><p>Create and manage your own game, invite players, and keep the experience organized in one place.</p><a href="host.html">Open host dashboard →</a></article></section>
-<section class="mission"><strong>Surrendered to Christ. Rooted in Scripture. Invested in people.</strong><p>12one is guided by the mission of Romans 12:1. The games are free to enjoy; the greater purpose is to encourage genuine community.</p></section>
+<section class="intro"><p class="eyebrow">12one · In full surrender</p><h1>12one <span>Games</span></h1><p>Free games built for connection and community. Choose a game, invite your people, and make memories together.</p></section>
+<div class="games-grid">
+<a class="game assassins" href="assassins2.html" aria-label="Play Assassins">
+<div class="tag">12one Games / 01</div><h2>Assassins</h2><p>Receive a secret target, make your move, and stay in the game. Who will be the last assassin standing?</p><span class="play">Play Assassins</span></a>
+<a class="game mafia" href="mafia2.html" aria-label="Play Continuous Mafia">
+<div class="tag">12one Games / 02</div><h2>Continuous <span>Mafia</span></h2><p>Hidden roles. Secret investigations. Group decisions. Join the ongoing game of strategy and deduction.</p><span class="play">Play Mafia</span></a>
+</div>
+<p class="classics">Looking for the originals? <a href="assassins.html">Assassins Classic</a><span>·</span><a href="mafia.html">Mafia Classic</a></p>
+
 </main>
 </body></html>
