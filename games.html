@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Austin's Games</title>
+<title>12one Games | Play, Connect, Belong</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --paper: #e9e2cf;
@@ -187,6 +187,17 @@
     letter-spacing: 0.05em;
     color: #4d4838;
   }
+
+/* Shared 12one brand: warm ivory, deep navy, muted burgundy */
+:root{--paper:#173344;--ink:#173344;--folder:#fffdf9;--folder-edge:#e2dcd4;--stamp-red:#8b3446;--stamp-red-dim:#8b3446;--accent-blue:#286579;--muted:#596c73;--tape:#e8dcd1}
+html,body{background:#f6f3ee;color:#173344;font-family:Montserrat,Inter,system-ui,sans-serif}
+body::before{background:radial-gradient(ellipse at top right,rgba(139,52,70,.055),transparent 55%);}
+main{max-width:940px;padding:60px 22px 85px}
+header{margin-bottom:32px}.eyebrow{font-family:Montserrat,Inter,sans-serif;color:#8b3446;font-size:12px;letter-spacing:.14em;font-weight:700}.eyebrow::before,.eyebrow::after{background:#d9c7cb}
+h1,.file h2{font-family:Montserrat,Inter,sans-serif;font-weight:800;letter-spacing:-.035em;text-shadow:none}h1{font-size:clamp(42px,7vw,70px)}h1 span{color:#8b3446}.subhead{font-family:Montserrat,Inter,sans-serif;font-size:16px;color:#596c73;max-width:600px;margin-bottom:40px}
+.dossier-grid{gap:20px}.file{background:#fffdf9;color:#173344;border:1px solid #e2dcd4;border-radius:14px;padding:27px;box-shadow:0 8px 28px rgba(22,48,63,.07)}.file:hover{border-color:#8b3446;box-shadow:0 14px 30px rgba(22,48,63,.11)}
+.tab{background:#fffdf9;border-color:#d6c9c9;border-radius:6px;color:#8b3446!important;font-family:Montserrat,Inter,sans-serif;font-weight:700}.file h2{font-size:26px;margin:12px 0}.file p.desc{color:#52666b;font-size:14px;min-height:80px}.file .meta{font-family:Montserrat,Inter,sans-serif;color:#617279;border-top:1px solid #e2dcd4}.file .meta b{color:#173344}.enter{font-family:Montserrat,Inter,sans-serif;color:#8b3446!important;font-weight:800;letter-spacing:.025em}.game-tagline{color:#596c73;font:600 13px Montserrat,Inter,sans-serif}
+@media(max-width:680px){.file p.desc{min-height:0}main{padding-top:45px}}
 </style>
 <link rel="stylesheet" href="site-footer.css">
 <script src="site-footer.js" defer></script>
@@ -194,32 +205,32 @@
 <body>
 <main>
   <header>
-    <div class="eyebrow">Classified &middot; Floor Files</div>
-    <h1>Austin's <span>Games</span></h1>
-    <p class="subhead">Two case files. Two ways to turn your floor against itself. Pick your poison — sign up, get your assignment, and don't get caught talking about it.</p>
+    <div class="eyebrow">12one · In full surrender</div>
+    <h1>12one <span>Games</span></h1>
+    <p class="subhead">A place to connect, laugh, and build community. Choose a game, invite your friends, and enjoy the moment.</p>
   </header>
 
   <div class="dossier-grid">
     <a class="file assassin" href="assassins.html">
-      <div class="tab">File No. 01</div>
-      <div class="stamp">Active</div>
+      <div class="tab">Game 01</div>
+      
       <h2>Assassin</h2>
       <p class="desc">Every player has one target. Eliminate them, inherit their target, and keep going until one assassin remains standing.</p>
       <div class="meta"><span>Mode: <b>Elimination chain</b></span><span>Players: <b>Any size</b></span></div>
-      <div class="enter">Open case file</div>
+      <div class="enter">Play game</div>
     </a>
 
     <a class="file mafia" href="mafia.html">
-      <div class="tab">File No. 02</div>
-      <div class="stamp">Active</div>
+      <div class="tab">Game 02</div>
+      
       <h2>Continuous Mafia</h2>
       <p class="desc">Mafia, detective, and citizens hidden among the group. Vote, investigate, and eliminate — the game keeps running until one side wins.</p>
       <div class="meta"><span>Mode: <b>Hidden roles</b></span><span>Players: <b>Signup required</b></span></div>
-      <div class="enter">Open case file</div>
+      <div class="enter">Play game</div>
     </a>
   </div>
 
-  <div class="game-tagline">Trust no one. Screenshot everything.</div>
+  <div class="game-tagline">Made for community. Created with purpose.</div>
 </main>
 </body>
 </html>
