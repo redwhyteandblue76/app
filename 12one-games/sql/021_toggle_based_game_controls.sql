@@ -506,6 +506,62 @@ begin
  update public.games set status=case when (select count(*) from public.assassins_players where game_id=p_game_id and alive)<=1 then 'finished' else 'active' end where id=p_game_id;
 end; $;
 
+create or replace function public.admin_game_defaults(p_game_type text default null, p_settings jsonb default null)
+returns jsonb language plpgsql security definer set search_path='' as $defaults$
+declare
+ v_allowed jsonb; v_entry record; v_kind text; v_min integer; v_max integer;
+ v_result jsonb;
+begin
+ if (select auth.uid()) is null or not public.is_platform_admin() then
+  raise exception 'Administrator only';
+ end if;
+ if p_game_type is not null and p_game_type not in ('assassins','mafia') then
+  raise exception 'Unknown game type';
+ end if;
+ if p_settings is not null then
+  if p_game_type is null or jsonb_typeof(p_settings)<>'object' then
+   raise exception 'Choose one game type and send a settings object';
+  end if;
+  if length(p_settings::text)>30000 then raise exception 'Settings too large';end if;
+  v_allowed:=case p_game_type
+   when 'assassins' then '{"master_lock":"boolean","signup_enabled":"boolean","dashboard_enabled":"boolean","eliminate_enabled":"boolean","phone_enabled":"boolean","hall_enabled":"boolean","hall_options":"string","instructions_enabled":"boolean","instruction_verification_enabled":"boolean","instructions_text":"string","full_rules_text":"string","paused":"boolean","signup_off_message":"string","dashboard_off_message":"string","eliminate_off_message":"string","master_lock_message":"string"}'::jsonb
+   when 'mafia' then '{"master_lock":"boolean","setup_enabled":"boolean","dashboard_enabled":"boolean","game_active":"boolean","hall_field_enabled":"boolean","hall_options":"string","allow_mafia_votes":"boolean","allow_detective_votes":"boolean","mafia_cooldown_hours":"integer","detective_cooldown_hours":"integer","citizen_cooldown_hours":"integer","votes_required":"integer","vote_expiry_hours":"integer","vote_expiration_minutes":"integer","min_active_for_game_end":"integer","mafia_instructions":"string","detective_instructions":"string","citizen_instructions":"string","game_instructions":"string","announcement":"string"}'::jsonb end;
+  for v_entry in select key,value from jsonb_each(p_settings) loop
+   v_kind:=v_allowed->>v_entry.key;
+   if v_kind is null then raise exception 'Unsupported default setting: %',v_entry.key;end if;
+   if v_kind='boolean' and jsonb_typeof(v_entry.value)<>'boolean' then
+    raise exception 'Expected true or false for %',v_entry.key;
+   elsif v_kind='string' and
+     (jsonb_typeof(v_entry.value)<>'string' or length(v_entry.value #>> '{}') > (case when v_entry.key='full_rules_text' then 12000 else 5000 end)) then
+    raise exception 'Invalid text for % (length limit exceeded)',v_entry.key;
+   elsif v_kind='integer' then
+    if jsonb_typeof(v_entry.value)<>'number' or (v_entry.value #>> '{}') !~ '^[0-9]+ from undoing the independent toggle system.
+revoke execute on function public.set_game_registration(uuid,boolean) from authenticated;
+revoke execute on function public.assassins_start(uuid) from authenticated;
+commit;
+ then
+     raise exception 'Expected a nonnegative whole number for %',v_entry.key;
+    end if;
+    v_min:=case when v_entry.key in ('votes_required','vote_expiry_hours','vote_expiration_minutes','min_active_for_game_end') then 1 else 0 end;
+    v_max:=case when v_entry.key='vote_expiration_minutes' then 43200
+      when v_entry.key in ('votes_required','min_active_for_game_end') then 100 else 720 end;
+    if (v_entry.value #>> '{}')::numeric not between v_min and v_max then
+     raise exception '% must be between % and %',v_entry.key,v_min,v_max;
+    end if;
+   end if;
+  end loop;
+  -- Merge with existing defaults, preserving other values; validate before write.
+  update public.game_default_settings
+   set settings=settings||p_settings,updated_at=now()
+   where game_type=p_game_type;
+  if not found then raise exception 'Default template missing';end if;
+ end if;
+ select coalesce(jsonb_object_agg(game_type,settings),'{}'::jsonb)
+ into v_result from public.game_default_settings
+ where p_game_type is null or game_type=p_game_type;
+ return v_result;
+end; $defaults$;
+
 -- Prevent old stage-based registration RPC from undoing the independent toggle system.
 revoke execute on function public.set_game_registration(uuid,boolean) from authenticated;
 revoke execute on function public.assassins_start(uuid) from authenticated;
