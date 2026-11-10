@@ -8,21 +8,12 @@ let selected=null;
 const button=(label,fn)=>{const b=el('button',label);b.className='secondary';b.onclick=async()=>{b.disabled=true;try{await fn();if(!/^(Refresh|Start game)/.test(label)&&selected){await db.rpc('host_record_event',{p_game_id:selected,p_action:'host_action',p_details:label})}}catch(e){fail(e)}finally{b.disabled=false}};return b};
 const field=(label,type='text',value='')=>{const wrap=el('label',label);const inp=el('input');inp.type=type;inp.value=value;wrap.append(inp);return [wrap,inp]};
 const heading=t=>area.append(el('h3',t));
-async function changeRegistration(open){
- await rpc('set_game_registration',{p_game_id:selected,p_open:open});
- const updated=await rpc('assassins_state',{p_game_id:selected});
- const expected=open?'registration':'draft';
- if(updated.status!==expected)throw new Error('Registration status did not update. Please refresh and retry.');
- msg(open?'Registration is open. Share the join link with players.':'Registration is closed. Existing players remain registered.');
- await refresh();
- await render();
-}
 async function render(){
  if(!selected)return;
  const s=await rpc('assassins_state',{p_game_id:selected});
  const hostSettings=await rpc('assassins_host_settings',{p_game_id:selected});
  root.classList.remove('hidden');area.replaceChildren();
- document.getElementById('assassinsTitle').textContent='ASSASSINS HOST DASHBOARD · '+s.status.toUpperCase();
+ document.getElementById('assassinsTitle').textContent='ASSASSINS HOST DASHBOARD'+(s.status==='finished'?' · COMPLETED':'');
  if(!s.host){area.append(el('p','Only the game host can manage this game.'));return;}
  if(s.paused)area.append(el('p','Game paused by host.'));
  if(s.instructions_enabled){heading('INSTRUCTIONS');area.append(el('p',s.instructions_text||'No instructions posted.'))}
@@ -34,13 +25,9 @@ async function render(){
   area.append(victory);
  }
  area.append(el('p',s.players.length+' registered player(s)'));
- if(s.host){heading('HOST MANAGEMENT');
-  if(s.status==='draft'){
-    area.append(el('p','This game is a draft. Open registration to allow players to join before starting.'));
-    area.append(button('Open registration',()=>changeRegistration(true)));
-   }
-   if(s.status==='registration')area.append(button('Close registration',()=>changeRegistration(false)));
-   if(s.status==='registration')area.append(button('Start game',async()=>{if(!confirm('Start the game?'))return;await rpc('assassins_start',{p_game_id:selected});await refresh();await render()}));
+ if(s.host){
+  heading('HOST MANAGEMENT');
+  area.append(await window.renderHostQuickControls(selected));
   const hostPlayers=await rpc('assassins_host_players',{p_game_id:selected});
   const contacts=await rpc('host_player_contacts',{p_game_id:selected});
   const contactByCodename=new Map((contacts||[]).map(p=>[p.codename?.toLowerCase(),p]));
@@ -50,18 +37,15 @@ async function render(){
    const contact=contactByCodename.get(p.codename?.toLowerCase())||{};
    const line=el('div',p.name+' · '+p.codename+' · '+(p.alive?'Active':'Eliminated')+' · '+p.kills+' eliminations'+(contact.hall?' · '+contact.hall:'')+(contact.phone?' · Phone: '+contact.phone:''));
    line.className='game';
-   if(['draft','registration'].includes(s.status))line.append(button('Remove',async()=>{if(!confirm('Remove '+p.name+'?'))return;await rpc('assassins_remove_player',{p_game_id:selected,p_codename:p.codename});await render()}));
+   if(s.status!=='finished' && !['active'].includes(s.status))line.append(button('Remove',async()=>{if(!confirm('Remove '+p.name+'?'))return;await rpc('assassins_remove_player',{p_game_id:selected,p_codename:p.codename});await render()}));
    if(['active','finished'].includes(s.status))line.append(button(p.alive?'Mark eliminated':'Reactivate',async()=>{if(!confirm('Change status for '+p.name+'?'))return;await rpc('assassins_host_status',{p_game_id:selected,p_member_id:p.id,p_alive:!p.alive});await render()}));
    details.append(line);
   }
   area.append(details);
   const settings=el('details');settings.append(el('summary','All original Assassins settings'));
   const settingsBool=[
-   ['master_lock','Master lock'],['signup_enabled','Sign-ups enabled'],
-   ['dashboard_enabled','Player dashboard'],['eliminate_enabled','Eliminations enabled'],
-   ['hall_field_enabled','Hall field enabled'],['phone_field_enabled','Phone field enabled'],
-   ['instructions_enabled','Show instructions'],['instruction_verification_enabled','Require instructions acknowledgment'],
-   ['paused','Pause eliminations']
+['hall_field_enabled','Hall field enabled'],['phone_field_enabled','Phone field enabled'],
+   ['instructions_enabled','Show instructions'],['instruction_verification_enabled','Require instructions acknowledgment']
   ];
   for(const [key,label] of settingsBool){
    const wrap=el('label',label+' ('+key+') ');const inp=el('input');inp.type='checkbox';inp.style.width='auto';
