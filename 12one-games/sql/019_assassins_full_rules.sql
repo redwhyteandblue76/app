@@ -89,10 +89,10 @@ begin
   if lower(p_value) not in ('true','false') then raise exception 'Expected true or false'; end if;
   execute format('update public.assassins_config set %I=$1::boolean,last_updated=now() where game_id=$2',p_key) using p_value,p_game_id;
  elsif p_key in ('hall_options','instructions_text','full_rules_text','signup_off_message','dashboard_off_message','eliminate_off_message','master_lock_message') then
-  if length(coalesce(p_value,''))>case when p_key='full_rules_text' then 12000 else 5000 end then raise exception 'Setting too long'; end if;
+  if length(coalesce(p_value,'')) > (case when p_key='full_rules_text' then 12000 else 5000 end) then raise exception 'Setting too long'; end if;
   execute format('update public.assassins_config set %I=$1,last_updated=now() where game_id=$2',p_key) using p_value,p_game_id;
  else raise exception 'Unsupported setting'; end if;
-end $$;
+end; $$;
 
 create or replace function public.assassins_host_settings(p_game_id uuid)
 returns jsonb language plpgsql stable security definer set search_path='' as $$
@@ -113,7 +113,7 @@ begin
  'instruction_verification_enabled',coalesce(c.instruction_verification_enabled,false),
  'instructions_text',coalesce(c.instructions_text,''),'full_rules_text',coalesce(c.full_rules_text,''),'paused',coalesce(c.paused,false),
  'admin_password','Host account authentication','reset_password','Host account authentication');
-end $$;
+end; $$;
 
 create or replace function public.assassins_v2_public(p_code text)
 returns jsonb language plpgsql stable security definer set search_path='' as $$
@@ -135,7 +135,7 @@ begin
  'hall_options',coalesce(c.hall_options,''),'instructions_enabled',coalesce(c.instructions_enabled,false),
  'instruction_verification_enabled',coalesce(c.instruction_verification_enabled,false),
  'instructions_text',coalesce(c.instructions_text,''),'full_rules_text',coalesce(c.full_rules_text,''),'feed',v_feed);
-end $$;
+end; $$;
 
 create or replace function public.admin_game_defaults(p_game_type text default null, p_settings jsonb default null)
 returns jsonb language plpgsql security definer set search_path='' as $defaults$
@@ -163,7 +163,7 @@ begin
    if v_kind='boolean' and jsonb_typeof(v_entry.value)<>'boolean' then
     raise exception 'Expected true or false for %',v_entry.key;
    elsif v_kind='string' and
-     (jsonb_typeof(v_entry.value)<>'string' or length(v_entry.value #>> '{}')>case when v_entry.key='full_rules_text' then 12000 else 5000 end) then
+     (jsonb_typeof(v_entry.value)<>'string' or length(v_entry.value #>> '{}') > (case when v_entry.key='full_rules_text' then 12000 else 5000 end)) then
     raise exception 'Invalid text for % (length limit exceeded)',v_entry.key;
    elsif v_kind='integer' then
     if jsonb_typeof(v_entry.value)<>'number' or (v_entry.value #>> '{}') !~ '^[0-9]+$' then
@@ -187,5 +187,5 @@ begin
  into v_result from public.game_default_settings
  where p_game_type is null or game_type=p_game_type;
  return v_result;
-end $defaults$;
+end; $defaults$;
 commit;
