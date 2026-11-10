@@ -10,42 +10,32 @@
  const label=(title,field)=>{const w=el('label',title);w.append(field);return w};
  const input=(type='text',value='')=>{const n=el('input');n.type=type;n.value=String(value??'');return n};
  const section=title=>{const details=el('details');details.append(el('summary',title));details.style.margin='16px 0';return details};
- async function changeRegistration(open){
-  const {error}=await db.rpc('set_game_registration',{p_game_id:gameId,p_open:open});
-  if(error)throw error;
-  const next=await rpc('read');
-  if(next.status!==(open?'registration':'draft'))throw Error('Registration status did not update. Refresh and try again.');
-  notice(open?'Registration is open. Share your join link.':'Registration closed. Existing player registrations are preserved.');
-  await refresh();
-  await render();
- }
-
- const boolSettings=[['dashboardEnabled','Player dashboards'],['gameActive','Game actions enabled'],['allowMafiaInCitizenVotes','Mafia members can cast citizen votes'],['allowDetectiveInCitizenVotes','Detectives can cast citizen votes'],['hallFieldEnabled','Require hall at registration']];
+ const boolSettings=[['allowMafiaInCitizenVotes','Mafia members can cast citizen votes'],['allowDetectiveInCitizenVotes','Detectives can cast citizen votes'],['hallFieldEnabled','Require hall at registration']];
  const textSettings=[['hallOptions','Hall options (comma-separated)'],['announcementMessage','Announcement'],['gameInstructions','Game instructions'],['mafiaInstructions','Mafia instructions'],['detectiveInstructions','Detective instructions'],['citizenInstructions','Citizen instructions']];
  const numericSettings=[['mafiaCooldownHours','Mafia cooldown (hours)'],['detectiveCooldownHours','Detective cooldown (hours)'],['citizenCooldownHours','Citizen cooldown (hours)'],['citizenVotesRequired','Citizen votes required'],['voteExpirationMinutes','Vote expiration (minutes)'],['minActiveForGameEnd','Minimum active players before game ends']];
  async function render(){
   if(!gameId)return;
   const s=await rpc('read');
   root.classList.remove('hidden');area.replaceChildren();
-  document.getElementById('mafiaTitle').textContent='MAFIA HOST DASHBOARD · '+s.status.toUpperCase();
+  document.getElementById('mafiaTitle').textContent='MAFIA HOST DASHBOARD'+(s.status==='finished'?' · COMPLETED':'');
   area.append(el('p',s.players.length+' registered player(s)'));
-  if(s.status==='draft'){
-   area.append(el('p','This game is a draft. Open registration to let players join.'));
-   area.append(button('Open registration',()=>changeRegistration(true)));
-  }else if(s.status==='registration'){
-   area.append(button('Close registration',()=>changeRegistration(false)));
-  }
-
-  if(s.status==='registration'){
-  const setup=section('Start game / Randomize roles');
-  const mafia=input('number','1');mafia.min=1;const detectives=input('number','1');detectives.min=0;
-  setup.append(label('Number of Mafia players',mafia),label('Number of detectives',detectives));
-  setup.append(button('Randomize roles and start',async()=>{
-   if(!confirm('Reset every player to active, clear cooldowns and votes, and reassign roles?'))return;
-   const d=await rpc('randomize',{mafia:Number(mafia.value),detectives:Number(detectives.value)});
-   notice('Roles assigned: '+d.mafia+' Mafia, '+d.detectives+' detectives, '+d.citizens+' citizens.');
-   await render();await refresh();
-  }));area.append(setup);
+  area.append(await window.renderHostQuickControls(gameId));
+  if(s.status!=='finished'){
+   const rolesAssigned=s.players.length>=3 && s.players.every(p=>!!p.role);
+   const setup=section('Assign Mafia roles (separate from gameplay)');
+   const mafia=input('number','1');mafia.min=1;
+   const detectives=input('number','1');detectives.min=0;
+   setup.append(label('Number of Mafia players',mafia),label('Number of detectives',detectives));
+   setup.append(el('p',rolesAssigned?'Roles assigned. Reassignment resets current roles and votes.':'Assign roles before enabling gameplay. This does not turn gameplay on.'));
+   if(!s.settings.gameActive){
+    setup.append(button(rolesAssigned?'Reassign roles':'Randomize & Assign Roles',async()=>{
+     if(!confirm('Assign new roles to all registered players? This clears previous votes, cooldowns and roles.'))return;
+     const d=await rpc('randomize',{mafia:Number(mafia.value),detectives:Number(detectives.value)});
+     notice('Roles assigned: '+d.mafia+' Mafia, '+d.detectives+' detectives, '+d.citizens+' citizens.');
+     await render();
+    }));
+   }else setup.append(el('p','Turn Gameplay Actions OFF before reassigning roles.'));
+   area.append(setup);
   }
   const settings=section('Game settings');
   for(const [key,title] of boolSettings){
