@@ -21,7 +21,7 @@ begin
  if new.game_type<>'mafia' or new.status=old.status then return new; end if;
 
  -- Return to pre-game configuration after a host resets the game.
- if old.status='finished' and new.status in ('draft','registration') then
+ if old.status='finished' and new.status in ('draft','registration','active') then
   update public.mafia_config
    set announcement=case
       when winner_announcement is not null and announcement=winner_announcement
