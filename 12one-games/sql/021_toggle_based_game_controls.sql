@@ -543,11 +543,7 @@ begin
      (jsonb_typeof(v_entry.value)<>'string' or length(v_entry.value #>> '{}') > (case when v_entry.key='full_rules_text' then 12000 else 5000 end)) then
     raise exception 'Invalid text for % (length limit exceeded)',v_entry.key;
    elsif v_kind='integer' then
-    if jsonb_typeof(v_entry.value)<>'number' or (v_entry.value #>> '{}') !~ '^[0-9]+ from undoing the independent toggle system.
-revoke execute on function public.set_game_registration(uuid,boolean) from authenticated;
-revoke execute on function public.assassins_start(uuid) from authenticated;
-commit;
- then
+    if jsonb_typeof(v_entry.value)<>'number' or (v_entry.value #>> '{}') !~ '^[0-9]+$' then
      raise exception 'Expected a nonnegative whole number for %',v_entry.key;
     end if;
     v_min:=case when v_entry.key in ('votes_required','vote_expiry_hours','vote_expiration_minutes','min_active_for_game_end') then 1 else 0 end;
