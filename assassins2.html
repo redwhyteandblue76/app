@@ -179,7 +179,7 @@ async function callBackend(action, params = {}) {
     const {data,error}=await v2db.rpc('assassins_v2_public',{p_code:GAME_CODE});
     if(error) throw error;
     gameContext=data;
-    const registration=data.status==='registration' && data.signup_enabled!==false && !data.master_lock;
+    const registration=data.status!=='finished' && data.signup_enabled!==false && !data.master_lock;
     return {masterLock:data.master_lock?'TRUE':'FALSE',signupOffMessage:data.signup_off_message||'Registration is closed.',dashboardOffMessage:data.dashboard_off_message||'Dashboard unavailable.',eliminateOffMessage:data.eliminate_off_message||'Eliminations are disabled.',masterLockMessage:data.master_lock_message||'Game unavailable.',paused:data.paused?'TRUE':'FALSE',signupEnabled:registration?'TRUE':'FALSE',dashboardEnabled:data.dashboard_enabled?'TRUE':'FALSE',eliminateEnabled:data.eliminate_enabled?'TRUE':'FALSE',hallFieldEnabled:data.hall_enabled?'TRUE':'FALSE',hallOptions:data.hall_options||'',phoneFieldEnabled:data.phone_enabled?'TRUE':'FALSE',instructionsEnabled:data.instructions_enabled?'TRUE':'FALSE',instructionVerificationEnabled:data.instruction_verification_enabled?'TRUE':'FALSE',instructionsText:data.instructions_text||'',fullRulesText:data.full_rules_text||'',winnerAnnouncement:data.winner_announcement||'',gameStatus:data.status};
   }
   if (action === 'submitForm') {
