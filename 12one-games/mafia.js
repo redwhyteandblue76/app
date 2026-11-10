@@ -20,7 +20,7 @@
   await render();
  }
 
- const boolSettings=[['setupEnabled','Registration enabled'],['dashboardEnabled','Player dashboards'],['gameActive','Game actions enabled'],['allowMafiaInCitizenVotes','Mafia members can cast citizen votes'],['allowDetectiveInCitizenVotes','Detectives can cast citizen votes'],['hallFieldEnabled','Require hall at registration']];
+ const boolSettings=[['dashboardEnabled','Player dashboards'],['gameActive','Game actions enabled'],['allowMafiaInCitizenVotes','Mafia members can cast citizen votes'],['allowDetectiveInCitizenVotes','Detectives can cast citizen votes'],['hallFieldEnabled','Require hall at registration']];
  const textSettings=[['hallOptions','Hall options (comma-separated)'],['announcementMessage','Announcement'],['gameInstructions','Game instructions'],['mafiaInstructions','Mafia instructions'],['detectiveInstructions','Detective instructions'],['citizenInstructions','Citizen instructions']];
  const numericSettings=[['mafiaCooldownHours','Mafia cooldown (hours)'],['detectiveCooldownHours','Detective cooldown (hours)'],['citizenCooldownHours','Citizen cooldown (hours)'],['citizenVotesRequired','Citizen votes required'],['voteExpirationMinutes','Vote expiration (minutes)'],['minActiveForGameEnd','Minimum active players before game ends']];
  async function render(){
@@ -36,6 +36,7 @@
    area.append(button('Close registration',()=>changeRegistration(false)));
   }
 
+  if(s.status==='registration'){
   const setup=section('Start game / Randomize roles');
   const mafia=input('number','1');mafia.min=1;const detectives=input('number','1');detectives.min=0;
   setup.append(label('Number of Mafia players',mafia),label('Number of detectives',detectives));
@@ -45,6 +46,7 @@
    notice('Roles assigned: '+d.mafia+' Mafia, '+d.detectives+' detectives, '+d.citizens+' citizens.');
    await render();await refresh();
   }));area.append(setup);
+  }
   const settings=section('Game settings');
   for(const [key,title] of boolSettings){
    const check=input('checkbox');check.checked=!!s.settings[key];check.style.width='auto';
