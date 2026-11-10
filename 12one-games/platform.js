@@ -238,6 +238,7 @@ const gameDefaultFields={
  ['instructions_enabled','Show instructions','boolean'],
  ['instruction_verification_enabled','Require instruction acknowledgment','boolean'],
  ['instructions_text','Registration instructions','text'],
+ ['full_rules_text','Full rules & instructions (Rules page)','text'],
  ['signup_off_message','Registration closed message','text'],
  ['dashboard_off_message','Dashboard disabled message','text'],
  ['eliminate_off_message','Eliminations disabled message','text'],
@@ -291,7 +292,7 @@ async function renderAdminGameDefaults(){
    if(kind==='boolean')control.checked=defaults[key]===true;
    else control.value=String(defaults[key]??'');
    if(kind==='number'){control.min=String(min);control.max=String(max);control.step='1';}
-   if(kind==='text')control.maxLength=5000;
+   if(kind==='text')control.maxLength=key==='full_rules_text'?12000:5000;
    if(kind==='string')control.maxLength=5000;
    control.dataset.defaultKey=key;
    wrap.append(control);grid.append(wrap);fields.push({key,kind,control,min,max});
