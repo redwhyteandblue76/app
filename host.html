@@ -114,6 +114,16 @@ details .game { background: #FFFFFF; }
 
 /* Keep mobile form controls at iOS-friendly size without blocking pinch zoom. */
 @media (max-width: 768px) { input, textarea, select { font-size: 16px !important; } }
+.quick-controls{padding:18px 20px;margin:14px 0 20px;background:#fff}
+.quick-controls h3{margin:0 0 8px}
+.quick-control-grid{display:grid;gap:0}
+.quick-control-line{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;border-bottom:1px solid var(--line)}
+.quick-control-line:last-child{border-bottom:0}
+.quick-control-line strong{display:block}
+.quick-control-line p{margin:2px 0 0;font-size:12px;color:var(--muted)}
+.quick-control-line button{flex:0 0 86px;margin:0;min-height:42px}
+.quick-control-line button.quick-on{background:#19634e;color:#fff}
+@media(max-width:480px){.quick-controls{padding:12px}.quick-control-line{gap:8px}.quick-control-line button{flex-basis:68px;padding:8px}}
 </style><link rel="stylesheet" href="site-footer.css">
 <script src="site-footer.js" defer></script>
 </head><body><main>
@@ -138,7 +148,7 @@ details .game { background: #FFFFFF; }
 <section id="lobby" class="hidden"><h2>GAME LOBBY</h2><div id="lobbyList"></div><p class="muted">Player list shows real names. Codenames remain private.</p></section>
 <div id="hostWorkspace" class="hidden" aria-label="Game management workspace"><div class="workspace-breadcrumb"><button type="button" id="backToDashboard" class="secondary">← All Games</button><span id="workspaceSubtitle"></span></div><section id="assassinsPanel" class="hidden game-view"><h2 id="assassinsTitle">ASSASSINS</h2><div id="assassinsContent"></div></section>
 <section id="mafiaPanel" class="hidden game-view"><h2 id="mafiaTitle">MAFIA HOST DASHBOARD</h2><div id="mafiaContent"></div></section></div>
-<div id="hostHomeView"><section id="dashboard" class="hidden"><div class="row"><label for="gameSearch">Search games<input id="gameSearch" placeholder="Search by name or code" type="search"></label><label for="gameFilter">Show<select id="gameFilter"><option value="all">All games</option><option value="active">Active</option><option value="registration">Registration</option><option value="draft">Draft</option><option value="finished">Completed</option><option value="archived">Archived</option></select></label></div><div class="row"><h2>My games</h2><button id="signout" class="secondary" type="button">Sign out</button></div>
+<div id="hostHomeView"><section id="dashboard" class="hidden"><div class="row"><label for="gameSearch">Search games<input id="gameSearch" placeholder="Search by name or code" type="search"></label><label for="gameFilter">Show<select id="gameFilter"><option value="all">All games</option><option value="open">Not completed</option><option value="finished">Completed</option><option value="archived">Archived</option></select></label></div><div class="row"><h2>My games</h2><button id="signout" class="secondary" type="button">Sign out</button></div>
 <p id="identity" class="muted"></p><details><summary>My account profile</summary><label for="profileName">Full name</label><input id="profileName" autocomplete="name" minlength="2" maxlength="120"><button id="saveProfile" type="button">Save full name</button></details><p>Available game credits: <strong id="creditCount">—</strong></p>
 <div id="gamesList" class="games-grid"></div>
 <details><summary>Redeem a game invitation</summary><form id="redeemForm"><label for="invite">Invitation code</label><input id="invite" autocomplete="off" maxlength="32" pattern="[A-Fa-f0-9]{32}" required><button>Redeem code</button></form></details>
@@ -158,5 +168,5 @@ details .game { background: #FFFFFF; }
 
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="12one-games/platform.js?v=20261110-full-rules"></script>
-<script src="12one-games/assassins.js?v=20261110-final-winner"></script><script src="12one-games/mafia.js?v=20261110-start-once"></script></body></html>
+<script src="12one-games/platform.js?v=20261110-control-overview"></script>
+<script src="12one-games/assassins.js?v=20261110-control-overview"></script><script src="12one-games/mafia.js?v=20261110-control-overview"></script></body></html>
