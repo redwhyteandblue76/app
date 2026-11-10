@@ -491,6 +491,19 @@ begin
  return target is not null;
 end; $;
 
+create or replace function public.assassins_host_status(p_game_id uuid,p_member_id uuid,p_alive boolean)
+returns void language plpgsql security definer set search_path='' as $
+declare g public.games%rowtype;
+begin
+ select * into g from public.games where id=p_game_id for update;
+ if not found or g.owner_user_id is distinct from (select auth.uid()) or g.game_type<>'assassins' then raise exception 'Host only'; end if;
+ if g.status<>'active' then raise exception 'Completed rounds cannot be edited. Reset the game first'; end if;
+ update public.assassins_players set alive=p_alive,eliminated_by=case when p_alive then null else eliminated_by end,eliminated_at=case when p_alive then null else now() end
+ where game_id=p_game_id and member_id=p_member_id;
+ if not found then raise exception 'Player not found'; end if;
+ update public.games set status=case when (select count(*) from public.assassins_players where game_id=p_game_id and alive)<=1 then 'finished' else 'active' end where id=p_game_id;
+end; $;
+
 -- Prevent old stage-based registration RPC from undoing the independent toggle system.
 revoke execute on function public.set_game_registration(uuid,boolean) from authenticated;
 revoke execute on function public.assassins_start(uuid) from authenticated;
