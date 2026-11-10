@@ -32,6 +32,7 @@ async function refresh(){
  adminIsHost=!admin.error&&admin.data===true;
  show('owner',adminIsHost&&!selectedHostGame);
  if(!admin.error&&admin.data===true)renderAdminDirectory().catch(e=>msg(e.message));
+ if(adminIsHost)renderAdminGameDefaults().catch(e=>{$('defaultSettingsStatus').textContent=e.message||String(e)});
  }
  if(currentGame)await loadLobby(currentGame);
  if(window.refreshAssassins)await window.refreshAssassins();
@@ -223,6 +224,107 @@ async function deleteHostedGame(g){
  if(typed!==g.name)return msg('Deletion cancelled: name did not match.');
  await gameCommand(g,'delete').catch(fail);
 }
+// Admin-only shared templates. These values apply only to newly created games
+// once SQL migration 017 is installed. Technical setting keys match the DB.
+const gameDefaultFields={
+ assassins:[
+ ['dashboard_enabled','Player dashboard','boolean'],
+ ['eliminate_enabled','Allow eliminations','boolean'],
+ ['master_lock','Master lock','boolean'],
+ ['paused','Pause eliminations','boolean'],
+ ['phone_enabled','Ask for phone','boolean'],
+ ['hall_enabled','Require hall','boolean'],
+ ['hall_options','Hall choices','string'],
+ ['instructions_enabled','Show instructions','boolean'],
+ ['instruction_verification_enabled','Require instruction acknowledgment','boolean'],
+ ['instructions_text','Registration instructions','text'],
+ ['signup_off_message','Registration closed message','text'],
+ ['dashboard_off_message','Dashboard disabled message','text'],
+ ['eliminate_off_message','Eliminations disabled message','text'],
+ ['master_lock_message','Game locked message','text']
+ ],
+ mafia:[
+ ['dashboard_enabled','Player dashboards','boolean'],
+ ['game_active','Allow game actions','boolean'],
+ ['hall_field_enabled','Require hall','boolean'],
+ ['hall_options','Hall choices','string'],
+ ['allow_mafia_votes','Allow Mafia in citizen votes','boolean'],
+ ['allow_detective_votes','Allow detectives in citizen votes','boolean'],
+ ['mafia_cooldown_hours','Mafia cooldown (hours)','number',0,720],
+ ['detective_cooldown_hours','Detective cooldown (hours)','number',0,720],
+ ['citizen_cooldown_hours','Citizen cooldown (hours)','number',0,720],
+ ['votes_required','Citizen votes required','number',1,100],
+ ['vote_expiry_hours','Vote expiry (hours)','number',1,720],
+ ['vote_expiration_minutes','Vote expiration (minutes)','number',1,43200],
+ ['min_active_for_game_end','Minimum players for game end','number',1,100],
+ ['announcement','Announcement','text'],
+ ['game_instructions','General instructions','text'],
+ ['mafia_instructions','Mafia instructions','text'],
+ ['detective_instructions','Detective instructions','text'],
+ ['citizen_instructions','Citizen instructions','text']
+ ]
+};
+let gameDefaultsLoadedFor=null;
+async function renderAdminGameDefaults(){
+ if(!adminIsHost||!currentUser||currentUser.is_anonymous)return;
+ const panel=$('defaultSettingsForms'),status=$('defaultSettingsStatus');
+ if(!panel||!status||gameDefaultsLoadedFor===currentUser.id)return;
+ status.textContent='Loading current platform defaults…';
+ const {data,error}=await db.rpc('admin_game_defaults',{p_game_type:null,p_settings:null});
+ if(error){
+  status.textContent='Default settings editor is unavailable. Install 12one-games/sql/017_admin_game_defaults.sql in the Supabase SQL Editor, then refresh. '+error.message;
+  return;
+ }
+ panel.replaceChildren();
+ for(const type of ['assassins','mafia']){
+  const defaults=data?.[type];
+  if(!defaults){status.textContent='Missing default settings for '+type+'. Check migration 017.';return}
+  const card=node('section');card.className='default-settings-game';
+  card.append(node('h3',type==='assassins'?'Assassins defaults':'Mafia defaults'));
+  const form=document.createElement('form');form.dataset.gameType=type;
+  const grid=node('div');grid.className='default-settings-grid';
+  const fields=[];
+  for(const [key,title,kind,min,max] of gameDefaultFields[type]){
+   const wrap=node('label',title);
+   const control=document.createElement(kind==='text'?'textarea':'input');
+   if(kind!=='text')control.type=kind==='boolean'?'checkbox':kind==='number'?'number':'text';
+   if(kind==='boolean')control.checked=defaults[key]===true;
+   else control.value=String(defaults[key]??'');
+   if(kind==='number'){control.min=String(min);control.max=String(max);control.step='1';}
+   if(kind==='text')control.maxLength=5000;
+   if(kind==='string')control.maxLength=5000;
+   control.dataset.defaultKey=key;
+   wrap.append(control);grid.append(wrap);fields.push({key,kind,control,min,max});
+  }
+  const save=makeButton('Save '+(type==='assassins'?'Assassins':'Mafia')+' defaults',()=>{});
+  save.type='submit';
+  form.append(grid,save);
+  form.onsubmit=async event=>{
+   event.preventDefault();
+   save.disabled=true;status.textContent='Saving '+type+' defaults…';
+   try{
+    const changes={};
+    for(const {key,kind,control,min,max} of fields){
+     if(kind==='boolean')changes[key]=control.checked;
+     else if(kind==='number'){
+      const value=Number(control.value);
+      if(control.value.trim()===''||!Number.isInteger(value)||value<min||value>max)
+       throw Error(key+' must be a whole number between '+min+' and '+max);
+      changes[key]=value;
+     }else changes[key]=control.value;
+    }
+    const {error:saveError}=await db.rpc('admin_game_defaults',{p_game_type:type,p_settings:changes});
+    if(saveError)throw saveError;
+    status.textContent=(type==='assassins'?'Assassins':'Mafia')+' defaults saved. Newly created games will use these settings; existing games are unchanged.';
+   }catch(error){status.textContent=error.message||String(error);}
+   finally{save.disabled=false;}
+  };
+  card.append(form);panel.append(card);
+ }
+ gameDefaultsLoadedFor=currentUser.id;
+ status.textContent='Edit and save each game type separately. Changes affect future games only.';
+}
+
 async function renderAdminDirectory(){
  const hosts=$('adminHosts'),games=$('adminGames');if(!hosts||!games)return;
  const {data,error}=await db.rpc('host_admin_directory');
