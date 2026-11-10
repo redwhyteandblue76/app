@@ -109,16 +109,23 @@ details .game { background: #FFFFFF; }
   header { margin: -15px -12px 20px; padding: 22px 16px; flex-wrap: wrap; }
   header h1 { font-size: 23px; }
 }
+.auth-switch{display:flex;gap:10px;max-width:450px;margin:18px 0 23px}.auth-switch button{flex:1;margin:0}.auth-switch button[aria-pressed="true"]{background:var(--red);border-color:var(--red);color:white}.auth-switch button[aria-pressed="false"]{background:#f4eee8;color:var(--teal);border-color:#c6d6d3}#auth form{max-width:450px}#auth form h3{margin:0 0 12px}#auth form>button[type="submit"]{width:100%;margin-top:18px}#auth .auth-switch button:focus-visible{outline:3px solid var(--cyan);outline-offset:3px}
 </style><link rel="stylesheet" href="site-footer.css">
 <script src="site-footer.js" defer></script>
 </head><body><main>
 <header><h1>12one Games</h1><span class="muted">HOST DASHBOARD</span></header>
 <p id="homeIntro">Your games, players, and hosting tools in one place.</p>
 <div id="notice" role="status" aria-live="polite"></div>
-<section id="auth"><h2>ACCOUNT</h2><p>Sign in or create an account to manage your games. Players do not need an account to open their game link.</p>
-<form id="authForm"><label for="fullName">Full name (when creating an account)</label><input id="fullName" autocomplete="name" minlength="2" maxlength="120" placeholder="First and last name"><label for="email">Email</label><input id="email" type="email" autocomplete="email" required>
-<label for="password">Password</label><input id="password" type="password" autocomplete="current-password" minlength="6" required>
-<button type="submit" data-action="signin">Sign in</button><button type="button" id="signup" class="secondary">Create account</button></form></section>
+<section id="auth"><h2>HOST ACCOUNT</h2><p>Sign in to manage your games, or create a new host account. Players can join games without a host account.</p>
+<div class="auth-switch" role="group" aria-label="Account options"><button id="showSignin" type="button" aria-pressed="true">Sign in</button><button id="showSignup" type="button" class="secondary" aria-pressed="false">Create account</button></div>
+<form id="authForm"><h3>Welcome back</h3><label for="email">Email</label><input id="email" type="email" autocomplete="email" required>
+<label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required>
+<button type="submit">Sign in</button></form>
+<form id="signupForm" class="hidden"><h3>Create a host account</h3><label for="fullName">Full name</label><input id="fullName" autocomplete="name" minlength="2" maxlength="120" placeholder="First and last name" required>
+<label for="signupEmail">Email</label><input id="signupEmail" type="email" autocomplete="email" required>
+<label for="signupPassword">Password (at least 6 characters)</label><input id="signupPassword" type="password" autocomplete="new-password" minlength="6" required>
+<label for="signupConfirm">Confirm password</label><input id="signupConfirm" type="password" autocomplete="new-password" minlength="6" required>
+<button type="submit">Create account</button></form></section>
 <section id="guestPanel" class="hidden"><h2>PLAYER SESSION</h2><p>This browser currently has a player session. Open your game link to continue.</p><button id="guestSignout" class="secondary">Sign out of player session</button></section>
 <section id="joinSection"><h2>JOIN A GAME</h2><p>Enter a game code or open a host's join link.</p>
 <form id="lookupForm"><label for="joinCode">Game code</label><input id="joinCode" required maxlength="10" autocomplete="off"><button>Find game</button></form>
@@ -141,5 +148,5 @@ details .game { background: #FFFFFF; }
 
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="12one-games/platform.js?v=20261031-workspace-fix-2"></script>
-<script src="12one-games/assassins.js?v=20261106-flagship"></script><script src="12one-games/mafia.js?v=20261106-flagship"></script></body></html>
+<script src="12one-games/platform.js?v=20261110-auth-split"></script>
+<script src="12one-games/assassins.js?v=20261106-flagship"></script><script src="12one-games/mafia.js?v=20261110-registration-control"></script></body></html>
