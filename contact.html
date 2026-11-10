@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Contact | Austin Whyte</title><link rel="stylesheet" href="site-footer.css"><style>
 *{box-sizing:border-box}body{margin:0;background:#101215;color:#e9e9e9;font:16px/1.6 system-ui,-apple-system,sans-serif}main{max-width:650px;margin:45px auto 70px;padding:0 22px}h1{font-size:2rem;margin-bottom:5px}p{color:#bec4ca}a{color:#8ecbe8}label{display:block;font-size:14px;font-weight:600;margin:18px 0 6px}input,select,textarea{width:100%;border:1px solid #414b55;border-radius:7px;padding:12px;font:inherit;background:#1b2026;color:#f2f2f2}textarea{resize:vertical}button{margin-top:22px;width:100%;padding:13px;border:0;border-radius:7px;background:#5fb3d9;color:#07131a;font:600 15px system-ui;cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}.note{font-size:12px;color:#9ba4ad}.back{font-size:14px}.hidden-field{position:absolute;left:-9999px}#status{min-height:25px;font-size:14px} 
+
+/* Keep mobile form controls at iOS-friendly size without blocking pinch zoom. */
+@media (max-width: 768px) { input, textarea, select { font-size: 16px !important; } }
 </style></head><body><main><a class="back" href="games.html">← Games</a><h1>Contact the Developer</h1><p>Questions, feedback, bug reports, or copyright inquiries? Send a message below.</p>
 <form id="contactForm" method="POST" target="contactResponse" novalidate>
 <label for="name">Name</label><input id="name" name="name" maxlength="100" autocomplete="name" required>
