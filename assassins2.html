@@ -517,12 +517,6 @@ function renderDashboard() {
       <div class="loading" id="verifyLoading"><div class="spinner"></div>Loading...</div>
       <div class="output" id="verifyOutput"></div>
     </div>
-    <div class="form-section" id="legacyPinSection" style="display:none;">
-
-      <label>Choose a 4-digit PIN:</label><input type="password" id="legacyPin" maxlength="4" inputmode="numeric">
-      <button type="button" id="setLegacyPin">Set My PIN</button>
-      <div id="legacyPinStatus" role="status"></div>
-    </div>
     <div class="form-section" id="actionSection" style="display:none;">
       <p class="subtle">Your codename is verified. Find your target or report a confirmed elimination.</p>
       <button id="findTargetBtn">Find My Target</button>
@@ -544,18 +538,6 @@ function renderDashboard() {
     </div>
   `;
 
-  document.getElementById('setLegacyPin').addEventListener('click',async()=>{
-    const status=document.getElementById('legacyPinStatus');
-    const pin=document.getElementById('legacyPin').value.trim();
-    if(!/^[0-9]{4}$/.test(pin)){status.textContent='Use exactly four digits.';return}
-    const {error}=await v2db.rpc('assassins_set_my_pin',{p_game_id:gameContext.id,p_pin:pin});
-    status.textContent=error?error.message:'PIN saved. You can now sign in on another device.';
-    if(!error){document.getElementById('legacyPin').value='';document.getElementById('legacyPinSection').style.display='none'}
-  });
-  // Offer a PIN setup only to players with an existing session from pre-PIN registration.
-  v2db.rpc('assassins_state',{p_game_id:gameContext.id}).then(({data})=>{
-    if(data?.my_codename)document.getElementById('legacyPinSection').style.display='block';
-  }).catch(()=>{});
   const codeInput = document.getElementById('codename');
   codeInput.value = rememberedCodename();
   const getCodename = () => normalizeCodenameInput(codeInput.value);
