@@ -45,7 +45,7 @@ async function lookup(){
  const {data,error}=await db.rpc('lookup_joinable_game',{p_code:code});if(error)throw error;
  const g=data?.[0];if(!g)throw Error('No game found for that code.');
  const target=linkFor(code,g.game_type);
- $('foundGame').replaceChildren(node('span',g.game_name+' · '+g.game_type+' · '+g.game_status+' · '));
+ $('foundGame').replaceChildren(node('span',g.game_name+' · '+g.game_type+' · '));
  const a=node('a','Open game');a.href=target;$('foundGame').append(a);
 }
 async function loadLobby(id){
@@ -395,7 +395,7 @@ async function renderAdminDirectory(){
  }
  for(const g of data.games||[]){
   const line=node('div');line.className='game';
-  line.append(node('strong',g.name),node('p',(g.host||g.host_email)+' · '+g.type+' · '+g.status+' · '+g.players+' players'));
+  line.append(node('strong',g.name),node('p',(g.host||g.host_email)+' · '+g.type+(g.status==='finished'?' · Completed':'')+' · '+g.players+' players'));
   line.append(makeButton('Export records',()=>exportHostedGame(g)));
   if(g.status!=='finished')line.append(makeButton('End game',()=>gameCommand(g,'end').catch(fail),'danger'));
   else line.append(makeButton('Delete game',()=>deleteHostedGame(g),'danger'));
