@@ -710,7 +710,27 @@ async function citizenRetract() {
 }
 
 /* ================= BOOT ================= */
-bootstrapMafia().then(init).catch(e=>{document.getElementById('main').textContent=e.message||String(e)});
+function showGameCodeEntry() {
+  const container = document.getElementById('main');
+  container.innerHTML = `
+    <form class="card" id="gameCodeEntry">
+      <h2>Enter Your Game</h2>
+      <p>Have a game code from your host? Enter it below to open your Mafia game.</p>
+      <label for="joinGameCode">Game code</label>
+      <input id="joinGameCode" name="game" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="20" placeholder="Enter game code" required>
+      <button type="submit" class="primary">Enter Game</button>
+    </form>`;
+  document.getElementById('gameCodeEntry').addEventListener('submit', event => {
+    event.preventDefault();
+    const code = document.getElementById('joinGameCode').value.trim().toUpperCase();
+    if (!code) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('game', code);
+    window.location.assign(url.href);
+  });
+}
+if (!GAME_CODE) showGameCodeEntry();
+else bootstrapMafia().then(init).catch(e=>{document.getElementById('main').textContent=e.message||String(e)});
 
 </script>
 </body>
