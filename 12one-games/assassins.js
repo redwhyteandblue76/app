@@ -26,6 +26,13 @@ async function render(){
  if(!s.host){area.append(el('p','Only the game host can manage this game.'));return;}
  if(s.paused)area.append(el('p','Game paused by host.'));
  if(s.instructions_enabled){heading('INSTRUCTIONS');area.append(el('p',s.instructions_text||'No instructions posted.'))}
+ if(s.status==='finished'&&hostSettings.winner_announcement){
+  const victory=el('div',hostSettings.winner_announcement);
+  victory.className='game';
+  victory.setAttribute('role','status');
+  victory.style.fontWeight='700';
+  area.append(victory);
+ }
  area.append(el('p',s.players.length+' registered player(s)'));
  if(s.host){heading('HOST MANAGEMENT');
   if(s.status==='draft'){
