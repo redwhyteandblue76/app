@@ -502,7 +502,7 @@ begin
 end; $$;
 
 create or replace function public.assassins_host_status(p_game_id uuid,p_member_id uuid,p_alive boolean)
-returns void language plpgsql security definer set search_path='' as $
+returns void language plpgsql security definer set search_path='' as $$
 declare g public.games%rowtype;
 begin
  select * into g from public.games where id=p_game_id for update;
