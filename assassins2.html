@@ -307,7 +307,7 @@ async function renderRules() {
   app.innerHTML = `
     <h2>Rules &amp; Instructions</h2>
     <div class="form-section">
-      <p class="subtle">Read these rules before playing. The administrator may post additional instructions below.</p>
+      <p class="subtle">Read the rules carefully before playing.</p>
       <div id="builtInRules">
       <div class="rule-block"><h3>The Overview</h3><p>Your mission is to find your assigned target and tag them with a sock. When you successfully tag your target, they must reveal their codename. Enter that codename in the Player Dashboard to confirm the elimination and receive your next target.</p></div>
       <div class="rule-block"><h3>How to Join</h3><p><a href="${GAME_PAGE}&view=signup">Sign up here</a> while registration is open. Choose a codename and keep it private.</p></div>
@@ -327,7 +327,6 @@ async function renderRules() {
       <div class="rule-block"><h3>Play Safely</h3><p>Use only soft socks, avoid the face, respect personal boundaries, and do not chase anyone into unsafe or restricted areas. If an elimination is disputed, contact the game administrator.</p></div>
       </div>
       <div class="rule-block" id="customFullRules" style="display:none;"><div id="fullRulesContent" style="white-space:pre-wrap;"></div></div>
-      <div class="rule-block"><h3>Administrator Instructions</h3><div id="adminRules" style="white-space:pre-wrap;">Loading current instructions…</div></div>
     </div>`;
   try {
     const d = publicStatus;
@@ -336,10 +335,7 @@ async function renderRules() {
       document.getElementById('customFullRules').style.display='block';
       document.getElementById('fullRulesContent').textContent=d.fullRulesText;
     }
-    document.getElementById('adminRules').textContent =
-      d.instructionsEnabled === 'TRUE' && d.instructionsText ? d.instructionsText :
-      'No additional instructions are currently posted.';
-  } catch(e) { document.getElementById('adminRules').textContent='Unable to load administrator instructions right now.'; }
+  } catch(e) { console.error('Unable to render full game rules:',e); }
 }
 
 // ============================================================
