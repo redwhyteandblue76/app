@@ -103,6 +103,57 @@ window.organizeHostTabState=function(area){
  for(const btn of area.querySelectorAll(':scope > .host-tabs > button'))btn.setAttribute('aria-selected',String(btn.dataset.tab===activeHostTab));
 };
 
+// Shared status-independent overview switches for both hosted game types.
+window.renderHostQuickControls=async function(gameId){
+ const wrapper=node('div');wrapper.className='game quick-controls';
+ wrapper.dataset.quickControls='true';
+ wrapper.append(node('h3','Quick game controls'));
+ const summary=node('p','Loading game controls…');summary.className='muted';
+ wrapper.append(summary);
+ const grid=node('div');grid.className='quick-control-grid';wrapper.append(grid);
+ const definitions=[
+  ['masterLock','Master Game Lock','Temporarily block all player access'],
+  ['signup','Player Registration','Allow new players to register'],
+  ['dashboard','Player Dashboards','Allow players to access dashboards'],
+  ['actions','Gameplay Actions','Allow eliminations and other gameplay actions']
+ ];
+ async function updateControls(){
+  const {data,error}=await db.rpc('host_quick_controls',{p_game_id:gameId});
+  if(error){summary.textContent='Controls unavailable. Install Supabase migration 021: '+error.message;grid.replaceChildren();return}
+  grid.replaceChildren();
+  const completed=!!data.completed;
+  const disabledReason=completed?'This round is completed. Reset before reopening.':
+   data.masterLock?'Player access is currently blocked by Master Game Lock.':
+   !data.ready?'Game setup is incomplete. Gameplay cannot be enabled until players are ready.':'';
+  summary.textContent=completed?'Round completed — results are preserved.':
+   data.masterLock?'Game locked — player access is blocked regardless of the switches below.':
+   !data.ready?'Setup needed before enabling gameplay.': 'Game access is controlled by the switches below.';
+  for(const [key,title,help] of definitions){
+   const line=node('div');line.className='quick-control-line';
+   const labels=node('div');labels.append(node('strong',title),node('p',help));line.append(labels);
+   const on=!!data[key];
+   const toggle=node('button',(on?'ON':'OFF'));
+   toggle.type='button';toggle.className=on?(key==='masterLock'?'danger':'quick-on'):'secondary';
+   toggle.setAttribute('aria-label',title+': '+(on?'on':'off')+'. Toggle');
+   toggle.setAttribute('aria-pressed',String(on));
+   toggle.disabled=completed&&(key==='signup'||key==='actions')&&!on;
+   toggle.onclick=async()=>{
+    toggle.disabled=true;
+    try{
+     const {error}=await db.rpc('host_set_quick_control',{p_game_id:gameId,p_key:key,p_enabled:!on});
+     if(error)throw error;
+     msg(title+' '+(!on?'enabled.':'disabled.'));
+     await updateControls();
+    }catch(e){fail(e);toggle.disabled=false}
+   };
+   line.append(toggle);grid.append(line);
+  }
+  if(disabledReason){const note=node('p',disabledReason);note.className='muted';grid.append(note);}
+ }
+ await updateControls();
+ return wrapper;
+};
+
 const makeButton=(label,fn,cls='secondary')=>{const b=node('button',label);b.className=cls;b.type='button';b.onclick=fn;return b};
 const pageTitle=()=>document.querySelector('header h1');
 function applyHostView(){
@@ -146,7 +197,7 @@ function decorateGamePanel(g){
  if(!bar){bar=node('div');bar.className='game-toolbar';panel.prepend(bar)}
  bar.replaceChildren();
  bar.append(makeButton('← All games',backToGames,'secondary'));
- const status=node('span',g.game_type+' · '+g.game_code+' · '+g.status);status.className='status-chip';bar.append(status);
+ const status=node('span',g.game_type+' · '+g.game_code+(g.status==='finished'?' · Completed':''));status.className='status-chip';bar.append(status);
  const share=makeButton('Copy join link',()=>{navigator.clipboard.writeText(linkFor(g.game_code,g.game_type)).then(()=>msg('Join link copied.')).catch(e=>fail(e))});bar.append(share);
  let actions=panel.querySelector(':scope > .host-action-bar');
  if(actions)actions.remove();
@@ -164,7 +215,7 @@ function decorateGamePanel(g){
  if(overview){
   overview.querySelector('.stats')?.remove();
   const stats=node('div');stats.className='stats';
-  for(const [title,value] of [['Total players',g.total??'—'],['Active players',g.active??'—'],['Game status',g.status]]){
+  for(const [title,value] of [['Total players',g.total??'—'],['Active players',g.active??'—'],['Round',g.status==='finished'?'Completed':'Open']]){
    const tile=node('div');tile.className='stat';tile.append(node('strong',String(value)),node('span',title));stats.append(tile);
   }
   overview.prepend(stats);
@@ -190,7 +241,7 @@ function renderGameCards(){
  if(!result.length)target.append(node('p','No matching games.'));
  for(const g of result){
   const card=node('article');card.className='game';
-  const tag=node('small',g.game_type.toUpperCase()+' · '+g.status+(g.archived_at?' · archived':''));tag.className='muted';card.append(tag);
+  const tag=node('small',g.game_type.toUpperCase()+(g.status==='finished'?' · Completed':'')+(g.archived_at?' · archived':''));tag.className='muted';card.append(tag);
   card.append(node('h3',g.name),node('p','Game code: '+g.game_code));
   if(g.total!==undefined)card.append(node('p',g.total+' players · '+g.active+' active'));
   const buttons=node('div');buttons.className='game-toolbar';
