@@ -253,8 +253,36 @@ $('backToDashboard')?.addEventListener('click',backToGames);
 $('gameSearch')?.addEventListener('input',renderGameCards);
 $('gameFilter')?.addEventListener('change',renderGameCards);
 
-$('authForm').onsubmit=e=>{e.preventDefault();task(e.currentTarget,async()=>{const {error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;msg('Signed in.')})};
-$('signup').onclick=()=>task($('authForm'),async()=>{if(($('fullName')?.value.trim()||'').length<2)throw Error('Please enter your full name when creating a host account.');const {data,error}=await db.auth.signUp({email:$('email').value.trim(),password:$('password').value,options:{data:{full_name:$('fullName')?.value.trim()||''}}});if(error)throw error;msg(data.session?'Account created.':'Check your email to confirm your account.')});
+function selectAuthMode(mode){
+ const signingUp=mode==='signup';
+ show('authForm',!signingUp);
+ show('signupForm',signingUp);
+ $('showSignin').setAttribute('aria-pressed',String(!signingUp));
+ $('showSignup').setAttribute('aria-pressed',String(signingUp));
+ $('showSignin').classList.toggle('secondary',signingUp);
+ $('showSignup').classList.toggle('secondary',!signingUp);
+ msg('');
+}
+$('showSignin').onclick=()=>selectAuthMode('signin');
+$('showSignup').onclick=()=>selectAuthMode('signup');
+$('authForm').onsubmit=e=>{e.preventDefault();task(e.currentTarget,async()=>{
+ const {error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});
+ if(error)throw error;
+ msg('Signed in.');
+})};
+$('signupForm').onsubmit=e=>{e.preventDefault();task(e.currentTarget,async()=>{
+ const fullName=$('fullName').value.trim();
+ const email=$('signupEmail').value.trim();
+ const password=$('signupPassword').value;
+ if(fullName.length<2||fullName.length>120)throw Error('Enter your full name (2–120 characters).');
+ if(password.length<6)throw Error('Password must have at least six characters.');
+ if(password!==$('signupConfirm').value)throw Error('Passwords do not match.');
+ const {data,error}=await db.auth.signUp({email,password,options:{data:{full_name:fullName}}});
+ if(error)throw error;
+ $('signupPassword').value='';
+ $('signupConfirm').value='';
+ msg(data.session?'Account created.':'Check your email to confirm your account.');
+})};
 $('signout').onclick=$('guestSignout').onclick=async()=>{const {error}=await db.auth.signOut();if(error)fail(error);else{currentGame=null;msg('Signed out.');await refresh()}};
 $('redeemForm').onsubmit=e=>{e.preventDefault();task(e.currentTarget,async()=>{const {error}=await db.rpc('redeem_game_invite',{p_code:$('invite').value.trim()});if(error)throw error;$('invite').value='';msg('Game credit added.')})};
 $('createForm').onsubmit=e=>{e.preventDefault();task(e.currentTarget,async()=>{const {data,error}=await db.rpc('create_hosted_game',{p_game_type:$('gameType').value,p_name:$('gameName').value.trim()});if(error)throw error;$('gameName').value='';msg('Game created: '+data[0].join_code+'. Open registration to accept players.')})};
