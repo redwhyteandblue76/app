@@ -279,6 +279,7 @@ async function deleteHostedGame(g){
 // once SQL migration 017 is installed. Technical setting keys match the DB.
 const gameDefaultFields={
  assassins:[
+ ['signup_enabled','Allow registration','boolean'],
  ['dashboard_enabled','Player dashboard','boolean'],
  ['eliminate_enabled','Allow eliminations','boolean'],
  ['master_lock','Master lock','boolean'],
@@ -296,6 +297,8 @@ const gameDefaultFields={
  ['master_lock_message','Game locked message','text']
  ],
  mafia:[
+ ['master_lock','Master Game Lock','boolean'],
+ ['setup_enabled','Allow registration','boolean'],
  ['dashboard_enabled','Player dashboards','boolean'],
  ['game_active','Allow game actions','boolean'],
  ['hall_field_enabled','Require hall','boolean'],
@@ -439,7 +442,7 @@ $('signupForm').onsubmit=e=>{e.preventDefault();task(e.currentTarget,async()=>{
 })};
 $('signout').onclick=$('guestSignout').onclick=async()=>{const {error}=await db.auth.signOut();if(error)fail(error);else{currentGame=null;msg('Signed out.');await refresh()}};
 $('redeemForm').onsubmit=e=>{e.preventDefault();task(e.currentTarget,async()=>{const {error}=await db.rpc('redeem_game_invite',{p_code:$('invite').value.trim()});if(error)throw error;$('invite').value='';msg('Game credit added.')})};
-$('createForm').onsubmit=e=>{e.preventDefault();task(e.currentTarget,async()=>{const {data,error}=await db.rpc('create_hosted_game',{p_game_type:$('gameType').value,p_name:$('gameName').value.trim()});if(error)throw error;$('gameName').value='';msg('Game created: '+data[0].join_code+'. Open registration to accept players.')})};
+$('createForm').onsubmit=e=>{e.preventDefault();task(e.currentTarget,async()=>{const {data,error}=await db.rpc('create_hosted_game',{p_game_type:$('gameType').value,p_name:$('gameName').value.trim()});if(error)throw error;$('gameName').value='';msg('Game created: '+data[0].join_code+'. Use Overview switches to control registration and gameplay.')})};
 $('issueForm').onsubmit=e=>{e.preventDefault();task(e.currentTarget,async()=>{const date=$('expiry').value;const {data,error}=await db.rpc('admin_issue_game_invite',{p_expires_at:date?new Date(date+'T23:59:59').toISOString():null});if(error)throw error;$('issuedCode').textContent='Copy this invitation code now: '+data;msg('Invitation generated.')})};
 $('lookupForm').onsubmit=e=>{e.preventDefault();task(e.currentTarget,lookup)};
 const queryCode=new URL(location.href).searchParams.get('join');if(queryCode)$('joinCode').value=queryCode;
