@@ -113,7 +113,7 @@ begin
   select g.id,v_member,coalesce(max(turn_order),0)+1 from public.assassins_players where game_id=g.id;
  end if;
  return g.id;
-end $$;
+end; $;
 
 create or replace function public.assassins_v2_public(p_code text)
 returns jsonb language plpgsql stable security definer set search_path='' as $$
@@ -168,7 +168,7 @@ begin
  'hall_options',coalesce(c.hall_options,''),'instructions_enabled',coalesce(c.instructions_enabled,false),
  'instruction_verification_enabled',coalesce(c.instruction_verification_enabled,false),
  'instructions_text',coalesce(c.instructions_text,''));
-end $$;
+end; $;
 
 create or replace function public.mafia_join(p_code text,p_real_name text,p_codename text,p_password text,p_phone text default '',p_hall text default '')
 returns uuid language plpgsql security definer set search_path='' as $$
@@ -193,7 +193,7 @@ begin
  values(g.id,(select auth.uid()),v_code,v_name,left(trim(p_phone),40),nullif(trim(p_hall),'')) returning id into v_id;
  insert into public.mafia_players(game_id,member_id,pin_hash) values(g.id,v_id,extensions.crypt(p_password,extensions.gen_salt('bf')));
  return g.id;
-end $$;
+end; $;
 
 create or replace function public.mafia_public(p_code text)
 returns jsonb language plpgsql stable security definer set search_path='' as $$
@@ -213,7 +213,7 @@ begin
  'hallFieldEnabled',coalesce(c.hall_field_enabled,false),
  'hallOptions',coalesce(to_jsonb(string_to_array(c.hall_options,',')),'[]'::jsonb),
  'gameInstructions',coalesce(c.game_instructions,''),'players',roster);
-end $$;
+end; $;
 
 create or replace function public.mafia_state(p_game_id uuid)
 returns jsonb language plpgsql stable security definer set search_path='' as $$
@@ -248,7 +248,7 @@ begin
  'citizenCooldown',jsonb_build_object('ready',p.citizen_last_at is null or p.citizen_last_at+make_interval(hours=>coalesce(c.citizen_cooldown_hours,24))<=now(),
  'remaining',greatest(0,ceil(extract(epoch from (p.citizen_last_at+make_interval(hours=>coalesce(c.citizen_cooldown_hours,24))-now()))/60))::integer||' min'),
  'activeVote',vote,'lastVoteResult',(select jsonb_build_object('targetName',r.target_name,'wasMafia',r.was_mafia,'time',r.created_at) from public.mafia_vote_results r where r.game_id=p_game_id and r.voter_id=me.id),'allowCitizenVotes',p.role='citizen' or (p.role='mafia' and coalesce(c.allow_mafia_votes,true)) or (p.role='detective' and coalesce(c.allow_detective_votes,true)));
-end $$;
+end; $;
 
 create or replace function public.mafia_action(p_game_id uuid,p_action text,p_codename text default '',p_password text default '',p_target text default '')
 returns jsonb language plpgsql security definer set search_path='' as $$
@@ -320,7 +320,7 @@ begin
   update public.games set status='finished' where id=p_game_id;
  end if;
  return jsonb_build_object('success',target_name||' was eliminated','votesSoFar',votes,'votesRequired',coalesce(c.votes_required,3));
-end $$;
+end; $;
 
 create or replace function public.mafia_host(p_game_id uuid,p_action text,p_payload jsonb default '{}'::jsonb)
 returns jsonb language plpgsql security definer set search_path='' as $$
@@ -333,6 +333,7 @@ begin
  select * into c from public.mafia_config where game_id=p_game_id;
  if p_action='randomize' then
    if g.status='finished' then raise exception 'Reset the completed round before assigning roles'; end if;
+   if coalesce(c.game_active,false) and g.status='active' then raise exception 'Turn Gameplay Actions OFF before reassigning roles'; end if;
   n_mafia:=coalesce((p_payload->>'mafia')::integer,1); n_detectives:=coalesce((p_payload->>'detectives')::integer,1);
   select count(*) into n from public.mafia_players where game_id=p_game_id;
   if n<3 or n_mafia<1 or n_detectives<0 or n_mafia+n_detectives>=n then raise exception 'Invalid role counts'; end if;
@@ -380,6 +381,9 @@ begin
   end if;
  elsif p_action='setting' then
   setting:=p_payload->>'key'; v:=p_payload->>'value';
+   if setting in ('setupEnabled','dashboardEnabled','gameActive') then
+    raise exception 'Use the Overview switches to change this control';
+   end if;
   setting_col:=case setting
    when 'setupEnabled' then 'setup_enabled' when 'dashboardEnabled' then 'dashboard_enabled'
    when 'gameActive' then 'game_active' when 'hallFieldEnabled' then 'hall_field_enabled'
@@ -422,7 +426,7 @@ begin
  'voteExpirationMinutes',c.vote_expiration_minutes,'minActiveForGameEnd',c.min_active_for_game_end,
  'mafiaInstructions',c.mafia_instructions,'detectiveInstructions',c.detective_instructions,
  'citizenInstructions',c.citizen_instructions,'gameInstructions',c.game_instructions,'announcementMessage',c.announcement));
-end $$;
+end; $;
 
 create or replace function public.game_player_sign_in(p_code text,p_codename text,p_pin text)
 returns boolean language plpgsql security definer set search_path='' as $$
@@ -465,7 +469,7 @@ begin
  on conflict(game_id,member_id) do update set failed_attempts=0,locked_until=null;
  update public.game_memberships set user_id=v_user where game_id=v_game.id and id=v_member;
  return true;
-end $$;
+end; $;
 
 create or replace function public.mafia_verify(p_game_id uuid,p_type text,p_target text)
 returns boolean language plpgsql stable security definer set search_path='' as $$
@@ -485,8 +489,9 @@ begin
   where m.game_id=p_game_id and lower(m.real_name)=lower(trim(p_target)) and m.id<>me;
  else raise exception 'Unknown verification type'; end if;
  return target is not null;
-end $$;
+end; $;
 
 -- Prevent old stage-based registration RPC from undoing the independent toggle system.
 revoke execute on function public.set_game_registration(uuid,boolean) from authenticated;
+revoke execute on function public.assassins_start(uuid) from authenticated;
 commit;
