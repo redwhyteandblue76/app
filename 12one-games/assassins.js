@@ -37,8 +37,8 @@ async function render(){
    const contact=contactByCodename.get(p.codename?.toLowerCase())||{};
    const line=el('div',p.name+' · '+p.codename+' · '+(p.alive?'Active':'Eliminated')+' · '+p.kills+' eliminations'+(contact.hall?' · '+contact.hall:'')+(contact.phone?' · Phone: '+contact.phone:''));
    line.className='game';
-   if(s.status!=='finished' && !['active'].includes(s.status))line.append(button('Remove',async()=>{if(!confirm('Remove '+p.name+'?'))return;await rpc('assassins_remove_player',{p_game_id:selected,p_codename:p.codename});await render()}));
-   if(['active','finished'].includes(s.status))line.append(button(p.alive?'Mark eliminated':'Reactivate',async()=>{if(!confirm('Change status for '+p.name+'?'))return;await rpc('assassins_host_status',{p_game_id:selected,p_member_id:p.id,p_alive:!p.alive});await render()}));
+   if(s.status!=='finished' && s.status!=='active')line.append(button('Remove',async()=>{if(!confirm('Remove '+p.name+'?'))return;await rpc('assassins_remove_player',{p_game_id:selected,p_codename:p.codename});await render()}));
+   if(s.status==='active')line.append(button(p.alive?'Mark eliminated':'Reactivate',async()=>{if(!confirm('Change status for '+p.name+'?'))return;await rpc('assassins_host_status',{p_game_id:selected,p_member_id:p.id,p_alive:!p.alive});await render()}));
    details.append(line);
   }
   area.append(details);
