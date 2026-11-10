@@ -399,6 +399,11 @@ async function init() {
     el.textContent = '📣 ' + s.announcement;
     el.style.display = 'block';
   }
+  if(s.masterLock){
+    document.getElementById('navBar').replaceChildren();
+    document.getElementById('main').innerHTML='<div class="card"><h2>Game Locked</h2><p>The host has temporarily disabled player access. Please check back later.</p></div>';
+    return;
+  }
   renderNav();
   if (state.codename) goTo('dashboard');
   else goTo(s.setupEnabled ? 'setup' : 'login');
@@ -516,7 +521,7 @@ function renderDashboardBody() {
   const d = state.dashboard;
   let html = `<div class="card"><h2>Welcome, ${escapeMafia(d.official_name)}</h2>`;
 
-  if (!d.gameActive) {
+  if (d.gameStatus === 'finished') {
     html += `<div class="output show" id="mafiaGameEndMessage">${escapeMafia(state.publicSettings?.announcement||"The game has ended. Thanks for playing!")}</div></div>`;
     document.getElementById('main').innerHTML = html;
     return;
@@ -539,6 +544,11 @@ function renderDashboardBody() {
 
   html += `<div class="instructions">${escapeMafia(d.roleInstructions || '').replace(/\n/g,'<br>')}</div></div>`;
 
+  if (!d.gameActive) {
+    html += '<div class="card"><div class="output show">Gameplay actions are currently disabled by the host. You can still view your role and instructions.</div></div>';
+    document.getElementById('main').innerHTML = html;
+    return;
+  }
   if (d.role === 'mafia') html += mafiaSection(d);
   if (d.role === 'detective') html += detectiveSection(d);
 
