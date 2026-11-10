@@ -144,6 +144,10 @@ window.renderHostQuickControls=async function(gameId){
      if(error)throw error;
      msg(title+' '+(!on?'enabled.':'disabled.'));
      await updateControls();
+     if(key==='actions' && selectedHostGame?.id===gameId){
+       if(selectedHostGame.game_type==='assassins')await window.refreshAssassins?.();
+       else if(selectedHostGame.game_type==='mafia')await window.refreshMafia?.();
+     }
     }catch(e){fail(e);toggle.disabled=false}
    };
    line.append(toggle);grid.append(line);
