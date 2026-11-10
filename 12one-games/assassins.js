@@ -71,14 +71,14 @@ async function render(){
    wrap.append(inp);settings.append(wrap);
   }
   for(const [key,label] of [
-   ['hall_options','Hall options'],['instructions_text','Registration instructions'],
+   ['hall_options','Hall options'],['instructions_text','Registration instructions'],['full_rules_text','Full rules & instructions (Rules page)'],
    ['signup_off_message','Registration closed message'],
    ['dashboard_off_message','Dashboard disabled message'],
    ['eliminate_off_message','Eliminations disabled message'],
    ['master_lock_message','Master lock message']
   ]){
-   const wrap=el('label',label+' ('+key+')');const inp=el(key.includes('message')||key==='instructions_text'?'textarea':'input');
-   inp.value=hostSettings[key]??'';inp.style.width='100%';wrap.append(inp);settings.append(wrap);
+   const wrap=el('label',label+' ('+key+')');const inp=el(key.includes('message')||key==='instructions_text'||key==='full_rules_text'?'textarea':'input');
+   inp.value=hostSettings[key]??'';inp.style.width='100%';if(key==='full_rules_text'){inp.rows=12;inp.maxLength=12000;}wrap.append(inp);settings.append(wrap);
    settings.append(button('Save '+label,async()=>{await rpc('assassins_host_setting',{p_game_id:selected,p_key:key,p_value:inp.value});msg(label+' saved.');await render()}));
   }
   settings.append(el('p','game_status: '+hostSettings.game_status+' — controlled through Open Registration, Start Game and Reset.'));
