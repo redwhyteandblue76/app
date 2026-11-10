@@ -191,7 +191,9 @@ begin
  if exists(select 1 from public.game_memberships where game_id=g.id and lower(real_name)=lower(v_name)) then raise exception 'That real name is already registered'; end if;
  insert into public.game_memberships(game_id,user_id,codename,real_name,phone,hall)
  values(g.id,(select auth.uid()),v_code,v_name,left(trim(p_phone),40),nullif(trim(p_hall),'')) returning id into v_id;
- insert into public.mafia_players(game_id,member_id,pin_hash) values(g.id,v_id,extensions.crypt(p_password,extensions.gen_salt('bf')));
+ insert into public.mafia_players(game_id,member_id,pin_hash,role)
+ values(g.id,v_id,extensions.crypt(p_password,extensions.gen_salt('bf')),
+ case when g.status='active' and c.game_active then 'citizen' else null end);
  return g.id;
 end; $;
 
