@@ -111,6 +111,9 @@ details .game { background: #FFFFFF; }
 }
 .auth-switch{display:flex;gap:10px;max-width:450px;margin:18px 0 23px}.auth-switch button{flex:1;margin:0}.auth-switch button[aria-pressed="true"]{background:var(--red);border-color:var(--red);color:white}.auth-switch button[aria-pressed="false"]{background:#f4eee8;color:var(--teal);border-color:#c6d6d3}#auth form{max-width:450px}#auth form h3{margin:0 0 12px}#auth form>button[type="submit"]{width:100%;margin-top:18px}#auth .auth-switch button:focus-visible{outline:3px solid var(--cyan);outline-offset:3px}
 .default-settings-game{margin:16px 0;padding:17px;border:1px solid var(--line);background:#fff;border-radius:12px}.default-settings-game h3{margin:0 0 8px}.default-settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px 20px}.default-settings-grid label{font-size:13px}.default-settings-grid input[type=checkbox]{width:20px;height:20px;vertical-align:middle;margin-left:12px}.default-settings-grid textarea{min-height:82px}.default-settings-game p{font-size:12px}.default-settings-game button{margin-top:16px}#defaultSettingsStatus:not(:empty){padding:8px 0;font-size:13px;color:var(--teal)}
+
+/* Keep mobile form controls at iOS-friendly size without blocking pinch zoom. */
+@media (max-width: 768px) { input, textarea, select { font-size: 16px !important; } }
 </style><link rel="stylesheet" href="site-footer.css">
 <script src="site-footer.js" defer></script>
 </head><body><main>
