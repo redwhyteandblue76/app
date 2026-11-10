@@ -181,6 +181,9 @@
     }
     table.stack td button { margin-top: 4px; }
   }
+
+/* Keep mobile form controls at iOS-friendly size without blocking pinch zoom. */
+@media (max-width: 768px) { input, textarea, select { font-size: 16px !important; } }
 </style>
 <link rel="stylesheet" href="site-footer.css">
 <script src="site-footer.js" defer></script>
