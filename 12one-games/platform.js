@@ -237,7 +237,7 @@ function renderGameCards(){
  const target=$('gamesList');target.replaceChildren();
  const q=($('gameSearch')?.value||'').trim().toLowerCase(),filter=$('gameFilter')?.value||'all';
  const result=allHostGames.filter(g=>(!q||(g.name+' '+g.game_code+' '+g.game_type).toLowerCase().includes(q))&&
- (filter==='all'?!g.archived_at:filter==='archived'?!!g.archived_at:g.status===filter));
+ (filter==='all'?!g.archived_at:filter==='archived'?!!g.archived_at:filter==='open'?!g.archived_at&&g.status!=='finished':!g.archived_at&&g.status==='finished'));
  if(!result.length)target.append(node('p','No matching games.'));
  for(const g of result){
   const card=node('article');card.className='game';
