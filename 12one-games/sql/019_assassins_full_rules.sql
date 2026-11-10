@@ -78,7 +78,7 @@ There are two winners: the final surviving player and the player with the most c
 
 PLAY SAFELY
 Use only soft socks, avoid the face, respect personal boundaries, and never chase anyone into unsafe or restricted areas. Contact the game administrator for disputed eliminations.$rules$::text),true),updated_at=now()
-where game_type='assassins' and not settings ? 'full_rules_text';
+where game_type='assassins' and not (settings ? 'full_rules_text');
 
 create or replace function public.assassins_host_setting(p_game_id uuid,p_key text,p_value text)
 returns void language plpgsql security definer set search_path='' as $$
