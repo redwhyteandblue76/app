@@ -18,9 +18,12 @@ begin
   select 1 from public.games
   where id=new.game_id and game_type='assassins' and status='active'
  ) then return new; end if;
- select count(*),max(member_id) into v_remaining,v_survivor
- from public.assassins_players
- where game_id=new.game_id and alive;
+ select count(*) into v_remaining
+ from public.assassins_players where game_id=new.game_id and alive;
+ if v_remaining=1 then
+  select member_id into v_survivor
+  from public.assassins_players where game_id=new.game_id and alive limit 1;
+ end if;
  if v_remaining=1 and v_survivor=new.assassin_id then
   select real_name into v_name from public.game_memberships
   where id=v_survivor and game_id=new.game_id;
