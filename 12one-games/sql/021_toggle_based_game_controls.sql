@@ -9,6 +9,14 @@ update public.game_default_settings
 update public.game_default_settings
  set settings = jsonb_set(settings,'{eliminate_enabled}','false'::jsonb,true),updated_at=now()
  where game_type='assassins';
+-- Existing games that have not begun should not have gameplay actions enabled
+-- merely because older configuration defaults were true.
+update public.mafia_config c set game_active=false
+from public.games g where g.id=c.game_id and g.game_type='mafia'
+ and g.status in ('draft','registration');
+update public.assassins_config c set eliminate_enabled=false
+from public.games g where g.id=c.game_id and g.game_type='assassins'
+ and g.status in ('draft','registration');
 
 create or replace function public.host_quick_controls(p_game_id uuid)
 returns jsonb language plpgsql stable security definer set search_path='' as $quick$
@@ -38,7 +46,7 @@ create or replace function public.host_set_quick_control(p_game_id uuid,p_key te
 returns jsonb language plpgsql security definer set search_path='' as $control$
 declare g public.games%rowtype; v_count integer; v_roles integer; v_added integer;
 begin
- if p_enabled is null or p_key not in ('masterLock','signup','dashboard','actions') then
+ if p_enabled is null or p_key is null or p_key not in ('masterLock','signup','dashboard','actions') then
   raise exception 'Invalid toggle';
  end if;
  select * into g from public.games where id=p_game_id for update;
@@ -347,7 +355,7 @@ begin
   alive=true,mafia_last_at=null,detective_last_at=null,citizen_last_at=null
   from numbered where p.game_id=p_game_id and p.member_id=numbered.member_id;
   update public.games set status='active' where id=p_game_id;
-  -- Preserve gameplay and dashboard toggle values during role assignment.
+  update public.mafia_config set game_active=false where game_id=p_game_id; -- Role assignment never enables gameplay.
   insert into public.mafia_log(game_id,event_type,message) values(p_game_id,'randomize','Host randomized Mafia roles');
   return jsonb_build_object('total',n,'mafia',n_mafia,'detectives',n_detectives,'citizens',n-n_mafia-n_detectives);
  elsif p_action='reset' then
