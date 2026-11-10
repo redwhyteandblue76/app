@@ -287,6 +287,35 @@ async function api(action,params={}){
  }catch(e){return{error:e.message||String(e)}}
 }
 function escapeMafia(value){return String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+let previousMafiaAnnouncement=null;
+async function syncMafiaAnnouncement(){
+ if(!mafiaDB||!mafiaGame)return;
+ const {data,error}=await mafiaDB.rpc('mafia_public',{p_code:GAME_CODE});
+ if(error||!data)return;
+ mafiaGame=data;
+ state.publicSettings=data;
+ const banner=document.getElementById('announcement');
+ if(!banner)return;
+ const message=String(data.announcement||'').trim();
+ if(previousMafiaAnnouncement!==message){
+  previousMafiaAnnouncement=message;
+  banner.textContent=message?'📣 '+message:'';
+  banner.style.display=message?'block':'none';
+ }
+ const endMessage=document.getElementById('mafiaGameEndMessage');
+ if(endMessage&&data.status==='finished'){
+  endMessage.textContent=message||'The game has ended. Thanks for playing!';
+ }
+ if(data.status==='finished'&&state.dashboard?.gameStatus!=='finished'&&state.view==='dashboard'){
+  // Refresh once to replace active controls with the completed game view.
+  state.dashboard.gameStatus='finished';
+  await renderDashboard();
+ }
+}
+// Check only the public status/announcement so players see the result without
+// typing or game interactions being interrupted by full dashboard refreshes.
+setInterval(()=>{if(!document.hidden)syncMafiaAnnouncement().catch(()=>{});},12000);
+
 
 /* ================= NAV / ROUTING ================= */
 function renderNav() {
@@ -470,6 +499,7 @@ async function renderDashboard() {
   }
   state.dashboard = data;
   renderDashboardBody();
+  syncMafiaAnnouncement().catch(()=>{});
 }
 
 function cooldownLine(cd) {
@@ -484,7 +514,7 @@ function renderDashboardBody() {
   let html = `<div class="card"><h2>Welcome, ${escapeMafia(d.official_name)}</h2>`;
 
   if (!d.gameActive) {
-    html += `<div class="output show">The game has ended. Thanks for playing!</div></div>`;
+    html += `<div class="output show" id="mafiaGameEndMessage">${escapeMafia(state.publicSettings?.announcement||"The game has ended. Thanks for playing!")}</div></div>`;
     document.getElementById('main').innerHTML = html;
     return;
   }
