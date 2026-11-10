@@ -177,7 +177,7 @@ async function callBackend(action, params = {}) {
     if(error) throw error;
     gameContext=data;
     const registration=data.status==='registration' && data.signup_enabled!==false && !data.master_lock;
-    return {masterLock:data.master_lock?'TRUE':'FALSE',signupOffMessage:data.signup_off_message||'Registration is closed.',dashboardOffMessage:data.dashboard_off_message||'Dashboard unavailable.',eliminateOffMessage:data.eliminate_off_message||'Eliminations are disabled.',masterLockMessage:data.master_lock_message||'Game unavailable.',paused:data.paused?'TRUE':'FALSE',signupEnabled:registration?'TRUE':'FALSE',dashboardEnabled:data.dashboard_enabled?'TRUE':'FALSE',eliminateEnabled:data.eliminate_enabled?'TRUE':'FALSE',hallFieldEnabled:data.hall_enabled?'TRUE':'FALSE',hallOptions:data.hall_options||'',phoneFieldEnabled:data.phone_enabled?'TRUE':'FALSE',instructionsEnabled:data.instructions_enabled?'TRUE':'FALSE',instructionVerificationEnabled:data.instruction_verification_enabled?'TRUE':'FALSE',instructionsText:data.instructions_text||'',gameStatus:data.status};
+    return {masterLock:data.master_lock?'TRUE':'FALSE',signupOffMessage:data.signup_off_message||'Registration is closed.',dashboardOffMessage:data.dashboard_off_message||'Dashboard unavailable.',eliminateOffMessage:data.eliminate_off_message||'Eliminations are disabled.',masterLockMessage:data.master_lock_message||'Game unavailable.',paused:data.paused?'TRUE':'FALSE',signupEnabled:registration?'TRUE':'FALSE',dashboardEnabled:data.dashboard_enabled?'TRUE':'FALSE',eliminateEnabled:data.eliminate_enabled?'TRUE':'FALSE',hallFieldEnabled:data.hall_enabled?'TRUE':'FALSE',hallOptions:data.hall_options||'',phoneFieldEnabled:data.phone_enabled?'TRUE':'FALSE',instructionsEnabled:data.instructions_enabled?'TRUE':'FALSE',instructionVerificationEnabled:data.instruction_verification_enabled?'TRUE':'FALSE',instructionsText:data.instructions_text||'',fullRulesText:data.full_rules_text||'',gameStatus:data.status};
   }
   if (action === 'submitForm') {
     const result = await v2db.rpc('assassins_join_with_pin',{p_code:GAME_CODE,p_codename:params.codename,p_real_name:params.real_name,p_pin:params.pin,p_phone:params.phone||'',p_hall:params.hall||'',p_accepted:params.instructionsAccepted==='true'});
@@ -308,6 +308,7 @@ async function renderRules() {
     <h2>Rules &amp; Instructions</h2>
     <div class="form-section">
       <p class="subtle">Read these rules before playing. The administrator may post additional instructions below.</p>
+      <div id="builtInRules">
       <div class="rule-block"><h3>The Overview</h3><p>Your mission is to find your assigned target and tag them with a sock. When you successfully tag your target, they must reveal their codename. Enter that codename in the Player Dashboard to confirm the elimination and receive your next target.</p></div>
       <div class="rule-block"><h3>How to Join</h3><p><a href="${GAME_PAGE}&view=signup">Sign up here</a> while registration is open. Choose a codename and keep it private.</p></div>
       <div class="rule-block"><h3>Once the Game Begins</h3><ol>
@@ -324,10 +325,17 @@ async function renderRules() {
       <div class="rule-block"><h3>Safe Items</h3><p>The designated safe item protects you only while it is <strong>IN YOUR HAND</strong>. Safe items may change frequently; check the group chat for the latest item.</p></div>
       <div class="rule-block"><h3>How to Win</h3><p>There are two winners: the final surviving player and the player with the most confirmed eliminations.</p></div>
       <div class="rule-block"><h3>Play Safely</h3><p>Use only soft socks, avoid the face, respect personal boundaries, and do not chase anyone into unsafe or restricted areas. If an elimination is disputed, contact the game administrator.</p></div>
+      </div>
+      <div class="rule-block" id="customFullRules" style="display:none;"><div id="fullRulesContent" style="white-space:pre-wrap;"></div></div>
       <div class="rule-block"><h3>Administrator Instructions</h3><div id="adminRules" style="white-space:pre-wrap;">Loading current instructions…</div></div>
     </div>`;
   try {
     const d = publicStatus;
+    if(d.fullRulesText){
+      document.getElementById('builtInRules').style.display='none';
+      document.getElementById('customFullRules').style.display='block';
+      document.getElementById('fullRulesContent').textContent=d.fullRulesText;
+    }
     document.getElementById('adminRules').textContent =
       d.instructionsEnabled === 'TRUE' && d.instructionsText ? d.instructionsText :
       'No additional instructions are currently posted.';
