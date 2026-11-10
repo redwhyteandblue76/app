@@ -180,7 +180,7 @@ async function callBackend(action, params = {}) {
     if(error) throw error;
     gameContext=data;
     const registration=data.status==='registration' && data.signup_enabled!==false && !data.master_lock;
-    return {masterLock:data.master_lock?'TRUE':'FALSE',signupOffMessage:data.signup_off_message||'Registration is closed.',dashboardOffMessage:data.dashboard_off_message||'Dashboard unavailable.',eliminateOffMessage:data.eliminate_off_message||'Eliminations are disabled.',masterLockMessage:data.master_lock_message||'Game unavailable.',paused:data.paused?'TRUE':'FALSE',signupEnabled:registration?'TRUE':'FALSE',dashboardEnabled:data.dashboard_enabled?'TRUE':'FALSE',eliminateEnabled:data.eliminate_enabled?'TRUE':'FALSE',hallFieldEnabled:data.hall_enabled?'TRUE':'FALSE',hallOptions:data.hall_options||'',phoneFieldEnabled:data.phone_enabled?'TRUE':'FALSE',instructionsEnabled:data.instructions_enabled?'TRUE':'FALSE',instructionVerificationEnabled:data.instruction_verification_enabled?'TRUE':'FALSE',instructionsText:data.instructions_text||'',fullRulesText:data.full_rules_text||'',gameStatus:data.status};
+    return {masterLock:data.master_lock?'TRUE':'FALSE',signupOffMessage:data.signup_off_message||'Registration is closed.',dashboardOffMessage:data.dashboard_off_message||'Dashboard unavailable.',eliminateOffMessage:data.eliminate_off_message||'Eliminations are disabled.',masterLockMessage:data.master_lock_message||'Game unavailable.',paused:data.paused?'TRUE':'FALSE',signupEnabled:registration?'TRUE':'FALSE',dashboardEnabled:data.dashboard_enabled?'TRUE':'FALSE',eliminateEnabled:data.eliminate_enabled?'TRUE':'FALSE',hallFieldEnabled:data.hall_enabled?'TRUE':'FALSE',hallOptions:data.hall_options||'',phoneFieldEnabled:data.phone_enabled?'TRUE':'FALSE',instructionsEnabled:data.instructions_enabled?'TRUE':'FALSE',instructionVerificationEnabled:data.instruction_verification_enabled?'TRUE':'FALSE',instructionsText:data.instructions_text||'',fullRulesText:data.full_rules_text||'',winnerAnnouncement:data.winner_announcement||'',gameStatus:data.status};
   }
   if (action === 'submitForm') {
     const result = await v2db.rpc('assassins_join_with_pin',{p_code:GAME_CODE,p_codename:params.codename,p_real_name:params.real_name,p_pin:params.pin,p_phone:params.phone||'',p_hall:params.hall||'',p_accepted:params.instructionsAccepted==='true'});
@@ -201,7 +201,14 @@ async function callBackend(action, params = {}) {
     if (action === 'findMyTarget') return {success:true,message:st.my_target?'Your target is '+st.my_target+'.':'No active target available.'};
     if (action === 'eliminateTarget') {
       const result = await v2db.rpc('assassins_confirm',{p_game_id:gameContext.id,p_target_codename:params.targetCodename});
-      return result.error?{success:false,message:result.error.message}:{success:true,message:'Elimination confirmed. '+(result.data?.next_target?'Next target: '+result.data.next_target:'')};
+      if(result.error)return{success:false,message:result.error.message};
+      if(result.data?.winner){
+        const latest=await v2db.rpc('assassins_v2_public',{p_code:GAME_CODE});
+        return {success:true,winner:true,message:!latest.error&&latest.data?.winner_announcement
+          ?latest.data.winner_announcement
+          :'🏆 You are the last player standing! You win Assassins!'};
+      }
+      return {success:true,message:'Elimination confirmed. '+(result.data?.next_target?'Next target: '+result.data.next_target:'')};
     }
   }
   throw Error('This original game feature is being migrated to game-specific Supabase storage: '+action);
@@ -309,6 +316,8 @@ async function renderLanding() {
     <div class="form-section" id="landingBox">
       <p style="text-align:center;">Find your target. Tag them with a sock. Confirm the elimination using their codename.</p>
       <div class="status-line" id="gameStatus">Checking game status…</div>
+      ${publicStatus?.gameStatus==='finished'&&publicStatus.winnerAnnouncement
+        ?'<div class="output success" style="display:block;" role="status">'+escapeHtml(publicStatus.winnerAnnouncement)+'</div>' : ''}
       <div class="action-links">
         ${isEnabled('dashboardEnabled') ? '<a href="' + GAME_PAGE + '&view=dashboard">Player Dashboard / Sign In</a>' : ''}
         ${isEnabled('signupEnabled') && !rememberedCodename() ? '<a href="' + GAME_PAGE + '&view=signup">Sign Up</a>' : ''}
@@ -626,6 +635,7 @@ function renderDashboard() {
       setLoading(loading, false);
       btn.disabled = false;
       showOutput(output, data.message, data.success ? 'success' : 'error');
+      if(data.winner)output.setAttribute('role','status');
       document.getElementById('confirmStep2').style.display = 'none';
       document.getElementById('confirmStep1Btn').style.display = 'block';
     } catch (err) {
@@ -643,6 +653,7 @@ function renderFeed() {
   app.innerHTML = `
     <h2>Elimination Feed</h2>
     <div class="form-section">
+      <div id="feedWinnerAnnouncement" class="output success" style="display:none;" role="status"></div>
       <button id="refreshBtn">Refresh</button>
       <div class="loading" id="feedLoading"><div class="spinner"></div>Loading...</div>
       <div id="feedList"></div>
@@ -657,6 +668,12 @@ function renderFeed() {
     try {
       const data = await callBackend('getPublicFeed');
       setLoading(loading, false);
+      const current=await callBackend('getPublicStatus');
+      const winnerBox=document.getElementById('feedWinnerAnnouncement');
+      if(winnerBox){
+        winnerBox.style.display=current.gameStatus==='finished'&&current.winnerAnnouncement?'block':'none';
+        winnerBox.textContent=current.winnerAnnouncement||'';
+      }
       if (!data.feed || data.feed.length === 0) {
         list.innerHTML = '<p style="text-align:center;">No eliminations yet.</p>';
         return;
