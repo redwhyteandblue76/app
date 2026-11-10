@@ -280,7 +280,28 @@ async function initialize() {
   else if (selected === 'admin') { app.textContent='Administration is available through the host dashboard.'; }
   else renderLanding();
 }
-initializeGameContext().then(initialize).catch(err => { document.getElementById('app').textContent = err.message; });
+function showGameCodeEntry() {
+  const container = document.getElementById('app');
+  container.innerHTML = `
+    <h2>Enter Your Game</h2>
+    <form class="form-section" id="gameCodeEntry">
+      <p>Have a game code from your host? Enter it below to open your Assassins game.</p>
+      <label for="joinGameCode">Game code</label>
+      <input id="joinGameCode" name="game" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="20" placeholder="Enter game code" required>
+      <button type="submit">Enter Game</button>
+    </form>`;
+  document.getElementById('gameCodeEntry').addEventListener('submit', event => {
+    event.preventDefault();
+    const code = document.getElementById('joinGameCode').value.trim().toUpperCase();
+    if (!code) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('game', code);
+    url.searchParams.delete('view');
+    window.location.assign(url.href);
+  });
+}
+if (!GAME_CODE) showGameCodeEntry();
+else initializeGameContext().then(initialize).catch(err => { document.getElementById('app').textContent = err.message; });
 
 async function renderLanding() {
   app.innerHTML = `
