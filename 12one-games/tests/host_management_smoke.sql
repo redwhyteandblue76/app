@@ -51,8 +51,8 @@ select public.host_manage_game((select id from public.games where game_code='HOS
 do $test$
 begin
  if exists(select 1 from public.games where game_code='HOST02') then raise exception 'Game was not deleted'; end if;
- if not exists(select 1 from public.game_credits where consumed_at is not null and consumed_by_game_id is null) then
- raise exception 'Spent credit not retained'; end if;
+ if exists(select 1 from public.game_credits where consumed_by_game_id is not null or consumed_at is not null) then
+ raise exception 'Spent game credit was not retired'; end if;
  if not exists(select 1 from public.host_events where action='delete' and game_name='New Host Name') then
  raise exception 'Deletion audit missing'; end if;
 end $test$;
