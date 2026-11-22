@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#9b2226">
+<meta name="description" content="A simple scorekeeper for players and teams. Scores are saved on this device.">
+<title>Scorekeeper</title>
+<link rel="icon" type="image/svg+xml" href="https://12one.page/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site-footer.css">
+<style>
+:root{--red:#9b2226;--darkred:#741a22;--navy:#173344;--muted:#586a72;--cream:#f7f4ef;--border:#e5ddd5}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;flex-direction:column;background:var(--cream);color:var(--navy);font:15px/1.6 Montserrat,system-ui,sans-serif}
+main{width:min(960px,100%);margin:0 auto;padding:48px 20px 65px;flex:1}
+h1{font-size:clamp(36px,6vw,58px);line-height:1.12;letter-spacing:-.055em;margin:0 0 12px;font-weight:900}h1 span{color:var(--red)}
+.eyebrow{font-size:12px;font-weight:900;letter-spacing:.17em;text-transform:uppercase;color:var(--red);margin:0 0 10px}
+.intro{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:28px}
+.intro p:last-child{color:var(--muted);margin:0}
+button,input{font:inherit}button{border:1px solid var(--border);border-radius:10px;padding:11px 16px;background:#fff;color:var(--navy);font-weight:800;cursor:pointer;transition:background .15s,transform .15s}button:hover{background:#f0e9e4}button:active{transform:scale(.98)}button:focus-visible,input:focus-visible{outline:3px solid var(--red);outline-offset:3px}
+.primary{background:var(--red);color:#fff;border-color:var(--red)}.primary:hover{background:var(--darkred)}.controls{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 24px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:17px}
+.card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:24px;box-shadow:0 5px 24px #17334409}
+.name{width:100%;background:#f8f6f3;border:1px solid transparent;border-radius:8px;padding:10px;color:var(--navy);font-weight:800;font-size:18px}
+.name:focus{border-color:var(--red)}.score{text-align:center;font-size:clamp(64px,10vw,92px);font-weight:900;letter-spacing:-.06em;font-variant-numeric:tabular-nums;line-height:1.5}
+.actions{display:flex;gap:12px}.actions button{flex:1;font-size:28px;min-height:60px;line-height:1}.actions button:last-child{background:var(--red);border-color:var(--red);color:white}.actions button:last-child:hover{background:var(--darkred)}
+.remove{display:block;margin:15px auto 0;border:0;background:none;color:var(--muted);font-size:12px;padding:7px}.remove:hover{background:none;color:var(--red)}
+.hint{color:var(--muted);text-align:center;font-size:12px;margin:27px 0 0}
+dialog{border:1px solid var(--border);border-radius:16px;padding:25px;background:white;color:var(--navy);width:min(420px,90vw);box-shadow:0 15px 60px #0003}dialog::backdrop{background:#10182099}dialog h2{margin:0 0 8px}dialog p{color:var(--muted)}dialog menu{display:flex;justify-content:flex-end;gap:10px;margin:22px 0 0;padding:0}
+@media(max-width:600px){main{padding:32px 16px 45px}.intro{margin-bottom:23px}.controls button{flex:1}.card{padding:20px}}
+</style>
+<script src="site-footer.js" defer></script>
+</head><body><main>
+<header class="intro"><div><p class="eyebrow">Keep the game moving</p><h1>Score<span>keeper.</span></h1><p>Simple scores, saved on this device.</p></div><button id="reset">Reset scores</button></header>
+<div class="controls"><button class="primary" id="add">+ Add player / team</button><button id="clear">New game</button></div>
+<section id="players" class="grid" aria-label="Players and scores"></section>
+<p class="hint">Tap a name to edit it. Scores save automatically in this browser.</p>
+</main>
+<dialog id="confirm"><form method="dialog"><h2 id="dialogTitle">Are you sure?</h2><p id="dialogMessage"></p><menu><button value="cancel">Cancel</button><button class="primary" value="confirm">Continue</button></menu></form></dialog>
+<script>
+(()=>{
+const KEY='simple-scorekeeper-v1';
+const id=()=>globalThis.crypto?.randomUUID?.()||String(Date.now())+Math.random();
+const initial=()=>[{id:id(),name:'Team 1',score:0},{id:id(),name:'Team 2',score:0}];
+let players;
+try{const data=JSON.parse(localStorage.getItem(KEY));players=Array.isArray(data)?data.filter(p=>p&&typeof p.id==='string'&&typeof p.name==='string'&&Number.isSafeInteger(p.score)).slice(0,100):initial()}catch{players=initial()}
+const root=document.querySelector('#players');
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(players))}catch(e){console.warn('Could not save scores',e)}};
+function render(){root.replaceChildren();players.forEach(p=>{
+const card=document.createElement('article');card.className='card';
+const name=document.createElement('input');name.className='name';name.value=p.name;name.maxLength=60;name.setAttribute('aria-label','Player or team name');name.addEventListener('input',()=>{p.name=name.value;save()});
+const score=document.createElement('div');score.className='score';score.textContent=p.score;score.setAttribute('aria-live','polite');
+const actions=document.createElement('div');actions.className='actions';
+for(const [label,delta] of [['−',-1],['+',1]]){const b=document.createElement('button');b.textContent=label;b.setAttribute('aria-label',(delta>0?'Add':'Subtract')+' one point for '+p.name);b.onclick=()=>{if(!Number.isSafeInteger(p.score+delta))return;p.score+=delta;score.textContent=p.score;save()};actions.append(b)}
+const remove=document.createElement('button');remove.className='remove';remove.textContent='Remove';remove.setAttribute('aria-label','Remove '+p.name);remove.onclick=()=>{players=players.filter(x=>x.id!==p.id);save();render()};
+card.append(name,score,actions,remove);root.append(card)
+})}
+const dialog=document.querySelector('#confirm');
+function ask(title,message){document.querySelector('#dialogTitle').textContent=title;document.querySelector('#dialogMessage').textContent=message;dialog.showModal();return new Promise(resolve=>dialog.addEventListener('close',()=>resolve(dialog.returnValue==='confirm'),{once:true}))}
+document.querySelector('#add').onclick=()=>{if(players.length>=100)return;players.push({id:id(),name:'Team '+(players.length+1),score:0});save();render()};
+document.querySelector('#reset').onclick=async()=>{if(await ask('Reset scores?','All scores will return to zero. Player names will stay.')){players.forEach(p=>p.score=0);save();render()}};
+document.querySelector('#clear').onclick=async()=>{if(await ask('Start a new game?','This will replace all players and scores with two new teams.')){players=initial();save();render()}};
+save();render();
+})();
+</script></body></html>
