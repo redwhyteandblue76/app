@@ -24,7 +24,7 @@ button,input{font:inherit}button{border:1px solid var(--border);border-radius:10
 .name{width:100%;background:#f8f6f3;border:1px solid transparent;border-radius:8px;padding:10px;color:var(--navy);font-weight:800;font-size:18px}
 .name:focus{border-color:var(--red)}.score{text-align:center;font-size:clamp(64px,10vw,92px);font-weight:900;letter-spacing:-.06em;font-variant-numeric:tabular-nums;line-height:1.5}
 .actions{display:flex;gap:12px}.actions button{flex:1;font-size:28px;min-height:60px;line-height:1}.actions button:last-child{background:var(--red);border-color:var(--red);color:white}.actions button:last-child:hover{background:var(--darkred)}
-.remove{display:block;margin:15px auto 0;border:0;background:none;color:var(--muted);font-size:12px;padding:7px}.remove:hover{background:none;color:var(--red)}
+.custom{display:flex;gap:9px;margin-top:12px}.custom input{min-width:0;flex:1;width:80px;border:1px solid var(--border);border-radius:9px;padding:10px 12px;background:#f8f6f3;color:var(--navy);font-weight:700}.custom button{white-space:nowrap;padding:10px 13px}.remove{display:block;margin:15px auto 0;border:0;background:none;color:var(--muted);font-size:12px;padding:7px}.remove:hover{background:none;color:var(--red)}
 .hint{color:var(--muted);text-align:center;font-size:12px;margin:27px 0 0}
 dialog{border:1px solid var(--border);border-radius:16px;padding:25px;background:white;color:var(--navy);width:min(420px,90vw);box-shadow:0 15px 60px #0003}dialog::backdrop{background:#10182099}dialog h2{margin:0 0 8px}dialog p{color:var(--muted)}dialog menu{display:flex;justify-content:flex-end;gap:10px;margin:22px 0 0;padding:0}
 @media(max-width:600px){main{padding:32px 16px 45px}.intro{margin-bottom:23px}.controls button{flex:1}.card{padding:20px}}
@@ -53,7 +53,12 @@ const score=document.createElement('div');score.className='score';score.textCont
 const actions=document.createElement('div');actions.className='actions';
 for(const [label,delta] of [['−',-1],['+',1]]){const b=document.createElement('button');b.textContent=label;b.setAttribute('aria-label',(delta>0?'Add':'Subtract')+' one point for '+p.name);b.onclick=()=>{if(!Number.isSafeInteger(p.score+delta))return;p.score+=delta;score.textContent=p.score;save()};actions.append(b)}
 const remove=document.createElement('button');remove.className='remove';remove.textContent='Remove';remove.setAttribute('aria-label','Remove '+p.name);remove.onclick=()=>{players=players.filter(x=>x.id!==p.id);save();render()};
-card.append(name,score,actions,remove);root.append(card)
+const custom=document.createElement('div');custom.className='custom';
+const amount=document.createElement('input');amount.type='number';amount.step='1';amount.placeholder='Points (e.g. 5 or -3)';amount.setAttribute('aria-label','Custom point adjustment for '+p.name);
+const apply=document.createElement('button');apply.textContent='Apply';apply.setAttribute('aria-label','Apply custom points to '+p.name);
+const adjust=()=>{const raw=amount.value.trim();if(!/^[+-]?\\d+$/.test(raw)){amount.setCustomValidity('Enter a whole number of points.');amount.reportValidity();return}amount.setCustomValidity('');const delta=Number(raw);if(!Number.isSafeInteger(delta)||!Number.isSafeInteger(p.score+delta)){amount.setCustomValidity('Number is too large.');amount.reportValidity();return}p.score+=delta;score.textContent=p.score;save();amount.value=''};
+amount.addEventListener('input',()=>amount.setCustomValidity(''));amount.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();adjust()}});apply.onclick=adjust;custom.append(amount,apply);
+card.append(name,score,actions,custom,remove);root.append(card)
 })}
 const dialog=document.querySelector('#confirm');
 function ask(title,message){document.querySelector('#dialogTitle').textContent=title;document.querySelector('#dialogMessage').textContent=message;dialog.showModal();return new Promise(resolve=>dialog.addEventListener('close',()=>resolve(dialog.returnValue==='confirm'),{once:true}))}
