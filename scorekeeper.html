@@ -28,9 +28,18 @@ button,input{font:inherit}button{border:1px solid var(--border);border-radius:10
 .hint{color:var(--muted);text-align:center;font-size:12px;margin:27px 0 0}
 dialog{border:1px solid var(--border);border-radius:16px;padding:25px;background:white;color:var(--navy);width:min(420px,90vw);box-shadow:0 15px 60px #0003}dialog::backdrop{background:#10182099}dialog h2{margin:0 0 8px}dialog p{color:var(--muted)}dialog menu{display:flex;justify-content:flex-end;gap:10px;margin:22px 0 0;padding:0}
 @media(max-width:600px){main{padding:32px 16px 45px}.intro{margin-bottom:23px}.controls button{flex:1}.card{padding:20px}}
+
+[hidden]{display:none!important}.wizard{max-width:760px;margin:35px auto}.wizard h2{font-size:clamp(27px,5vw,40px);line-height:1.15;letter-spacing:-.04em;margin:0 0 12px}.wizard p{color:var(--muted)}.stepbar{display:flex;gap:8px;margin:0 0 24px}.stepbar span{height:5px;flex:1;border-radius:8px;background:var(--border)}.stepbar span.active{background:var(--red)}.wizardActions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}.wizardActions button{flex:1}.wizardRoster{display:grid;gap:10px;margin:18px 0}.wizardPerson{display:flex;align-items:center;gap:9px}.wizardPerson input{flex:1;min-width:0;border:1px solid var(--border);border-radius:9px;padding:12px}.wizardPerson button{padding:9px}.presetHelp{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:12px 0}.wizard .card{box-shadow:none}.rulesList{padding-left:20px}.rulesList li{margin:9px 0}
 </style>
 <script src="site-footer.js" defer></script>
 </head><body><main>
+<section id="wizard" class="wizard" aria-label="Game setup">
+<div class="stepbar" aria-hidden="true"><span id="step1"></span><span id="step2"></span><span id="step3"></span></div>
+<div id="welcomeStep" class="card"><p class="eyebrow">Ready to play?</p><h2>Welcome to Scorekeeper.</h2><p>Keep score for your favorite card games, or make your own. Set up your game in a few quick steps.</p><div class="wizardActions"><button class="primary" id="beginGame">Start game</button><button id="resumeGame" hidden>Resume saved game</button></div></div>
+<div id="settingsStep" hidden><div class="card"><p class="eyebrow">Step 1 of 2 · Choose your game</p><h2>How are we playing?</h2><p>Choose a preset, or select Custom for simple scorekeeping. You can adjust any of the features.</p><div class="presetHelp"><button id="rulesButton" type="button">Game description &amp; rules ⓘ</button><span class="muted" id="presetSummary"></span></div></div><div id="wizardSettingsSlot"></div><div class="wizardActions"><button id="settingsBack">Back</button><button class="primary" id="settingsNext">Next: Players</button></div></div>
+<div id="playersStep" class="card" hidden><p class="eyebrow">Step 2 of 2 · Participants</p><h2 id="playersStepTitle">Who's playing?</h2><p id="teamTip">Add everyone playing and give each participant a name.</p><div id="wizardRoster" class="wizardRoster"></div><button id="wizardAdd">+ Add player</button><div class="wizardActions"><button id="playersBack">Back</button><button class="primary" id="launchGame">Let's play!</button></div></div>
+</section>
+<div id="gameUI" hidden>
 <header class="intro"><div><p class="eyebrow">Keep the game moving</p><h1>Score<span>keeper.</span></h1><p>Simple scores, saved on this device.</p></div><button id="reset">Reset scores</button></header>
 <div class="controls"><button class="primary" id="add">+ Add player / team</button><button id="clear">New game</button><button id="setupToggle">Advanced game setup</button></div>
 <section id="setup" class="card" hidden style="margin-bottom:22px">
@@ -42,7 +51,7 @@ dialog{border:1px solid var(--border);border-radius:16px;padding:25px;background
 <section id="standingsPanel" class="card" hidden style="margin-bottom:22px"><h2 style="margin-top:0">Standings</h2><div id="standings"></div><div class="controls"><button id="finish">Finish game</button><button id="export">Export CSV</button></div><p id="winner"></p></section>
 <section id="historyPanel" class="card" hidden style="margin-bottom:22px"><h2 style="margin-top:0">Round history</h2><div id="history"></div></section>
 <section id="players" class="grid" aria-label="Players and scores"></section>
-<p class="hint">Tap a name to edit it. Scores save automatically in this browser.</p>
+<p class="hint">Tap a name to edit it. Scores save automatically in this browser.</p></div>
 </main>
 <dialog id="confirm"><form method="dialog"><h2 id="dialogTitle">Are you sure?</h2><p id="dialogMessage"></p><menu><button value="cancel">Cancel</button><button class="primary" value="confirm">Continue</button></menu></form></dialog>
 <script>
@@ -107,6 +116,44 @@ $('saveRound').onclick=()=>{const r={scores:{},bids:{},tricks:{}};for(const x of
 $('cancelRound').onclick=()=>{editing=null;renderRound()};
 $('finish').onclick=()=>{game.finished=!game.finished;save();render()};
 $('export').onclick=()=>{const t=totals(),q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';const rows=[['Game',game.name],['Preset',game.preset],[],['Round',...game.players.map(p=>p.name)],...game.rounds.map((r,i)=>[i+1,...game.players.map(p=>r.scores[p.id]??0)]),['Base adjustments',...game.players.map(p=>p.score)],['Total',...game.players.map(p=>t[p.id])]];if(has('bids')){rows.push([],['Round','Player','Bid','Tricks taken']);game.rounds.forEach((r,i)=>game.players.forEach(p=>rows.push([i+1,p.name,r.bids?.[p.id]??'',r.tricks?.[p.id]??''])))}const blob=new Blob(['\uFEFF'+rows.map(r=>r.map(q).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=el('a');a.href=url;a.download='scorekeeper-'+Date.now()+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
-save();render();
+
+const descriptions={
+custom:['Custom game','Use the simple score cards. Add or subtract points as you play. Enable advanced features only if you need them.'],
+hearts:['Hearts','A trick-taking game where players generally try to avoid hearts and the queen of spades. Lowest score typically wins. Shooting the moon is a common optional rule.'],
+rook:['Rook','A bidding and trick-taking game often played in partnerships. Teams compete to earn points through captured cards and contracts. Decks and scoring vary by house rules.'],
+river:['Up and Down the River','A prediction-based trick-taking game. Players bid how many tricks they expect to win while the number of cards dealt changes between rounds. Scoring varies by group.'],
+fivehundred:['500','A trick-taking game where players bid contracts and score points for making them. Often played in partnerships; bidding and scoring vary by version.'],
+euchre:['Euchre','A partnership trick-taking game using a shortened deck. Players choose trump and aim to win enough tricks. A common game target is 10 points.'],
+spades:['Spades','A trick-taking game where spades are trump. Players or teams bid on tricks and score based on their contracts; bags and nil bids are common variations.'],
+ohphooey:['Oh Phooey','A trick-taking game where players predict how many tricks they will win each round. The cards dealt may increase or decrease, and points depend on meeting bids.'],
+phase10:['Phase 10','A rummy-style game in which players complete a sequence of phases. Unplayed cards generally count as penalty points; lowest total is favored.'],
+cribbage:['Cribbage','A card game where players earn points from combinations during play and hand scoring. Traditionally the first to 121 points wins.']
+};
+let stage='welcome';
+const setStage=s=>{stage=s;$('wizard').hidden=s==='game';$('gameUI').hidden=s!=='game';for(const k of ['welcome','settings','players'])$(k+'Step').hidden=s!==k;['step1','step2','step3'].forEach((id,i)=>$(id).classList.toggle('active',i<=({welcome:0,settings:1,players:2,game:2}[s]??0)));if(s==='settings'){const setup=$('setup');$('wizardSettingsSlot').append(setup);setup.hidden=false;setup.querySelector('h2').hidden=true;setup.querySelector('.controls').hidden=true;setupRender();updateSummary()}if(s==='players')drawWizardRoster();if(s==='game'){$('setup').hidden=true;render();}window.scrollTo({top:0,behavior:'instant'})};
+const updateSummary=()=>{$('presetSummary').textContent=descriptions[$('preset').value]?.[1].split('.')[0]+'.'||''};
+const drawWizardRoster=()=>{
+const root=$('wizardRoster');root.replaceChildren();const teams=[...$('featureList').querySelectorAll('input:checked')].some(x=>x.value==='teams');
+$('playersStepTitle').textContent=teams?'Set up your teams':'Who is playing?';
+$('teamTip').textContent=teams?'Each participant represents a team. Enter the team names; scores will be shared by team.':'Enter a name for each player. You can add or remove players.';
+$('wizardAdd').textContent=teams?'+ Add team':'+ Add player';
+game.players.forEach((p,i)=>{const row=el('div',undefined,'wizardPerson');const inp=el('input');inp.type='text';inp.value=p.name;inp.maxLength=60;inp.setAttribute('aria-label',(teams?'Team ':'Player ')+(i+1));inp.oninput=()=>{p.name=inp.value;save()};const del=el('button','Remove');del.onclick=()=>{if(game.players.length<=1)return;game.players.splice(i,1);save();drawWizardRoster()};row.append(inp,del);root.append(row)});
+};
+$('beginGame').onclick=()=>{if(game.rounds.length||game.players.some(p=>p.score!==0)){if(!confirm('Start a new game? Existing scores will be replaced. Export your scores first if you need them.'))return;}game=newGame();editing=null;save();setStage('settings')};
+$('resumeGame').onclick=()=>setStage('game');
+$('settingsBack').onclick=()=>setStage('welcome');
+$('settingsNext').onclick=()=>{const selected=[...$('featureList').querySelectorAll('input:checked')].map(x=>x.value);if(['history','edit','bids','schedule','dealer'].some(k=>selected.includes(k))&&!selected.includes('rounds'))selected.push('rounds');const n=integer($('startCards').value);if(n===null||n<1||n>52){alert('Starting cards must be between 1 and 52.');return}game.features=selected;game.preset=$('preset').value;game.name=$('gameName').value.trim()||'Game night';game.win=$('win').value;game.schedule=$('schedule').value;game.startCards=n;save();setStage('players')};
+$('playersBack').onclick=()=>setStage('settings');
+$('wizardAdd').onclick=()=>{if(game.players.length>=40)return;game.players.push({id:uid(),name:(has('teams')?'Team ':'Player ')+(game.players.length+1),score:0});save();drawWizardRoster()};
+$('launchGame').onclick=()=>{if(!game.players.length||game.players.some(p=>!p.name.trim())){alert('Please enter a name for every participant.');return}if(new Set(game.players.map(p=>p.name.trim().toLowerCase())).size!==game.players.length){alert('Please use different names for each participant.');return}game.started=true;save();setStage('game')};
+$('rulesButton').onclick=()=>{const [title,desc]=descriptions[$('preset').value]||descriptions.custom;$('rulesTitle').textContent=title;$('rulesText').replaceChildren(el('p',desc),el('p','These are brief general rules. Agree on your preferred scoring and house rules before starting.'));$('rulesDialog').showModal()};
+$('preset').addEventListener('change',updateSummary);
+$('clear').addEventListener('click',e=>{e.stopImmediatePropagation();if(!confirm('Start a new game? This replaces current scores and rounds. Export first if you want to keep a copy.'))return;game=newGame();editing=null;save();setStage('welcome')},true);
+$('setupToggle').addEventListener('click',e=>{e.stopImmediatePropagation();setStage('settings')},true);
+$('closeSetup').addEventListener('click',e=>{e.stopImmediatePropagation();setStage('game')},true);
+$('applySetup').addEventListener('click',e=>{e.stopImmediatePropagation();$('settingsNext').click()},true);
+$('resumeGame').hidden=!game.started;
+save();render();setStage('welcome');
+
 })();
 </script></body></html>
