@@ -129,7 +129,7 @@ function optionField(key,label,type='number',extra=''){const v=draftOpts[key];re
 function renderSettings(){
 const t=chosen,o=draftOpts;let bits='';
 if(t==='simple'){bits='<p class="notice">Simple mode keeps the original score cards and custom point entry. No round setup is required.</p>'+select('win','Optional leader tracking',[['none','Off'],['high','Highest score leads'],['low','Lowest score leads']],o.win);}
-else if(t==='custom'){bits='<h3>Scoring style</h3>'+select('scoreMode','Scoring interface',[['quick','Quick adjustments'],['rounds','Round-by-round'],['both','Both']],o.scoreMode)+'<h3>Optional features</h3><div class="fields">'+['history','edit','bids','dealer','schedule','standings','export'].map(k=>check('f_'+k,featureLabels[k],o.features.includes(k))).join('')+'</div>'+select('win','Winning condition',[['none','Manual only'],['high','Highest score'],['low','Lowest score']],o.win)+optionField('target','Target score (0 to disable)');}
+else if(t==='custom'){bits='<div class="actions"><button type="button" data-act="savePreset">Save current configuration</button>'+ (db.presets.length?select('loadPreset','Load saved preset',[['','Choose a preset'],...db.presets.map(p=>[p.id,p.name])],''):'')+'</div><h3>Scoring style</h3>'+select('scoreMode','Scoring interface',[['quick','Quick adjustments'],['rounds','Round-by-round'],['both','Both']],o.scoreMode)+'<h3>Optional features</h3><div class="fields">'+['history','edit','bids','dealer','schedule','standings','export'].map(k=>check('f_'+k,featureLabels[k],o.features.includes(k))).join('')+'</div>'+select('win','Winning condition',[['none','Manual only'],['high','Highest score'],['low','Lowest score']],o.win)+optionField('target','Target score (0 to disable)');}
 else if(['rook4','rook5','rook6'].includes(t)){bits='<p class="notice">180 card points including kitty, plus 20 for most tricks; failed bid deducts the full bid. Rook is always low trump. No dealer tracking.</p>'+optionField('target','Winning target')+(t==='rook5'?'<p>Players change partners each round based on the called card.</p>':'<p>Enter team names in the next step.</p>');}
 else if(t==='hearts'){bits='<div class="fields">'+optionField('playerCount','Number of players')+select('decks','Decks',[['1','One deck (26 penalties)'],['2','Two decks (52 penalties)']],o.decks)+optionField('target','Game-ending threshold')+'</div><p class="subtle">Shooting the moon adds the full penalty total to each other player.</p>';}
 else if(t==='river'||t==='phooey'){bits='<div class="fields">'+optionField('playerCount','Number of players')+select('decks','Decks',[['1','One'],['2','Two']],o.decks)+select('firstDealer','First dealer',Array.from({length:12},(_,i)=>[String(i),'Player '+(i+1)]),o.firstDealer)+'</div>'+input('schedule','Cards per round (comma-separated)',o.schedule,'text')+'<p class="subtle">The schedule controls when starting cards appear. Edit the sequence freely; every number is cards per player.</p><p class="notice">'+(t==='river'?'Exact bid: 10 + tricks; otherwise 0.':'Exact bids: 0=10, 1=15, 2=20, 3+=10×bid. Over: tricks taken. Under: negative bid value. No prohibited bids.')+'</p>'+(t==='phooey'?check('trackTrump','Track trump suit each round',o.trackTrump):'');}
@@ -179,7 +179,7 @@ if(g.rounds.length||g.events.length)root.innerHTML+=renderHistory(g);
 if(end&&!g.finished){root.innerHTML+='<p class="notice">The game-ending condition may have been reached. Review the standings and select Finish Game when ready.</p>'}
 }
 function renderQuick(g,t){return '<section class="panel"><div class="between"><h2>Quick scoring</h2><button data-act="undo" '+(!g.events.length?'disabled':'')+'>Undo last adjustment</button></div><div class="scoregrid">'+g.players.map(p=>'<div class="scorecard"><strong>'+safe(p.name)+'</strong><div class="score">'+t[p.id]+'</div><div class="quick"><button data-act="delta" data-id="'+p.id+'" data-n="-1">−</button><button data-act="delta" data-id="'+p.id+'" data-n="1">+</button></div><form class="addpoint" data-add="'+p.id+'"><input required type="number" step="1" placeholder="Custom points" aria-label="Points for '+safe(p.name)+'"><button class="primary" type="submit">Apply</button></form>'+(g.type==='cribbage'?'<select aria-label="Scoring category" data-cat="'+p.id+'"><option>Pegging</option><option>Hand</option><option>Crib</option><option>Adjustment</option></select>':'')+'</div>').join('')+'</div></section>'}
-function renderMatch(g){const wins=g.matchWins||{};return '<section class="panel"><h2>Match tracking</h2><p class="subtle">'+g.players.map(p=>safe(p.name)+': '+(wins[p.id]||0)+' wins').join(' · ')+'</p>'+(g.finished?'<button data-act="rematch" class="primary">Start next match game</button>':'')+'</section>'}
+function renderMatch(g){const wins=g.matchWins||{};return '<section class="panel"><h2>Match tracking</h2><p class="subtle">'+g.players.map(p=>safe(p.name)+': '+(wins[p.id]||0)+' wins').join(' · ')+'</p>'+(g.finished&&g.skunked?.length?'<p>Skunked: '+g.skunked.map(id=>safe(name(g,id))).join(', ')+'</p>':'')+(g.finished?'<button data-act="rematch" class="primary">Start next match game</button>':'')+'</section>'}
 function saveDraftValues(g){const f=$('roundForm');if(!f)return;g.draft=Object.fromEntries(new FormData(f));}
 function optionsForPlayers(g,except){return g.players.filter(p=>p.id!==except).map(p=>[p.id,p.name])}
 function renderRound(g){
@@ -266,7 +266,7 @@ groups.forEach((members,i)=>{
 const key=String(i);let target=0,regularTaken=0,nilTaken=0,nilScore=0;for(const player of members){const kind=raw['kind_'+player.id]||'normal',taken=requiredInt(raw,'taken_'+player.id,0,13);if(kind==='normal'){target+=requiredInt(raw,'bid_'+player.id,0,13);regularTaken+=taken}else{if(!o.special)throw Error('Special bids disabled.');nilTaken+=taken;const base=kind==='blind'?200:100;nilScore+=taken===0?base:-base}}
 const made=regularTaken>=target;const over=Math.max(0,regularTaken-target);const added=over+nilTaken;let bag=Number(previousBag[key]||0)+added;const penalties=Math.floor(bag/o.bagLimit);bag=bag%o.bagLimit;
 const gained=(made?10*target+over:-10*target)+nilScore+nilTaken-penalties*o.bagPenalty;
-members.forEach(x=>scores[x.id]=t==='spades4'?0:gained);if(t==='spades4')scores[members[0].id]=gained;
+members.forEach(x=>scores[x.id]=gained);
 bags[key]=bag;
 });meta='Spades contracts · Bags tracked by team or player';
 }
@@ -318,13 +318,14 @@ rows.push([],['Round details (JSON)']);g.rounds.forEach((r,i)=>rows.push([i+1,JS
 const q=x=>'"'+String(x??'').replace(/"/g,'""')+'"';
 const blob=new Blob(['\uFEFF'+rows.map(row=>row.map(q).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=(g.name||'scorekeeper').replace(/[^a-z0-9-_]/gi,'-')+'-'+Date.now()+'.csv';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
 }
-function finish(g){if(!confirm('Finish this game and show final standings?'))return;g.finished=true;g.completedAt=Date.now();if(g.type==='cribbage'&&g.opts.match){const ids=winnerIds(g);ids.forEach(id=>g.matchWins[id]=(g.matchWins[id]||0)+1)}persist();setScreen('results')}
+function finish(g){if(!confirm('Finish this game and show final standings?'))return;g.finished=true;g.completedAt=Date.now();if(g.type==='cribbage'&&g.opts.match){const ids=winnerIds(g);ids.forEach(id=>g.matchWins[id]=(g.matchWins[id]||0)+1);const t=total(g),losers=g.players.filter(p=>!ids.includes(p.id));g.skunked=losers.filter(p=>t[p.id]<(g.opts.target===121?91:Math.floor(g.opts.target*.75))).map(p=>p.id)}persist();setScreen('results')}
 function act(e){
 const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act,g=getGame();
 if(a==='welcome'||a==='choose'||a==='library'){if(a==='choose')chosen='simple';setScreen(a);return}
 if(a==='rules'){openHelp(b.dataset.game||chosen);return}
 if(a==='nextSettings'){startNew(chosen);return}
 if(a==='backSettings'){setScreen('settings');return}
+if(a==='savePreset'){const options=captureOptions();if(!options)return;const title=prompt('Name this custom setup:');if(!title?.trim())return;db.presets.push({id:uid(),name:title.trim().slice(0,70),opts:options});persist();renderSettings();return}
 if(a==='nextPeople'){const options=captureOptions();if(!options)return;draftOpts=options;draftPlayers=participants(chosen,draftOpts);setScreen('people');return}
 if(a==='addPerson'){if(draftPlayers.length>=40)return;capturePlayers();draftPlayers.push({id:uid(),name:'Player '+(draftPlayers.length+1)});renderPeople();return}
 if(a==='removePerson'){if(draftPlayers.length<=1)return;capturePlayers();draftPlayers.pop();renderPeople();return}
@@ -336,7 +337,7 @@ if(!g)return;
 if(a==='new'){setScreen('choose');return}
 if(a==='finish'){finish(g);return}
 if(a==='reopen'){g.finished=false;persist();setScreen('play');return}
-if(a==='rematch'){if(!confirm('Start the next game with the same participants?'))return;g.finished=false;g.completedAt=null;g.rounds=[];g.events=[];g.draft={};g.draftStep='bid';persist();setScreen('play');return}
+if(a==='rematch'){if(!confirm('Start the next game with the same participants?'))return;const next=newGame(g.type);next.opts=structuredClone(g.opts);next.name=g.name;next.players=g.players.map(p=>({...p}));next.matchWins={...g.matchWins};db.games.push(next);db.activeId=next.id;persist();setScreen('play');return}
 if(a==='undo'){g.events.pop();persist();render();return}
 if(a==='delta'){const n=N(b.dataset.n);if(n===null)return;g.events.push({id:uid(),participant:b.dataset.id,delta:n,category:g.type==='cribbage'?root.querySelector('[data-cat="'+b.dataset.id+'"]')?.value:'Quick adjustment',at:Date.now()});persist();render();return}
 if(a==='saveRound'){submitRound(g);return}
@@ -349,7 +350,7 @@ if(a==='delRound'){const i=Number(b.dataset.index);if(!confirm('Delete round '+(
 root.addEventListener('click',act);
 root.addEventListener('click',e=>{const b=e.target.closest('[data-type]');if(!b)return;chosen=b.dataset.type;render()});
 root.addEventListener('submit',e=>{const f=e.target.closest('[data-add]');if(!f)return;e.preventDefault();const g=getGame(),x=f.querySelector('input'),n=N(x.value);if(n===null){x.setCustomValidity('Enter a whole number.');x.reportValidity();return}x.setCustomValidity('');g.events.push({id:uid(),participant:f.dataset.add,delta:n,category:g.type==='cribbage'?root.querySelector('[data-cat="'+f.dataset.add+'"]')?.value:'Custom adjustment',at:Date.now()});persist();render()});
-root.addEventListener('change',e=>{const g=getGame();if(g&&screen==='play'&&e.target.closest('#roundForm')){saveDraftValues(g);persist()}});
+root.addEventListener('change',e=>{if(e.target.name==='loadPreset'&&e.target.value){const preset=db.presets.find(p=>p.id===e.target.value);if(preset){draftOpts=structuredClone(preset.opts);draftOpts.gameName=preset.name;renderSettings()}return}const g=getGame();if(g&&screen==='play'&&e.target.closest('#roundForm')){saveDraftValues(g);persist()}});
 root.addEventListener('input',e=>{const g=getGame();if(g&&screen==='play'&&e.target.closest('#roundForm')){saveDraftValues(g);persist()}});
 persist();render();
 })();
