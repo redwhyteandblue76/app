@@ -1,159 +1,356 @@
 <!doctype html>
-<html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#9b2226">
-<meta name="description" content="A simple scorekeeper for players and teams. Scores are saved on this device.">
-<title>Scorekeeper</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#9b2226"><meta name="description" content="Flexible local-first card game scorekeeping."><title>Scorekeeper</title>
 <link rel="icon" type="image/svg+xml" href="https://12one.page/favicon.svg">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="site-footer.css">
+<link rel="stylesheet" href="site-footer.css"><script src="site-footer.js" defer></script>
 <style>
-:root{--red:#9b2226;--darkred:#741a22;--navy:#173344;--muted:#586a72;--cream:#f7f4ef;--border:#e5ddd5}
-*{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;flex-direction:column;background:var(--cream);color:var(--navy);font:15px/1.6 Montserrat,system-ui,sans-serif}
-main{width:min(960px,100%);margin:0 auto;padding:48px 20px 65px;flex:1}
-h1{font-size:clamp(36px,6vw,58px);line-height:1.12;letter-spacing:-.055em;margin:0 0 12px;font-weight:900}h1 span{color:var(--red)}
-.eyebrow{font-size:12px;font-weight:900;letter-spacing:.17em;text-transform:uppercase;color:var(--red);margin:0 0 10px}
-.intro{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:28px}
-.intro p:last-child{color:var(--muted);margin:0}
-button,input{font:inherit}button{border:1px solid var(--border);border-radius:10px;padding:11px 16px;background:#fff;color:var(--navy);font-weight:800;cursor:pointer;transition:background .15s,transform .15s}button:hover{background:#f0e9e4}button:active{transform:scale(.98)}button:focus-visible,input:focus-visible{outline:3px solid var(--red);outline-offset:3px}
-.primary{background:var(--red);color:#fff;border-color:var(--red)}.primary:hover{background:var(--darkred)}.controls{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 24px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:17px}
-.card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:24px;box-shadow:0 5px 24px #17334409}
-.name{width:100%;background:#f8f6f3;border:1px solid transparent;border-radius:8px;padding:10px;color:var(--navy);font-weight:800;font-size:18px}
-.name:focus{border-color:var(--red)}.score{text-align:center;font-size:clamp(64px,10vw,92px);font-weight:900;letter-spacing:-.06em;font-variant-numeric:tabular-nums;line-height:1.5}
-.actions{display:flex;gap:12px}.actions button{flex:1;font-size:28px;min-height:60px;line-height:1}.actions button:last-child{background:var(--red);border-color:var(--red);color:white}.actions button:last-child:hover{background:var(--darkred)}
-.custom{display:flex;gap:9px;margin-top:12px}.custom input{min-width:0;flex:1;width:80px;border:1px solid var(--border);border-radius:9px;padding:10px 12px;background:#f8f6f3;color:var(--navy);font-weight:700}.custom button{white-space:nowrap;padding:10px 13px}.setupgrid,.featuregrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:15px 0}.setupgrid label,.featuregrid label{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:700}.featuregrid label{flex-direction:row;align-items:center}.setupgrid input,.setupgrid select,.roundrow input{min-width:0;width:100%;border:1px solid var(--border);border-radius:8px;padding:9px;background:#faf9f7;color:var(--navy)}.roundrow{display:grid;grid-template-columns:minmax(90px,1fr) repeat(3,minmax(70px,1fr));gap:9px;align-items:end;padding:10px 0;border-bottom:1px solid var(--border)}.roundrow label{font-size:12px;font-weight:700}.roundrow label input{display:block}.historytable{width:100%;border-collapse:collapse}.historytable td,.historytable th{padding:9px;border-bottom:1px solid var(--border);text-align:left}.historyscroll{overflow:auto}.historytable button{padding:5px 9px}@media(max-width:600px){.roundrow{grid-template-columns:repeat(2,minmax(0,1fr))}.roundrow strong{grid-column:1/-1}}.remove{display:block;margin:15px auto 0;border:0;background:none;color:var(--muted);font-size:12px;padding:7px}.remove:hover{background:none;color:var(--red)}
-.hint{color:var(--muted);text-align:center;font-size:12px;margin:27px 0 0}
-dialog{border:1px solid var(--border);border-radius:16px;padding:25px;background:white;color:var(--navy);width:min(420px,90vw);box-shadow:0 15px 60px #0003}dialog::backdrop{background:#10182099}dialog h2{margin:0 0 8px}dialog p{color:var(--muted)}dialog menu{display:flex;justify-content:flex-end;gap:10px;margin:22px 0 0;padding:0}
-@media(max-width:600px){main{padding:32px 16px 45px}.intro{margin-bottom:23px}.controls button{flex:1}.card{padding:20px}}
-
-[hidden]{display:none!important}.wizard{max-width:760px;margin:35px auto}.wizard h2{font-size:clamp(27px,5vw,40px);line-height:1.15;letter-spacing:-.04em;margin:0 0 12px}.wizard p{color:var(--muted)}.stepbar{display:flex;gap:8px;margin:0 0 24px}.stepbar span{height:5px;flex:1;border-radius:8px;background:var(--border)}.stepbar span.active{background:var(--red)}.wizardActions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}.wizardActions button{flex:1}.wizardRoster{display:grid;gap:10px;margin:18px 0}.wizardPerson{display:flex;align-items:center;gap:9px}.wizardPerson input{flex:1;min-width:0;border:1px solid var(--border);border-radius:9px;padding:12px}.wizardPerson button{padding:9px}.presetHelp{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:12px 0}.wizard .card{box-shadow:none}.rulesList{padding-left:20px}.rulesList li{margin:9px 0}
-</style>
-<script src="site-footer.js" defer></script>
-</head><body><main>
-<section id="wizard" class="wizard" aria-label="Game setup">
-<div class="stepbar" aria-hidden="true"><span id="step1"></span><span id="step2"></span><span id="step3"></span></div>
-<div id="welcomeStep" class="card"><p class="eyebrow">Ready to play?</p><h2>Welcome to Scorekeeper.</h2><p>Keep score for your favorite card games, or make your own. Set up your game in a few quick steps.</p><div class="wizardActions"><button class="primary" id="beginGame">Start game</button><button id="resumeGame" hidden>Resume saved game</button></div></div>
-<div id="settingsStep" hidden><div class="card"><p class="eyebrow">Step 1 of 2 · Choose your game</p><h2>How are we playing?</h2><p>Choose a preset, or select Custom for simple scorekeeping. You can adjust any of the features.</p><div class="presetHelp"><button id="rulesButton" type="button">Game description &amp; rules ⓘ</button><span class="muted" id="presetSummary"></span></div></div><div id="wizardSettingsSlot"></div><div class="wizardActions"><button id="settingsBack">Back</button><button class="primary" id="settingsNext">Next: Players</button></div></div>
-<div id="playersStep" class="card" hidden><p class="eyebrow">Step 2 of 2 · Participants</p><h2 id="playersStepTitle">Who's playing?</h2><p id="teamTip">Add everyone playing and give each participant a name.</p><div id="wizardRoster" class="wizardRoster"></div><button id="wizardAdd">+ Add player</button><div class="wizardActions"><button id="playersBack">Back</button><button class="primary" id="launchGame">Let's play!</button></div></div>
-</section>
-<div id="gameUI" hidden>
-<header class="intro"><div><p class="eyebrow">Keep the game moving</p><h1>Score<span>keeper.</span></h1><p>Simple scores, saved on this device.</p></div><button id="reset">Reset scores</button></header>
-<div class="controls"><button class="primary" id="add">+ Add player / team</button><button id="clear">New game</button><button id="setupToggle">Advanced game setup</button></div>
-<section id="setup" class="card" hidden style="margin-bottom:22px">
-<h2 style="margin-top:0">Advanced game setup</h2>
-<div class="setupgrid"><label>Game preset<select id="preset"><option value="custom">Custom</option><option value="hearts">Hearts</option><option value="rook">Rook</option><option value="river">Up and Down the River</option><option value="fivehundred">500</option><option value="euchre">Euchre</option><option value="spades">Spades</option><option value="ohphooey">Oh Phooey</option><option value="phase10">Phase 10</option><option value="cribbage">Cribbage</option></select></label><label>Game name<input id="gameName" placeholder="Game night"></label><label>Win condition<select id="win"><option value="high">Highest score wins</option><option value="low">Lowest score wins</option></select></label><label>Starting cards<input type="number" min="1" max="52" id="startCards" value="10"></label><label>Round schedule<select id="schedule"><option value="none">None</option><option value="down">Down</option><option value="up">Up</option><option value="downup">Down then up</option></select></label></div>
-<div class="featuregrid" id="featureList"></div><p style="font-size:12px;color:var(--muted)">Presets are editable starting points. Scoring rules vary by group; enter scores using your own rules.</p>
-<div class="controls"><button class="primary" id="applySetup">Apply settings</button><button id="closeSetup">Close</button></div></section>
-<section id="roundPanel" class="card" hidden style="margin-bottom:22px"><h2 style="margin-top:0" id="roundTitle">Round 1</h2><p id="roundMeta" style="color:var(--muted)"></p><div id="roundInputs"></div><div class="controls"><button class="primary" id="saveRound">Save round</button><button id="cancelRound" hidden>Cancel editing</button></div><p id="roundError" role="alert"></p></section>
-<section id="standingsPanel" class="card" hidden style="margin-bottom:22px"><h2 style="margin-top:0">Standings</h2><div id="standings"></div><div class="controls"><button id="finish">Finish game</button><button id="export">Export CSV</button></div><p id="winner"></p></section>
-<section id="historyPanel" class="card" hidden style="margin-bottom:22px"><h2 style="margin-top:0">Round history</h2><div id="history"></div></section>
-<section id="players" class="grid" aria-label="Players and scores"></section>
-<p class="hint">Tap a name to edit it. Scores save automatically in this browser.</p></div>
-</main>
-<dialog id="confirm"><form method="dialog"><h2 id="dialogTitle">Are you sure?</h2><p id="dialogMessage"></p><menu><button value="cancel">Cancel</button><button class="primary" value="confirm">Continue</button></menu></form></dialog>
+:root{--red:#9b2226;--red-dark:#741a22;--navy:#173344;--muted:#586a72;--border:#e5ddd5;--cream:#f7f4ef;--good:#226b4c}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:var(--cream);color:var(--navy);display:flex;flex-direction:column;font:14px/1.55 Montserrat,system-ui,sans-serif}main{width:min(1080px,100%);margin:0 auto;flex:1;padding:36px 18px 64px}
+h1{font-size:clamp(38px,6vw,62px);line-height:1.08;letter-spacing:-.065em;margin:0 0 10px;font-weight:900}h1 span{color:var(--red)}h2{font-size:clamp(23px,4vw,32px);line-height:1.2;letter-spacing:-.04em;margin:0 0 12px}h3{font-size:17px;margin:6px 0 12px}
+p{margin:8px 0 14px}.subtle,small{color:var(--muted)}.eyebrow{color:var(--red);text-transform:uppercase;font-size:11px;letter-spacing:.16em;font-weight:900;margin:0 0 11px}
+.panel{background:white;border:1px solid var(--border);border-radius:16px;padding:clamp(17px,3vw,27px);margin:0 0 18px;box-shadow:0 5px 20px #17334408}.tight{padding:15px}.hero{max-width:740px;margin:30px auto 12px;text-align:center;padding:34px 24px}.hero .actions{justify-content:center}.hero p{max-width:520px;margin:12px auto 25px}.row,.actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.between{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+button,input,select,textarea{font:inherit}button{cursor:pointer;background:#fff;color:var(--navy);border:1px solid var(--border);border-radius:10px;padding:11px 16px;font-weight:800;transition:background .15s}button:hover{background:#f3ede8}button:disabled{opacity:.5;cursor:not-allowed}.primary{background:var(--red);border-color:var(--red);color:white}.primary:hover{background:var(--red-dark)}.ghost{border:0;background:transparent}.danger{color:var(--red)}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+label.field{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:800}input:not([type=checkbox]):not([type=radio]),select,textarea{display:block;width:100%;min-width:0;border:1px solid var(--border);border-radius:9px;padding:11px 12px;background:#faf9f7;color:var(--navy)}input[type=checkbox]{accent-color:var(--red);width:17px;height:17px}.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,205px),1fr));gap:13px}.check{display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:10px;padding:12px;font-weight:700}.check input{flex:none}
+.badge{background:#f4e6e2;color:var(--red);border-radius:99px;padding:5px 10px;font-size:11px;font-weight:900}.steps{display:flex;gap:7px;margin:0 0 20px}.steps span{height:5px;background:var(--border);border-radius:10px;flex:1}.steps .on{background:var(--red)}.wizard{max-width:800px;margin:0 auto}.selection{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px;margin:15px 0}.pick{display:block;text-align:left;padding:15px;border:1px solid var(--border);border-radius:13px;min-height:82px}.pick strong{display:block}.pick small{display:block;margin-top:5px;font-weight:500}.pick.on{border:2px solid var(--red);background:#fff4f0}.navbuttons{display:flex;justify-content:space-between;gap:10px;margin:15px 0}.navbuttons button:last-child{margin-left:auto}.helpRow{padding:15px 0;border-bottom:1px solid var(--border)}.helpRow p{margin:4px 0}.roster{display:grid;gap:10px}.person{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}.person.team4{grid-template-columns:1fr 120px auto}
+.scoregrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,205px),1fr));gap:13px;margin:16px 0}.scorecard{border:1px solid var(--border);border-radius:14px;padding:19px;background:white}.scorecard.lead{border-color:var(--red)}.scorecard h3{font-size:16px;overflow-wrap:anywhere}.score{font-size:clamp(42px,7vw,72px);letter-spacing:-.06em;font-weight:900;line-height:1.3;text-align:center;font-variant-numeric:tabular-nums}.quick{display:flex;gap:8px}.quick button{flex:1;font-size:25px;padding:12px}.quick button:last-child{background:var(--red);color:white;border-color:var(--red)}.addpoint{display:flex;gap:6px;margin-top:10px}.addpoint input{flex:1;width:70px}.addpoint button{flex:0}
+.bar{height:9px;background:#eee6e1;border-radius:99px;overflow:hidden}.bar span{display:block;height:100%;background:var(--red);min-width:0}.tablewrap{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:11px 9px;text-align:left;border-bottom:1px solid var(--border);vertical-align:middle}th{font-size:11px;color:var(--muted);white-space:nowrap;text-transform:uppercase;letter-spacing:.04em}td input,td select{min-width:85px}td button{padding:7px 10px}.entryrow{padding:13px 0;border-bottom:1px solid var(--border)}.entryrow strong{display:block;margin-bottom:8px}.notice{border-left:3px solid var(--red);background:#fbf4f1;padding:11px 14px;border-radius:7px;margin:12px 0}.error{color:#a51d23;font-weight:700}.success{color:var(--good);font-weight:800}
+dialog{border:1px solid var(--border);border-radius:17px;padding:25px;width:min(530px,92vw);box-shadow:0 20px 70px #0003;color:var(--navy)}dialog::backdrop{background:#101820aa}dialog .actions{justify-content:flex-end}dialog h2{font-size:24px}dialog p{color:var(--muted)}[hidden]{display:none!important}.site-legal-footer{margin-top:auto}
+@media(max-width:600px){main{padding:25px 14px 45px}.hero{margin-top:20px;padding:28px 19px}.panel{padding:16px}.navbuttons button{flex:1}.person.team4{grid-template-columns:1fr 95px auto}.actions button{flex-grow:1}}
+</style></head>
+<body><main id="app" aria-live="off"></main>
+<dialog id="helpDialog" aria-labelledby="helpTitle"><h2 id="helpTitle"></h2><div id="helpContent"></div><div class="actions"><button id="closeHelp" class="primary">Close</button></div></dialog>
 <script>
-(()=>{
-const KEY='scorekeeper-custom-v3',OLD='simple-scorekeeper-v1';
-const $=id=>document.getElementById(id);
-const uid=()=>crypto?.randomUUID?.()||String(Date.now())+Math.random();
-const featureNames={rounds:'Round-by-round scoring',history:'Score history',edit:'Edit previous rounds',win:'High / low score wins',bids:'Bid tracking',dealer:'Dealer rotation',schedule:'Round schedule',standings:'Standings and winner',teams:'Team scoring',export:'Export CSV'};
-const all=Object.keys(featureNames);
-const presets={
-custom:[],hearts:['rounds','history','edit','win','dealer','standings','export'],
-rook:['rounds','history','edit','win','bids','dealer','standings','teams','export'],
-river:['rounds','history','edit','win','bids','dealer','schedule','standings','export'],
-fivehundred:['rounds','history','edit','win','bids','dealer','standings','teams','export'],
-euchre:['rounds','history','edit','win','dealer','standings','teams','export'],
-spades:['rounds','history','edit','win','bids','dealer','standings','teams','export'],
-
-ohphooey:['rounds','history','edit','win','bids','dealer','schedule','standings','export'],
-phase10:['rounds','history','edit','win','dealer','standings','export'],
-cribbage:['rounds','history','edit','win','dealer','standings','export']};
-const newGame=()=>({players:[{id:uid(),name:'Team 1',score:0},{id:uid(),name:'Team 2',score:0}],rounds:[],features:[],preset:'custom',name:'Game night',win:'high',schedule:'none',startCards:10,finished:false});
-let game;
-try{game=JSON.parse(localStorage.getItem(KEY))}catch{}
-if(!game||!Array.isArray(game.players)||!Array.isArray(game.rounds)){game=newGame();try{const old=JSON.parse(localStorage.getItem(OLD));if(Array.isArray(old))game.players=old.filter(p=>p&&typeof p.name==='string'&&Number.isSafeInteger(p.score)).map(p=>({id:uid(),name:p.name,score:p.score})).slice(0,40)}catch{}}
-game.features=Array.isArray(game.features)?game.features:[];let editing=null;
-const has=k=>game.features.includes(k),save=()=>{try{localStorage.setItem(KEY,JSON.stringify(game))}catch{alert('Unable to save to browser storage.')}};
-const el=(tag,txt,cls)=>{const x=document.createElement(tag);if(txt!==undefined)x.textContent=txt;if(cls)x.className=cls;return x};
-const integer=s=>/^[+-]?\d+$/.test(String(s).trim())&&Number.isSafeInteger(Number(s))?Number(s):null;
-const totals=()=>Object.fromEntries(game.players.map(p=>[p.id,p.score+game.rounds.reduce((sum,r)=>sum+(r.scores[p.id]||0),0)]));
-function cards(n){const v=Math.max(1,Math.min(52,game.startCards||10));if(game.schedule==='down')return Math.max(1,v-n+1);if(game.schedule==='up')return Math.min(52,v+n-1);if(game.schedule==='downup'){const i=(n-1)%(2*v-1);return i<v?v-i:i-v+2}return null}
-function render(){
-$('players').replaceChildren();const t=totals();
-game.players.forEach(p=>{const card=el('article',undefined,'card'),name=el('input');name.className='name';name.value=p.name;name.maxLength=60;name.setAttribute('aria-label','Name');name.oninput=()=>{p.name=name.value;save();renderExtras()};
-const score=el('div',String(t[p.id]),'score'),actions=el('div',undefined,'actions');
-for(const [label,delta] of [['−',-1],['+',1]]){const b=el('button',label);b.setAttribute('aria-label',label+' one point for '+p.name);b.onclick=()=>{if(!Number.isSafeInteger(p.score+delta))return;p.score+=delta;save();render()};actions.append(b)}
-const custom=el('div',undefined,'custom'),amount=el('input');amount.type='number';amount.step='1';amount.placeholder='Points (e.g. 5 or -3)';amount.setAttribute('aria-label','Custom points for '+p.name);const apply=el('button','Apply');const adjust=()=>{const n=integer(amount.value);if(n===null||!Number.isSafeInteger(p.score+n)){amount.setCustomValidity('Enter a valid whole number');amount.reportValidity();return}amount.setCustomValidity('');p.score+=n;save();render()};amount.oninput=()=>amount.setCustomValidity('');amount.onkeydown=e=>{if(e.key==='Enter')adjust()};apply.onclick=adjust;custom.append(amount,apply);
-const remove=el('button','Remove','remove');remove.onclick=()=>{if(!confirm('Remove '+p.name+' and their scores?'))return;game.players=game.players.filter(x=>x.id!==p.id);save();render()};card.append(name,score,actions,custom,remove);$('players').append(card)});
-renderExtras()}
-function renderExtras(){
-const active=has('rounds');$('roundPanel').hidden=!active||game.finished;$('historyPanel').hidden=!(active&&has('history'));$('standingsPanel').hidden=!(has('standings')||has('export')||game.finished);
-$('standings').replaceChildren();const t=totals();const ordered=[...game.players].sort((a,b)=>game.win==='low'?t[a.id]-t[b.id]:t[b.id]-t[a.id]);ordered.forEach((p,i)=>$('standings').append(el('p',(i+1)+'. '+p.name+' — '+t[p.id]+(i===0?' ★':''))));
-$('winner').textContent=game.finished&&ordered.length?'Winner: '+ordered.filter(p=>t[p.id]===t[ordered[0].id]).map(p=>p.name).join(', '):'';
-$('finish').textContent=game.finished?'Reopen game':'Finish game';$('finish').hidden=!has('standings');$('export').hidden=!has('export');
-renderHistory();renderRound()}
-function renderRound(){
-const n=editing===null?game.rounds.length+1:editing+1,r=editing===null?null:game.rounds[editing];$('roundTitle').textContent=(editing===null?'Round ':'Edit round ')+n;
-$('roundMeta').textContent=[has('schedule')&&cards(n)!==null?cards(n)+' cards':'',has('dealer')&&game.players.length?'Dealer: '+game.players[(n-1)%game.players.length].name:''].filter(Boolean).join(' · ');
-$('roundInputs').replaceChildren();game.players.forEach(p=>{const row=el('div',undefined,'roundrow');row.append(el('strong',p.name));for(const kind of ['scores',...(has('bids')?['bids','tricks']:[])]){const l=el('label',kind==='scores'?'Points':kind==='bids'?'Bid':'Tricks taken');const inp=el('input');inp.type='number';inp.step='1';if(kind!=='scores')inp.min='0';inp.value=r?.[kind]?.[p.id]??'';inp.dataset.kind=kind;inp.dataset.id=p.id;l.append(inp);row.append(l)}$('roundInputs').append(row)});
-$('cancelRound').hidden=editing===null;$('saveRound').textContent=editing===null?'Save round':'Save changes';$('roundError').textContent=''}
-function renderHistory(){
-const root=$('history');root.replaceChildren();if(!game.rounds.length){root.append(el('p','No rounds recorded yet.'));return}
-const scroll=el('div',undefined,'historyscroll'),table=el('table',undefined,'historytable'),head=el('tr');['Round',...game.players.map(p=>p.name),'Actions'].forEach(x=>head.append(el('th',x)));table.append(head);
-game.rounds.forEach((r,i)=>{const tr=el('tr');tr.append(el('td',String(i+1)));game.players.forEach(p=>tr.append(el('td',String(r.scores[p.id]??0))));const td=el('td');if(has('edit')){const edit=el('button','Edit');edit.onclick=()=>{editing=i;renderRound();$('roundPanel').scrollIntoView({behavior:'smooth'})};td.append(edit)}const del=el('button','Delete');del.onclick=()=>{if(confirm('Delete round '+(i+1)+'?')){game.rounds.splice(i,1);editing=null;save();render()}};td.append(del);tr.append(td);table.append(tr)});scroll.append(table);root.append(scroll)}
-function setupRender(){const root=$('featureList');root.replaceChildren();all.forEach(k=>{const l=el('label'),x=el('input');x.type='checkbox';x.value=k;x.checked=has(k);l.append(x,el('span',featureNames[k]));root.append(l)});$('preset').value=game.preset;$('gameName').value=game.name;$('win').value=game.win;$('schedule').value=game.schedule;$('startCards').value=game.startCards}
-$('setupToggle').onclick=()=>{$('setup').hidden=!$('setup').hidden;setupRender()};$('closeSetup').onclick=()=>{$('setup').hidden=true};
-$('preset').onchange=()=>{const p=$('preset').value;$('featureList').querySelectorAll('input').forEach(x=>x.checked=presets[p].includes(x.value));$('win').value=['hearts','phase10'].includes(p)?'low':'high';$('schedule').value=['river','ohphooey'].includes(p)?'downup':'none';$('gameName').value=({hearts:'Hearts',rook:'Rook',river:'Up and Down the River',fivehundred:'500',euchre:'Euchre',spades:'Spades',ohphooey:'Oh Phooey',phase10:'Phase 10',cribbage:'Cribbage'})[p]||'Game night'};
-$('applySetup').onclick=()=>{const selected=[...$('featureList').querySelectorAll('input:checked')].map(x=>x.value);if(selected.includes('history')||selected.includes('edit')||selected.includes('bids')||selected.includes('schedule')||selected.includes('dealer')){if(!selected.includes('rounds'))selected.push('rounds')}const start=integer($('startCards').value);if(start===null||start<1||start>52){alert('Starting cards must be between 1 and 52.');return}game.features=selected;game.preset=$('preset').value;game.name=$('gameName').value;game.win=$('win').value;game.schedule=$('schedule').value;game.startCards=start;editing=null;save();$('setup').hidden=true;render()};
-$('add').onclick=()=>{if(game.players.length>=40)return;game.players.push({id:uid(),name:(has('teams')?'Team ':'Player ')+(game.players.length+1),score:0});save();render()};
-$('reset').onclick=()=>{if(!confirm('Reset all scores and round history?'))return;game.players.forEach(p=>p.score=0);game.rounds=[];game.finished=false;editing=null;save();render()};
-$('clear').onclick=()=>{if(!confirm('Start a new game? All current scores and rounds will be replaced. Export first to keep a copy.'))return;game=newGame();editing=null;save();render();setupRender()};
-$('saveRound').onclick=()=>{const r={scores:{},bids:{},tricks:{}};for(const x of $('roundInputs').querySelectorAll('input')){const v=x.value.trim(),n=integer(v);if((x.dataset.kind==='scores'&&n===null)||(v!==''&&n===null)||(x.dataset.kind!=='scores'&&n!==null&&n<0)){$('roundError').textContent='Enter valid whole numbers for points, and nonnegative numbers for bids and tricks.';x.focus();return}if(n!==null)r[x.dataset.kind][x.dataset.id]=n}if(editing===null)game.rounds.push(r);else game.rounds[editing]=r;editing=null;save();render()};
-$('cancelRound').onclick=()=>{editing=null;renderRound()};
-$('finish').onclick=()=>{game.finished=!game.finished;save();render()};
-$('export').onclick=()=>{const t=totals(),q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';const rows=[['Game',game.name],['Preset',game.preset],[],['Round',...game.players.map(p=>p.name)],...game.rounds.map((r,i)=>[i+1,...game.players.map(p=>r.scores[p.id]??0)]),['Base adjustments',...game.players.map(p=>p.score)],['Total',...game.players.map(p=>t[p.id])]];if(has('bids')){rows.push([],['Round','Player','Bid','Tricks taken']);game.rounds.forEach((r,i)=>game.players.forEach(p=>rows.push([i+1,p.name,r.bids?.[p.id]??'',r.tricks?.[p.id]??''])))}const blob=new Blob(['\uFEFF'+rows.map(r=>r.map(q).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=el('a');a.href=url;a.download='scorekeeper-'+Date.now()+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
-
+(function(){
+'use strict';
+const STORE='scorekeeper-v4',OLD3='scorekeeper-custom-v3',OLD1='simple-scorekeeper-v1';
+const $=id=>document.getElementById(id),root=$('app'),uid=()=>globalThis.crypto&&crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2);
+const safe=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+const N=v=>v!==''&&v!==undefined&&v!==null&&/^[+-]?\d+$/.test(String(v).trim())&&Number.isSafeInteger(Number(v))?Number(v):null;
+const input=(k,label,val,kind='number',extra='')=>'<label class="field">'+safe(label)+'<input name="'+safe(k)+'" type="'+kind+'" value="'+safe(val??'')+'" '+extra+'></label>';
+const select=(k,label,opts,val)=>'<label class="field">'+safe(label)+'<select name="'+safe(k)+'">'+opts.map(o=>'<option value="'+safe(o[0])+'" '+(String(o[0])===String(val)?'selected':'')+'>'+safe(o[1])+'</option>').join('')+'</select></label>';
+const check=(k,label,yes)=>'<label class="check"><input type="checkbox" name="'+safe(k)+'" '+(yes?'checked':'')+'>'+safe(label)+'</label>';
+const suits=[['red','Red'],['yellow','Yellow'],['green','Green'],['black','Black'],['none','No Trump (Rook only)']];
+const pokerSuits=[['spades','Spades'],['clubs','Clubs'],['diamonds','Diamonds'],['hearts','Hearts'],['none','No Trump']];
+const types=[
+['simple','Simple','Fast point adjustments'],
+['custom','Custom','Build your own scorekeeper'],
+['rook4','Rook (4-Handed)','Two fixed teams'],
+['rook5','Rook (5-Handed)','Called-card partner'],
+['rook6','Rook (6-Handed)','Three fixed teams'],
+['hearts','Hearts','Count penalty cards'],
+['river','Up and Down the River','Predict tricks each round'],
+['fivehundred','500','Contracts and partnerships'],
+['euchre','Euchre','Five-trick team hands'],
+['spades4','Spades (4 Players)','Team bids and bags'],
+['spades2','Spades (2 Players)','Individual bids and bags'],
+['phooey','Oh Phooey','Custom bid-based scoring'],
+['phase10','Phase 10','Phases and penalties'],
+['cribbage','Cribbage','Pegging and quick points']];
 const descriptions={
-custom:['Custom game','Use the simple score cards. Add or subtract points as you play. Enable advanced features only if you need them.'],
-hearts:['Hearts','A trick-taking game where players generally try to avoid hearts and the queen of spades. Lowest score typically wins. Shooting the moon is a common optional rule.'],
-rook:['Rook','A bidding and trick-taking game often played in partnerships. Teams compete to earn points through captured cards and contracts. Decks and scoring vary by house rules.'],
-river:['Up and Down the River','A prediction-based trick-taking game. Players bid how many tricks they expect to win while the number of cards dealt changes between rounds. Scoring varies by group.'],
-fivehundred:['500','A trick-taking game where players bid contracts and score points for making them. Often played in partnerships; bidding and scoring vary by version.'],
-euchre:['Euchre','A partnership trick-taking game using a shortened deck. Players choose trump and aim to win enough tricks. A common game target is 10 points.'],
-spades:['Spades','A trick-taking game where spades are trump. Players or teams bid on tricks and score based on their contracts; bags and nil bids are common variations.'],
-ohphooey:['Oh Phooey','A trick-taking game where players predict how many tricks they will win each round. The cards dealt may increase or decrease, and points depend on meeting bids.'],
-phase10:['Phase 10','A rummy-style game in which players complete a sequence of phases. Unplayed cards generally count as penalty points; lowest total is favored.'],
-cribbage:['Cribbage','A card game where players earn points from combinations during play and hand scoring. Traditionally the first to 121 points wins.']
+simple:'Add and subtract points using large buttons, or enter any custom point adjustment. Undo mistakes. Optionally track the highest or lowest score.',
+custom:'Choose quick scoring, editable rounds, bids, dealer tracking, and optional custom schedules. All points are entered manually; no formula builder is required.',
+rook4:'Four players in two partnerships. One team bids. Card points total 180 including the kitty; 20 more go to the side with the most tricks. If tied, the side that took a trick most recently wins the bonus. Last-trick winner takes the kitty. A failed contract loses the full bid. Rook is low trump, or the only trump in No Trump.',
+rook5:'Five individual players. The bidder calls a card and its holder becomes a temporary partner. Both get the full bidding-side score; the other three share the full defending-side score. Rook scoring follows the 180 card points plus 20 most-tricks bonus rules.',
+rook6:'Six players in three partnerships. One team bids while the other two score independently. Most tricks earns 20; ties are broken by the most recent trick among tied teams. Kitty points go to the last-trick side.',
+hearts:'Avoid taking hearts (1 penalty each) and the queen of spades (13). With two decks, there are 52 penalty points. Capturing every penalty card shoots the moon and gives each opponent the full penalty total.',
+river:'Bid tricks before each hand; cards dealt follow a customizable schedule. An exact bid earns 10 plus tricks taken. An incorrect bid earns zero. Dealer rotates each round.',
+fivehundred:'Four players in two partnerships. Choose a bid from six to ten tricks and a suit; each contract has a predefined point value. Defenders earn ten points per trick. Optional Nullo and Open Nullo contracts are available.',
+euchre:'Four players in two teams. The caller must win at least three of five tricks. Callers earn 1 for three or four, 2 for all five, or a customizable sweep bonus if going alone. Euchred defenders earn 2.',
+spades4:'Four players in two teams. Each player bids; team contracts earn ten points per bid trick, bags accumulate, and Nil/Blind Nil awards or deducts 100/200 points.',
+spades2:'Two opponents, scoring individually under the same Spades contract, bag, and Nil conventions. Hand construction is handled by players; this app records the results.',
+phooey:'Customize the hand schedule (default 7 down to 1, back to 7, then 9). Exact bid: 0 earns 10, 1 earns 15, 2 earns 20, and higher bids earn ten times bid. Overtricks earn their trick count; undertricks deduct the value of the original bid. No bid restrictions.',
+phase10:'Complete each successive standard phase to advance. Count remaining numbered, Skip, and Wild cards for penalties, or enter the total directly. First to finish Phase 10 wins, with lower cumulative penalties breaking ties.',
+cribbage:'Race to 121. Score pegging, hand, crib, and adjustments with quick buttons. Tracks the dealer and multiple games within a match; a 121-point game awards a skunk if the loser has fewer than 91.'
 };
-let stage='welcome';
-const setStage=s=>{stage=s;$('wizard').hidden=s==='game';$('gameUI').hidden=s!=='game';for(const k of ['welcome','settings','players'])$(k+'Step').hidden=s!==k;['step1','step2','step3'].forEach((id,i)=>$(id).classList.toggle('active',i<=({welcome:0,settings:1,players:2,game:2}[s]??0)));if(s==='settings'){const setup=$('setup');$('wizardSettingsSlot').append(setup);setup.hidden=false;setup.querySelector('h2').hidden=true;setup.querySelector('.controls').hidden=true;setupRender();updateSummary()}if(s==='players')drawWizardRoster();if(s==='game'){$('setup').hidden=true;render();}window.scrollTo({top:0,behavior:'instant'})};
-const updateSummary=()=>{$('presetSummary').textContent=descriptions[$('preset').value]?.[1].split('.')[0]+'.'||''};
-const drawWizardRoster=()=>{
-const root=$('wizardRoster');root.replaceChildren();const teams=[...$('featureList').querySelectorAll('input:checked')].some(x=>x.value==='teams');
-$('playersStepTitle').textContent=teams?'Set up your teams':'Who is playing?';
-$('teamTip').textContent=teams?'Each participant represents a team. Enter the team names; scores will be shared by team.':'Enter a name for each player. You can add or remove players.';
-$('wizardAdd').textContent=teams?'+ Add team':'+ Add player';
-game.players.forEach((p,i)=>{const row=el('div',undefined,'wizardPerson');const inp=el('input');inp.type='text';inp.value=p.name;inp.maxLength=60;inp.setAttribute('aria-label',(teams?'Team ':'Player ')+(i+1));inp.oninput=()=>{p.name=inp.value;save()};const del=el('button','Remove');del.onclick=()=>{if(game.players.length<=1)return;game.players.splice(i,1);save();drawWizardRoster()};row.append(inp,del);root.append(row)});
-};
-$('beginGame').onclick=()=>{if(game.rounds.length||game.players.some(p=>p.score!==0)){if(!confirm('Start a new game? Existing scores will be replaced. Export your scores first if you need them.'))return;}game=newGame();editing=null;save();setStage('settings')};
-$('resumeGame').onclick=()=>setStage('game');
-$('settingsBack').onclick=()=>setStage('welcome');
-$('settingsNext').onclick=()=>{const selected=[...$('featureList').querySelectorAll('input:checked')].map(x=>x.value);if(['history','edit','bids','schedule','dealer'].some(k=>selected.includes(k))&&!selected.includes('rounds'))selected.push('rounds');const n=integer($('startCards').value);if(n===null||n<1||n>52){alert('Starting cards must be between 1 and 52.');return}game.features=selected;game.preset=$('preset').value;game.name=$('gameName').value.trim()||'Game night';game.win=$('win').value;game.schedule=$('schedule').value;game.startCards=n;save();setStage('players')};
-$('playersBack').onclick=()=>setStage('settings');
-$('wizardAdd').onclick=()=>{if(game.players.length>=40)return;game.players.push({id:uid(),name:(has('teams')?'Team ':'Player ')+(game.players.length+1),score:0});save();drawWizardRoster()};
-$('launchGame').onclick=()=>{if(!game.players.length||game.players.some(p=>!p.name.trim())){alert('Please enter a name for every participant.');return}if(new Set(game.players.map(p=>p.name.trim().toLowerCase())).size!==game.players.length){alert('Please use different names for each participant.');return}game.started=true;save();setStage('game')};
-$('rulesButton').onclick=()=>{const [title,desc]=descriptions[$('preset').value]||descriptions.custom;$('rulesTitle').textContent=title;$('rulesText').replaceChildren(el('p',desc),el('p','These are brief general rules. Agree on your preferred scoring and house rules before starting.'));$('rulesDialog').showModal()};
-$('preset').addEventListener('change',updateSummary);
-$('clear').addEventListener('click',e=>{e.stopImmediatePropagation();if(!confirm('Start a new game? This replaces current scores and rounds. Export first if you want to keep a copy.'))return;game=newGame();editing=null;save();setStage('welcome')},true);
-$('setupToggle').addEventListener('click',e=>{e.stopImmediatePropagation();setStage('settings')},true);
-$('closeSetup').addEventListener('click',e=>{e.stopImmediatePropagation();setStage('game')},true);
-$('applySetup').addEventListener('click',e=>{e.stopImmediatePropagation();$('settingsNext').click()},true);
-$('resumeGame').hidden=!game.started;
-save();render();setStage('welcome');
-
+const featureLabels={quick:'Quick point buttons',rounds:'Round-by-round entry',history:'Round history',edit:'Edit earlier rounds',bids:'Track bids',dealer:'Dealer rotation',schedule:'Custom round schedule',standings:'Standings and winner',export:'CSV export'};
+const baseOptions=t=>({target:({rook4:500,rook5:500,rook6:500,fivehundred:500,euchre:10,spades4:500,spades2:500,hearts:100,cribbage:121})[t]||0,win:['hearts','phase10'].includes(t)?'low':'high',decks:1,playerCount:4,firstDealer:0,scoreMode:'quick',features:['quick','standings'],cards:10,schedule:'10,9,8,7,6,5,4,3,2,1,2,3,4,5,6,7,8,9,10',bagLimit:10,bagPenalty:100,alone:4,trackTrump:false,match:true,cribMode:'two',special:true,slam:true,customBids:false,customDealer:false,customHistory:true,scheduleOn:false,phaseDirect:false,gameName:types.find(x=>x[0]===t)?.[1]||'Game'});
+function defaults(t){
+let o=baseOptions(t);
+if(t==='phooey'){o.schedule='7,6,5,4,3,2,1,2,3,4,5,6,7,9';o.cards=7}
+if(t==='river'){o.schedule='10,9,8,7,6,5,4,3,2,1,2,3,4,5,6,7,8,9,10'}
+if(t==='custom'){o.features=['quick'];o.scoreMode='quick'}
+if(t==='simple'){o.features=['quick'];o.target=0}
+if(t==='hearts'){o.target=100}
+return o;
+}
+function participants(t,o){
+const teamMode=['rook4','rook6','fivehundred','euchre'].includes(t)||(t==='cribbage'&&o.cribMode==='four');
+const count=teamMode?(t==='rook6'?3:2):t==='rook5'?5:t==='spades2'?2:t==='spades4'?4:t==='cribbage'?(o.cribMode==='four'?2:2):['hearts','river','phooey','phase10'].includes(t)?o.playerCount:2;
+return Array.from({length:count},(_,i)=>({id:uid(),name:(teamMode?'Team ':'Player ')+(i+1),team:t==='spades4'?i%2:undefined}));
+}
+function newGame(t='simple'){const o=defaults(t);return{id:uid(),type:t,name:o.gameName,opts:o,players:participants(t,o),rounds:[],events:[],draft:{},draftStep:'bid',finished:false,created:Date.now(),matchWins:{},completedAt:null}}
+function createDB(){return{version:4,games:[],presets:[],activeId:null}}
+let db;try{db=JSON.parse(localStorage.getItem(STORE))}catch{}
+if(!db||!Array.isArray(db.games)){db=createDB();
+for(const key of [OLD3,OLD1]){
+try{const old=JSON.parse(localStorage.getItem(key));if(!old)continue;
+const g=newGame('simple');g.name='Imported Scorekeeper';
+let rows=key===OLD3?old.players:old;
+if(!Array.isArray(rows))continue;
+g.players=rows.filter(p=>p&&typeof p.name==='string').map(p=>({id:uid(),name:p.name})).slice(0,40);
+if(!g.players.length)continue;
+const scores=key===OLD3?rows.map(p=>p.score||0):rows.map(p=>p.score||0);
+g.players.forEach((p,i)=>{const score=N(scores[i]);if(score)g.events.push({id:uid(),participant:p.id,delta:score,category:'Imported score',at:Date.now()})});
+if(key===OLD3&&Array.isArray(old.rounds)){g.rounds=old.rounds.map(r=>({id:uid(),raw:{legacy:true},scores:Object.fromEntries(g.players.map((p,i)=>[p.id,N(r.scores?.[rows[i]?.id])||0])),meta:'Imported round'}))}db.games.push(g);break;
+}catch(e){console.warn('Legacy import skipped',e)}
+} }
+if(!Array.isArray(db.presets))db.presets=[];
+let screen='welcome',chosen='simple',draftOpts=defaults('simple'),draftPlayers=[],active=null,editing=-1,viewHistory=false;
+const validTypes=new Set(types.map(x=>x[0]));
+const getGame=()=>db.games.find(g=>g.id===db.activeId)||null;
+const persist=()=>{try{localStorage.setItem(STORE,JSON.stringify(db));return true}catch(e){console.error(e);alert('Unable to save to local browser storage. Export the game before leaving this page.');return false}};
+function total(g){const out=Object.fromEntries(g.players.map(p=>[p.id,0]));for(const e of g.events||[])if(out[e.participant]!==undefined)out[e.participant]+=e.delta;for(const r of g.rounds||[])for(const p of g.players)out[p.id]+=r.scores?.[p.id]||0;return out}
+function winnerIds(g){const t=total(g),ids=g.players.map(p=>p.id);if(!ids.length)return[];const target=g.opts.win==='low'?Math.min(...ids.map(id=>t[id])):Math.max(...ids.map(id=>t[id]));return ids.filter(id=>t[id]===target)}
+function name(g,id){return g.players.find(p=>p.id===id)?.name||'Unknown'}
+function schedule(g){const s=String(g.opts.schedule||'').split(/[,;\s]+/).filter(Boolean).map(N);return s.length&&s.every(n=>n!==null&&n>=1&&n<=52)?s:[]}
+function escTable(obj){return safe(JSON.stringify(obj))}
+function gameEnded(g){
+if(g.finished)return true;
+if(g.type==='phase10')return g.players.some(p=>(g.rounds||[]).filter(r=>r.raw?.['complete_'+p.id]==='yes').length>=10);
+return false;
+}
+function openHelp(t=chosen){$('helpTitle').textContent=types.find(x=>x[0]===t)?.[1]||'Game rules';$('helpContent').replaceChildren();const p=document.createElement('p');p.textContent=descriptions[t]||descriptions.custom;$('helpContent').append(p);const caution=document.createElement('p');caution.textContent='House rules vary. Your selected game settings control the scorekeeper; please agree on any optional rules before playing.';$('helpContent').append(caution);$('helpDialog').showModal()}
+$('closeHelp').onclick=()=>$('helpDialog').close();
+function header(title,sub){return '<p class="eyebrow">Card games · Scorekeeping</p><h1>Score<span>keeper.</span></h1><p class="subtle">'+safe(sub||title)+'</p>'}
+function stages(step){return '<div class="steps">'+[1,2,3].map(i=>'<span class="'+(i<=step?'on':'')+'"></span>').join('')+'</div>'}
+function setScreen(s){screen=s;render();window.scrollTo({top:0,behavior:'instant'})}
+function startNew(t){chosen=t;draftOpts=defaults(t);draftPlayers=participants(t,draftOpts);setScreen('settings')}
+function render(){
+if(screen==='welcome'){root.innerHTML='<section class="panel hero"><p class="eyebrow">Welcome</p><h1>Score<span>keeper.</span></h1><p>Simple scores for game night, or purpose-built scoring for your favorite card games. Everything saves on this device.</p><div class="actions"><button class="primary" data-act="choose">Start New Game</button><button data-act="library">Saved Games ('+db.games.length+')</button></div></section>';return}
+if(screen==='choose'){root.innerHTML='<div class="wizard">'+stages(1)+'<section class="panel"><p class="eyebrow">Step 1 of 3</p><h2>What are we playing?</h2><p class="subtle">Start simple or select a card game to get its own scoring controls.</p><div class="selection">'+types.map(([id,title,desc])=>'<button class="pick '+(chosen===id?'on':'')+'" data-type="'+id+'"><strong>'+safe(title)+'</strong><small>'+safe(desc)+'</small></button>').join('')+'</div><div class="helpRow"><strong>'+safe(types.find(x=>x[0]===chosen)[1])+'</strong><p class="subtle">'+safe(descriptions[chosen].slice(0,140))+'</p><button data-act="rules">Game description &amp; rules ⓘ</button></div></section><div class="navbuttons"><button data-act="welcome">Back</button><button class="primary" data-act="nextSettings">Next: Settings</button></div></div>';return}
+if(screen==='settings'){renderSettings();return}
+if(screen==='people'){renderPeople();return}
+if(screen==='library'){renderLibrary();return}
+if(screen==='play'||screen==='results'){active=getGame();if(!active){setScreen('welcome');return}renderPlay();return}
+}
+function optionField(key,label,type='number',extra=''){const v=draftOpts[key];return input(key,label,v,type,extra)}
+function renderSettings(){
+const t=chosen,o=draftOpts;let bits='';
+if(t==='simple'){bits='<p class="notice">Simple mode keeps the original score cards and custom point entry. No round setup is required.</p>'+select('win','Optional leader tracking',[['none','Off'],['high','Highest score leads'],['low','Lowest score leads']],o.win);}
+else if(t==='custom'){bits='<h3>Scoring style</h3>'+select('scoreMode','Scoring interface',[['quick','Quick adjustments'],['rounds','Round-by-round'],['both','Both']],o.scoreMode)+'<h3>Optional features</h3><div class="fields">'+['history','edit','bids','dealer','schedule','standings','export'].map(k=>check('f_'+k,featureLabels[k],o.features.includes(k))).join('')+'</div>'+select('win','Winning condition',[['none','Manual only'],['high','Highest score'],['low','Lowest score']],o.win)+optionField('target','Target score (0 to disable)');}
+else if(['rook4','rook5','rook6'].includes(t)){bits='<p class="notice">180 card points including kitty, plus 20 for most tricks; failed bid deducts the full bid. Rook is always low trump. No dealer tracking.</p>'+optionField('target','Winning target')+(t==='rook5'?'<p>Players change partners each round based on the called card.</p>':'<p>Enter team names in the next step.</p>');}
+else if(t==='hearts'){bits='<div class="fields">'+optionField('playerCount','Number of players')+select('decks','Decks',[['1','One deck (26 penalties)'],['2','Two decks (52 penalties)']],o.decks)+optionField('target','Game-ending threshold')+'</div><p class="subtle">Shooting the moon adds the full penalty total to each other player.</p>';}
+else if(t==='river'||t==='phooey'){bits='<div class="fields">'+optionField('playerCount','Number of players')+select('decks','Decks',[['1','One'],['2','Two']],o.decks)+select('firstDealer','First dealer',Array.from({length:12},(_,i)=>[String(i),'Player '+(i+1)]),o.firstDealer)+'</div>'+input('schedule','Cards per round (comma-separated)',o.schedule,'text')+'<p class="subtle">The schedule controls when starting cards appear. Edit the sequence freely; every number is cards per player.</p><p class="notice">'+(t==='river'?'Exact bid: 10 + tricks; otherwise 0.':'Exact bids: 0=10, 1=15, 2=20, 3+=10×bid. Over: tricks taken. Under: negative bid value. No prohibited bids.')+'</p>'+(t==='phooey'?check('trackTrump','Track trump suit each round',o.trackTrump):'');}
+else if(t==='fivehundred'){bits='<p class="notice">500 uses contract values and defending tricks. First to +500 or opponent at −500; defensive points can win.</p>'+optionField('target','Winning target')+check('special','Enable Nullo (250) and Open Nullo (500)',o.special)+check('slam','All 10 tricks: minimum 250 points',o.slam);}
+else if(t==='euchre'){bits='<div class="fields">'+optionField('target','Winning target')+optionField('alone','Lone-hand 5-trick sweep points')+'</div>'+check('trackTrump','Track trump suit optionally',o.trackTrump);}
+else if(t==='spades4'||t==='spades2'){bits='<div class="fields">'+optionField('target','Winning target')+optionField('bagLimit','Bag threshold')+optionField('bagPenalty','Bag penalty (positive number)')+'</div>'+check('special','Enable Nil and Blind Nil',o.special)+'<p class="subtle">Bags count even when a Nil fails. Nil tricks do not count toward a partner’s contract.</p>';}
+else if(t==='phase10'){bits='<p class="notice">Ten standard phases. Mark completed phases and enter remaining cards or a penalty total. Lowest penalty score breaks ties.</p>';}
+else if(t==='cribbage'){bits=select('cribMode','Player mode',[['two','Two individual players'],['four','Four players, two teams']],o.cribMode)+optionField('target','Winning target')+check('match','Track multiple games and skunks',o.match);}
+root.innerHTML='<div class="wizard">'+stages(2)+'<section class="panel"><p class="eyebrow">Step 2 of 3</p><h2>Game settings</h2><p class="subtle">'+safe(types.find(x=>x[0]===t)[1])+' · Only relevant settings are shown.</p><div class="helpRow"><button data-act="rules">Game description &amp; rules ⓘ</button></div><form id="settingsForm"><div class="fields">'+input('gameName','Game name',o.gameName,'text','maxlength="70"')+'</div>'+bits+'</form></section><div class="navbuttons"><button data-act="choose">Back</button><button class="primary" data-act="nextPeople">Next: Players &amp; Teams</button></div></div>';
+}
+function captureOptions(){
+const form=$('settingsForm'),d=new FormData(form),o=structuredClone(draftOpts),t=chosen;
+o.gameName=String(d.get('gameName')||'Game').trim()||'Game';
+for(const k of ['target','playerCount','decks','firstDealer','bagLimit','bagPenalty','alone','cribMode','win','scoreMode','schedule'])if(d.has(k))o[k]=['target','playerCount','decks','firstDealer','bagLimit','bagPenalty','alone'].includes(k)?N(d.get(k)):String(d.get(k));
+for(const k of ['special','slam','trackTrump','match'])if(form.querySelector('[name="'+k+'"]'))o[k]=d.has(k);
+if(t==='custom'){o.features=['quick'];if(o.scoreMode!=='quick')o.features.push('rounds');if(o.scoreMode==='rounds')o.features=o.features.filter(x=>x!=='quick');for(const k of ['history','edit','bids','dealer','schedule','standings','export'])if(d.has('f_'+k))o.features.push(k)}
+if(['river','phooey'].includes(t)){const arr=String(o.schedule).split(/[,;\s]+/).filter(Boolean).map(N);if(!arr.length||arr.some(v=>v===null||v<1||v>52)){alert('Enter a valid card schedule: numbers between 1 and 52, separated by commas.');return null}if(arr.length>300){alert('Use 300 rounds or fewer.');return null}o.schedule=arr.join(',')}
+if(o.target===null||o.target<0||o.target>1000000){alert('Enter a valid nonnegative score target.');return null}
+if(o.playerCount!==null&&(o.playerCount<2||o.playerCount>20)){alert('Use between 2 and 20 players.');return null}
+if(o.bagLimit===null||o.bagLimit<1||o.bagPenalty===null||o.bagPenalty<0||o.alone===null||o.alone<0){alert('Check the scoring values.');return null}
+if(['river','phooey'].includes(t)){const arr=o.schedule.split(',').map(Number);if(arr.some(n=>n*o.playerCount>52*o.decks)){alert('The selected schedule needs more cards than the chosen number of decks provides.');return null}}
+return o;
+}
+function renderPeople(){
+const t=chosen,group=['rook4','rook6','fivehundred','euchre'].includes(t)||(t==='cribbage'&&draftOpts.cribMode==='four');
+const fixed=['rook4','rook6','rook5','fivehundred','euchre','spades4','spades2','cribbage'].includes(t);
+const teamSpades=t==='spades4';
+root.innerHTML='<div class="wizard">'+stages(3)+'<section class="panel"><p class="eyebrow">Step 3 of 3</p><h2>'+(group?'Name your teams':'Who is playing?')+'</h2><p class="subtle">'+(teamSpades?'Enter four players and assign two to each team.':group?'One score is kept for each team.':'Enter all players before beginning. You can correct names later.')+'</p><div id="roster" class="roster"></div><div class="actions">'+(!fixed?'<button data-act="addPerson">+ Add participant</button><button data-act="removePerson">Remove last</button>':'')+'</div></section><div class="navbuttons"><button data-act="backSettings">Back</button><button class="primary" data-act="launch">Start Game</button></div></div>';
+const roster=$('roster');draftPlayers.forEach((p,i)=>{const row=document.createElement('div');row.className='person'+(teamSpades?' team4':'');row.innerHTML='<input maxlength="60" aria-label="Participant '+(i+1)+'" value="'+safe(p.name)+'" data-person="'+i+'">'+(teamSpades?'<select data-team="'+i+'" aria-label="Team assignment"><option value="0" '+(p.team===0?'selected':'')+'>Team A</option><option value="1" '+(p.team===1?'selected':'')+'>Team B</option></select>':'')+'<span class="subtle">'+(i+1)+'</span>';roster.append(row)});
+}
+function capturePlayers(){root.querySelectorAll('[data-person]').forEach(e=>draftPlayers[Number(e.dataset.person)].name=e.value.trim());root.querySelectorAll('[data-team]').forEach(e=>draftPlayers[Number(e.dataset.team)].team=Number(e.value));if(!draftPlayers.length||draftPlayers.some(p=>!p.name)){alert('Enter a name for every participant.');return false}if(new Set(draftPlayers.map(p=>p.name.toLowerCase())).size!==draftPlayers.length){alert('Use distinct participant names.');return false}if(chosen==='spades4'&&draftPlayers.filter(p=>p.team===0).length!==2){alert('Spades requires two players on each team.');return false}return true}
+function renderLibrary(){
+root.innerHTML=header('Saved games','Resume earlier games, export them, or begin again.')+'<div class="actions" style="margin-bottom:20px"><button class="primary" data-act="choose">+ New game</button><button data-act="welcome">Welcome</button></div>'+(!db.games.length?'<section class="panel"><p>No saved games yet.</p></section>':db.games.slice().reverse().map(g=>'<section class="panel between"><div><strong>'+safe(g.name)+'</strong><p class="subtle">'+safe(types.find(x=>x[0]===g.type)?.[1]||g.type)+' · '+g.rounds.length+' rounds · '+(g.finished?'Finished':'In progress')+'</p></div><div class="actions"><button data-act="open" data-id="'+safe(g.id)+'">Open</button><button data-act="export" data-id="'+safe(g.id)+'">CSV</button><button class="danger" data-act="delete" data-id="'+safe(g.id)+'">Delete</button></div></section>').join(''));
+}
+function scoreStatus(g){const t=total(g),ids=winnerIds(g),names=ids.map(id=>name(g,id)).join(', ');return g.finished?'Winner: '+names:g.opts.win==='none'?'Scores in progress':'Leading: '+names}
+function progress(g){const t=total(g),goal=Number(g.opts.target)||0;if(!goal)return'';return '<div class="bar"><span style="width:'+Math.max(0,Math.min(100,Math.max(...Object.values(t),0)/goal*100))+'%"></span></div>'}
+function renderPlay(){
+const g=active,t=total(g),roundMode=(g.type!=='simple'&&g.type!=='cribbage'&&g.type!=='custom')||(g.type==='custom'&&g.opts.scoreMode!=='quick');
+const quick=g.type==='simple'||g.type==='cribbage'||(g.type==='custom'&&g.opts.scoreMode!=='rounds');
+const end=gameEnded(g);
+root.innerHTML='<div class="between" style="margin-bottom:17px"><div>'+header('',g.name+' · '+(g.rounds.length+' rounds recorded'))+'</div><div class="actions"><button data-act="library">Games</button><button data-act="rules" data-game="'+safe(g.type)+'">Rules ⓘ</button></div></div><section class="panel"><div class="between"><h2>'+safe(g.name)+'</h2><span class="badge">'+(g.finished?'Finished': 'In progress')+'</span></div><div class="scoregrid">'+g.players.map(p=>'<article class="scorecard '+(winnerIds(g).includes(p.id)?'lead':'')+'"><h3>'+safe(p.name)+'</h3><div class="score">'+t[p.id]+'</div>'+((g.type==='spades4'||g.type==='spades2')?'<small>Bag count: '+(g.bagCounts?.[p.id]??0)+'</small>':'')+'</article>').join('')+'</div>'+progress(g)+'<p class="'+(g.finished?'success':'subtle')+'">'+safe(scoreStatus(g))+'</p><div class="actions">'+(!g.finished?'<button data-act="finish">Finish Game</button>':'<button data-act="reopen">Reopen</button>')+'<button data-act="export" data-id="'+safe(g.id)+'">Export CSV</button><button data-act="new">New Game</button></div></section>';
+if(quick&&!g.finished)root.innerHTML+=renderQuick(g,t);
+if(roundMode&&!g.finished)root.innerHTML+=renderRound(g);
+if(g.type==='phase10'&&!g.finished)root.innerHTML+=renderRound(g);
+if(g.type==='cribbage')root.innerHTML+=renderMatch(g);
+if(g.rounds.length||g.events.length)root.innerHTML+=renderHistory(g);
+if(end&&!g.finished){root.innerHTML+='<p class="notice">The game-ending condition may have been reached. Review the standings and select Finish Game when ready.</p>'}
+}
+function renderQuick(g,t){return '<section class="panel"><div class="between"><h2>Quick scoring</h2><button data-act="undo" '+(!g.events.length?'disabled':'')+'>Undo last adjustment</button></div><div class="scoregrid">'+g.players.map(p=>'<div class="scorecard"><strong>'+safe(p.name)+'</strong><div class="score">'+t[p.id]+'</div><div class="quick"><button data-act="delta" data-id="'+p.id+'" data-n="-1">−</button><button data-act="delta" data-id="'+p.id+'" data-n="1">+</button></div><form class="addpoint" data-add="'+p.id+'"><input required type="number" step="1" placeholder="Custom points" aria-label="Points for '+safe(p.name)+'"><button class="primary" type="submit">Apply</button></form>'+(g.type==='cribbage'?'<select aria-label="Scoring category" data-cat="'+p.id+'"><option>Pegging</option><option>Hand</option><option>Crib</option><option>Adjustment</option></select>':'')+'</div>').join('')+'</div></section>'}
+function renderMatch(g){const wins=g.matchWins||{};return '<section class="panel"><h2>Match tracking</h2><p class="subtle">'+g.players.map(p=>safe(p.name)+': '+(wins[p.id]||0)+' wins').join(' · ')+'</p>'+(g.finished?'<button data-act="rematch" class="primary">Start next match game</button>':'')+'</section>'}
+function saveDraftValues(g){const f=$('roundForm');if(!f)return;g.draft=Object.fromEntries(new FormData(f));}
+function optionsForPlayers(g,except){return g.players.filter(p=>p.id!==except).map(p=>[p.id,p.name])}
+function renderRound(g){
+const r=g.draft||{},bidStep=g.draftStep!=='results',idx=editing<0?g.rounds.length:editing,round=idx+1;
+const t=g.type,roundCards=schedule(g)[idx],dealerId=g.players[(Number(g.opts.firstDealer||0)+idx)%g.players.length]?.id;
+let ui='',title='Round '+round+(editing>=0?' · Editing':'');
+const psel=(k,label,ex)=>select(k,label,optionsForPlayers(g,ex),r[k]);
+if(['rook4','rook5','rook6'].includes(t)){
+const sides=t==='rook5'?[['bid','Bidding side'],['def','Defending side']]:g.players.map(p=>[p.id,p.name]);
+if(bidStep){ui='<div class="fields">'+select('bidder',t==='rook5'?'Bidding player':'Bidding team',optionsForPlayers(g),r.bidder)+input('bid','Winning bid',r.bid)+select('trump','Trump',suits,r.trump||'red')+input('kitty','Kitty points',r.kitty||0)+(t==='rook5'?input('called','Called card',r.called||'','text'):'')+'</div><p class="subtle">Enter kitty points now. They will go to the side that took the final trick. Rook is always low trump.</p>';}
+else{ui=(t==='rook5'?'<div class="fields">'+select('partner','Partner revealed',optionsForPlayers(g,r.bidder),r.partner)+'</div>':'')+'<div class="fields">'+sides.map(([id,n])=>input('card_'+id,n+' · card points',r['card_'+id]||0)+input('tricks_'+id,n+' · tricks taken',r['tricks_'+id]||0)).join('')+'</div><div class="fields">'+select('last','Side that took final trick',sides,r.last)+select('tie','Most recent trick among tied sides (if needed)',[['','Choose when tied'],...sides],r.tie)+'</div><p class="subtle">The app automatically awards the 20-point bonus for most tricks. A tie goes to the tied side that took a trick most recently.</p>';}
+}else if(t==='hearts'){ui='<p class="subtle">Enter captured penalty cards; total hearts and queens must match the selected deck count.</p><div class="fields">'+g.players.map(p=>input('hearts_'+p.id,p.name+' · hearts',r['hearts_'+p.id]??0)+input('queen_'+p.id,p.name+' · queens of spades',r['queen_'+p.id]??0)).join('')+'</div>';}
+else if(t==='river'||t==='phooey'){
+title+=' · '+(roundCards||'?')+' cards';
+if(bidStep)ui='<p class="subtle">Dealer: '+safe(name(g,dealerId))+' · Enter each prediction before playing.</p><div class="fields">'+g.players.map(p=>input('bid_'+p.id,p.name+' · bid',r['bid_'+p.id]??0)).join('')+'</div>'+(t==='phooey'&&g.opts.trackTrump?select('trump','Optional trump',[['','Not recorded'],...pokerSuits],r.trump):'');
+else ui='<p class="subtle">Record tricks taken. Together they must equal '+roundCards+'.</p><div class="fields">'+g.players.map(p=>input('taken_'+p.id,p.name+' · tricks',r['taken_'+p.id]??0)).join('')+'</div>';
+}else if(t==='fivehundred'){
+if(bidStep)ui='<div class="fields">'+psel('bidder','Bidding team')+select('contract','Contract',[['regular','Regular'],...(g.opts.special?[['nullo','Nullo / Misère (250)'],['open','Open Nullo / Misère (500)']]:[])],r.contract||'regular')+select('level','Tricks contracted',Array.from({length:5},(_,i)=>[String(6+i),String(6+i)]),r.level||'6')+select('suit','Suit',pokerSuits,r.suit||'spades')+'</div><p class="subtle">Regular contract: points depend on level and suit. Special contracts must take zero tricks.</p>';
+else ui='<div class="fields">'+input('taken','Tricks won by bidding team (0–10)',r.taken??'')+'</div>';
+}else if(t==='euchre'){
+ui='<div class="fields">'+psel('caller','Calling team')+select('taken','Tricks won by callers',Array.from({length:6},(_,i)=>[String(i),String(i)]),r.taken||'3')+check('alone','Caller went alone',r.alone==='on')+(g.opts.trackTrump?select('trump','Optional trump suit',[['','Not recorded'],...pokerSuits.slice(0,4)],r.trump):'')+'</div>';
+}else if(t==='spades4'||t==='spades2'){
+if(bidStep)ui='<div class="fields">'+g.players.map(p=>select('kind_'+p.id,p.name+' bid type',[['normal','Normal'],...(g.opts.special?[['nil','Nil'],['blind','Blind Nil']]:[])],r['kind_'+p.id]||'normal')+input('bid_'+p.id,p.name+' normal bid',r['bid_'+p.id]??0)).join('')+'</div><p class="subtle">Nil and Blind Nil ignore the normal bid number for that player.</p>';
+else ui='<p class="subtle">Enter actual tricks taken. Total must be 13.</p><div class="fields">'+g.players.map(p=>input('taken_'+p.id,p.name+' · tricks',r['taken_'+p.id]??0)).join('')+'</div>';
+}else if(t==='phase10'){
+const past=g.players.map(p=>[p.id,g.rounds.slice(0,idx).filter(x=>x.raw?.['complete_'+p.id]==='yes').length+1]);
+ui='<p class="subtle">Mark completed phases. Remaining cards can be counted by category or entered as a total.</p>'+g.players.map(p=>{const phase=past.find(x=>x[0]===p.id)[1];return '<div class="entryrow"><strong>'+safe(p.name)+' · Phase '+Math.min(phase,10)+'</strong>'+check('complete_'+p.id,'Completed phase',r['complete_'+p.id]==='yes')+'<div class="fields">'+select('method_'+p.id,'Penalty entry',[['total','Total points'],['cards','Count cards']],r['method_'+p.id]||'total')+input('total_'+p.id,'Penalty total',r['total_'+p.id]??0)+input('low_'+p.id,'Number cards 1–9',r['low_'+p.id]??0)+input('high_'+p.id,'Number cards 10–12',r['high_'+p.id]??0)+input('skip_'+p.id,'Skip cards',r['skip_'+p.id]??0)+input('wild_'+p.id,'Wild cards',r['wild_'+p.id]??0)+'</div></div>'}).join('');
+}else if(t==='custom'){
+ui=(g.opts.features.includes('dealer')?'<p class="subtle">Dealer: '+safe(name(g,dealerId))+'</p>':'')+(g.opts.features.includes('schedule')?'<p class="subtle">Cards: '+safe(roundCards||'Not configured')+'</p>':'')+'<div class="fields">'+g.players.map(p=>input('points_'+p.id,p.name+' points',r['points_'+p.id]??0)+(g.opts.features.includes('bids')?input('bid_'+p.id,p.name+' bid (optional)',r['bid_'+p.id]??''):'')).join('')+'</div>';
+}
+return '<section class="panel"><div class="between"><h2>'+safe(title)+'</h2><span class="badge">'+(bidStep&&['rook4','rook5','rook6','river','phooey','fivehundred','spades4','spades2'].includes(t)?'Bidding':'Results')+'</span></div><form id="roundForm">'+ui+'</form><p id="roundError" class="error" role="alert"></p><div class="actions"><button class="primary" data-act="saveRound">'+(bidStep&&['rook4','rook5','rook6','river','phooey','fivehundred','spades4','spades2'].includes(t)?'Begin round':'Save round')+'</button>'+(editing>=0?'<button data-act="cancelEdit">Cancel edit</button>':'')+'</div></section>';
+}
+function renderHistory(g){
+const rows=g.rounds.map((r,i)=>'<tr><td>'+ (i+1) +'</td>'+g.players.map(p=>'<td>'+ (r.scores?.[p.id]??0) +'</td>').join('')+'<td><button data-act="detail" data-index="'+i+'">Details</button> <button data-act="edit" data-index="'+i+'" '+(g.finished?'disabled':'')+'>Edit</button> <button data-act="delRound" data-index="'+i+'" '+(g.finished?'disabled':'')+'>Delete</button></td></tr>').join('');
+const events=(g.events||[]).map(e=>'<tr><td>'+safe(e.category||'Adjustment')+'</td><td>'+safe(name(g,e.participant))+'</td><td>'+e.delta+'</td></tr>').join('');
+return '<section class="panel"><div class="between"><h2>Score history</h2><button data-act="toggleHistory">'+(viewHistory?'Hide':'Show')+'</button></div>'+(viewHistory?'<div class="tablewrap"><table><thead><tr><th>Round</th>'+g.players.map(p=>'<th>'+safe(p.name)+'</th>').join('')+'<th>Actions</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+(events?'<h3>Point adjustments</h3><div class="tablewrap"><table>'+events+'</table></div>':''):'<p class="subtle">'+g.rounds.length+' rounds and '+g.events.length+' adjustments saved. Expand to review or correct.</p>')+'</section>';
+}
+function formVals(){const f=$('roundForm');return f?Object.fromEntries(new FormData(f)):{}}
+function requiredInt(raw,key,min,max){const n=N(raw[key]);if(n===null||(min!==undefined&&n<min)||(max!==undefined&&n>max))throw Error('Enter a valid number for '+key+'.');return n}
+function calculate(g,raw,prior){
+const t=g.type,p=g.players,o=g.opts,scores=Object.fromEntries(p.map(x=>[x.id,0]));let meta='',bags={};
+if(['rook4','rook5','rook6'].includes(t)){
+const bid=requiredInt(raw,'bid',0,200),kitty=requiredInt(raw,'kitty',0,180),bidder=raw.bidder;if(!p.some(x=>x.id===bidder))throw Error('Select the bidding team/player.');
+const ids=t==='rook5'?['bid','def']:p.map(x=>x.id);const partner=raw.partner;
+if(t==='rook5'&&(!p.some(x=>x.id===partner)||partner===bidder))throw Error('Select the called-card partner.');
+const card={},tricks={};for(const id of ids){card[id]=requiredInt(raw,'card_'+id,0,180);tricks[id]=requiredInt(raw,'tricks_'+id,0,100)}
+if(ids.reduce((s,id)=>s+card[id],0)+kitty!==180)throw Error('All captured card points plus kitty points must total 180.');
+const last=raw.last;if(!ids.includes(last))throw Error('Select which side took the final trick.');
+const most=Math.max(...ids.map(id=>tricks[id])),tied=ids.filter(id=>tricks[id]===most);
+let bonus=tied.length===1?tied[0]:tied.includes(last)?last:raw.tie;
+if(!tied.includes(bonus))throw Error('Choose which tied side took the most recent trick.');
+const earned={};ids.forEach(id=>earned[id]=card[id]+(id===last?kitty:0)+(id===bonus?20:0));
+if(t==='rook5'){const bidSide=earned.bid>=bid?earned.bid:-bid;for(const person of p)scores[person.id]=person.id===bidder||person.id===partner?bidSide:earned.def;meta='Bidder '+name(g,bidder)+' · Partner '+name(g,partner)+' · Bid '+bid+' · '+raw.trump+' · '+(earned.bid>=bid?'made':'set')+' · Bonus: '+bonus+' · Kitty to '+last;}
+else{for(const person of p)scores[person.id]=person.id===bidder?(earned[person.id]>=bid?earned[person.id]:-bid):earned[person.id];meta='Bid '+bid+' by '+name(g,bidder)+' · '+raw.trump+' · '+(earned[bidder]>=bid?'made':'set')+' · Bonus: '+name(g,bonus)+' · Kitty: '+name(g,last)}
+}
+else if(t==='hearts'){
+const d=Number(o.decks)||1;let hearts=0,queens=0;for(const person of p){const h=requiredInt(raw,'hearts_'+person.id,0,13*d),q=requiredInt(raw,'queen_'+person.id,0,d);hearts+=h;queens+=q;scores[person.id]=h+13*q}
+if(hearts!==13*d||queens!==d)throw Error('Account for all '+13*d+' hearts and '+d+' queen(s) of spades.');
+const shooter=p.find(x=>scores[x.id]===26*d);if(shooter){p.forEach(x=>scores[x.id]=x.id===shooter.id?0:26*d);meta='Shot the moon: '+shooter.name}else meta='Penalty cards counted: '+26*d;
+}
+else if(t==='river'||t==='phooey'){
+const hand=schedule(g)[prior.length];if(!hand)throw Error('No scheduled round remains. Edit the schedule in a new game setup.');
+let tricks=0;for(const person of p){const b=requiredInt(raw,'bid_'+person.id,0,hand),taken=requiredInt(raw,'taken_'+person.id,0,hand);tricks+=taken;const value=b===0?10:b===1?15:b===2?20:b*10;scores[person.id]=t==='river'?(b===taken?10+taken:0):(b===taken?value:taken>b?taken:-value)}
+if(tricks!==hand)throw Error('Tricks taken must total the '+hand+' tricks played.');
+meta=hand+' cards · Dealer: '+p[(Number(o.firstDealer||0)+prior.length)%p.length].name+(raw.trump?' · Trump: '+raw.trump:'');
+}
+else if(t==='fivehundred'){
+const bidder=raw.bidder;if(!p.some(x=>x.id===bidder))throw Error('Select a bidding team.');
+const taken=requiredInt(raw,'taken',0,10),contract=raw.contract||'regular',special=contract!=='regular';
+const level=requiredInt(raw,'level',6,10),suitIndex=pokerSuits.findIndex(x=>x[0]===raw.suit);if(suitIndex<0)throw Error('Select a valid contract suit.');
+const value=special?(contract==='open'?500:250):40+(level-6)*100+suitIndex*20;
+const made=special?taken===0:taken>=level;const earned=made?(special?value:(taken===10&&o.slam?Math.max(value,250):value)):-value;
+p.forEach(x=>scores[x.id]=x.id===bidder?earned:10*(10-taken));meta=contract+' · '+(special?'':level+' '+raw.suit+' · ')+(made?'made':'set')+' · contract '+value+' · '+taken+' tricks';
+}
+else if(t==='euchre'){
+const caller=raw.caller;if(!p.some(x=>x.id===caller))throw Error('Select who called trump.');
+const taken=requiredInt(raw,'taken',0,5),alone=raw.alone==='on',points=taken<3?0:taken===5?(alone?o.alone:2):1;p.forEach(x=>scores[x.id]=x.id===caller?points:taken<3?2:0);meta=name(g,caller)+' called · '+taken+' tricks'+(alone?' · Alone':'')+(raw.trump?' · '+raw.trump:'');
+}
+else if(t==='spades4'||t==='spades2'){
+let totalTricks=0;for(const person of p)totalTricks+=requiredInt(raw,'taken_'+person.id,0,13);if(totalTricks!==13)throw Error('Exactly 13 tricks must be accounted for.');
+const groups=t==='spades4'?[[p[0],p[1],p[2],p[3]].flat().filter(x=>x.team===0),p.filter(x=>x.team===1)]:p.map(x=>[x]);
+const previousBag=Object.fromEntries(groups.map((members,i)=>[String(i),prior.reduce((_,r)=>r.bags?.[String(i)]??0,0)]));
+groups.forEach((members,i)=>{
+const key=String(i);let target=0,regularTaken=0,nilTaken=0,nilScore=0;for(const player of members){const kind=raw['kind_'+player.id]||'normal',taken=requiredInt(raw,'taken_'+player.id,0,13);if(kind==='normal'){target+=requiredInt(raw,'bid_'+player.id,0,13);regularTaken+=taken}else{if(!o.special)throw Error('Special bids disabled.');nilTaken+=taken;const base=kind==='blind'?200:100;nilScore+=taken===0?base:-base}}
+const made=regularTaken>=target;const over=Math.max(0,regularTaken-target);const added=over+nilTaken;let bag=Number(previousBag[key]||0)+added;const penalties=Math.floor(bag/o.bagLimit);bag=bag%o.bagLimit;
+const gained=(made?10*target+over:-10*target)+nilScore+nilTaken-penalties*o.bagPenalty;
+members.forEach(x=>scores[x.id]=t==='spades4'?0:gained);if(t==='spades4')scores[members[0].id]=gained;
+bags[key]=bag;
+});meta='Spades contracts · Bags tracked by team or player';
+}
+else if(t==='phase10'){
+for(const person of p){const id=person.id,method=raw['method_'+id]||'total';if(method==='cards'){const low=requiredInt(raw,'low_'+id,0,100),high=requiredInt(raw,'high_'+id,0,100),skip=requiredInt(raw,'skip_'+id,0,100),wild=requiredInt(raw,'wild_'+id,0,100);scores[id]=low*5+high*10+skip*15+wild*25}else scores[id]=requiredInt(raw,'total_'+id,0,100000);const completed=prior.filter(r=>r.raw?.['complete_'+id]==='yes').length;if(raw['complete_'+id]==='yes'&&completed>=10)throw Error(person.name+' already completed Phase 10.')}
+meta='Phase progression and penalties';
+}
+else if(t==='custom'){
+for(const person of p)scores[person.id]=requiredInt(raw,'points_'+person.id,-1000000,1000000);
+meta='Manual round scoring'+(o.features.includes('dealer')?' · Dealer: '+p[(Number(o.firstDealer||0)+prior.length)%p.length].name:'');
+}
+return{scores,meta,bags};
+}
+function recalc(g){
+const before=[];const groups=g.type==='spades4'?['0','1']:g.type==='spades2'?['0','1']:[];
+let bagState=Object.fromEntries(groups.map(x=>[x,0]));
+for(const r of g.rounds){try{
+const computed=calculate(g,r.raw,before);
+r.scores=computed.scores;r.meta=computed.meta;
+if(groups.length){for(const k of groups)bagState[k]=computed.bags[k]??bagState[k];r.bags={...bagState}}
+before.push(r);
+}catch(e){r.issue=e.message;before.push(r)}}
+g.bagCounts={};if(groups.length){const b=g.rounds[g.rounds.length-1]?.bags||{};g.players.forEach((p,i)=>g.bagCounts[p.id]=b[g.type==='spades4'?String(p.team):String(i)]||0)}
+}
+function submitRound(g){
+const raw={...(g.draft||{}),...formVals()},bidTypes=['rook4','rook5','rook6','river','phooey','fivehundred','spades4','spades2'];
+if(bidTypes.includes(g.type)&&g.draftStep!=='results'){
+try{
+if(['rook4','rook5','rook6'].includes(g.type)){requiredInt(raw,'bid',0,200);requiredInt(raw,'kitty',0,180);if(!raw.bidder)throw Error('Select a bidder.')}
+if(['river','phooey'].includes(g.type))for(const p of g.players)requiredInt(raw,'bid_'+p.id,0,schedule(g)[editing<0?g.rounds.length:editing]);
+if(g.type==='fivehundred'&&!raw.bidder)throw Error('Choose a bidding team.');
+if(g.type.startsWith('spades'))for(const p of g.players)if((raw['kind_'+p.id]||'normal')==='normal')requiredInt(raw,'bid_'+p.id,0,13);
+g.draft=raw;g.draftStep='results';persist();render();return;
+}catch(e){alert(e.message);return}}
+try{
+const index=editing<0?g.rounds.length:editing,prior=g.rounds.slice(0,index);
+const result=calculate(g,raw,prior);
+const record={id:editing<0?uid():g.rounds[index].id,raw,scores:result.scores,meta:result.meta,bags:result.bags,at:Date.now()};
+if(editing<0)g.rounds.push(record);else g.rounds[index]=record;
+editing=-1;g.draft={};g.draftStep='bid';recalc(g);persist();render();
+}catch(e){const x=$('roundError');if(x)x.textContent=e.message;else alert(e.message)}
+}
+function csv(g){
+const headers=['Record','Round','Description',...g.players.map(p=>p.name)],rows=[['Game','',g.name],['Type','',types.find(x=>x[0]===g.type)?.[1]||g.type],headers];
+g.rounds.forEach((r,i)=>rows.push(['Round',i+1,r.meta,...g.players.map(p=>r.scores?.[p.id]||0)]));
+g.events.forEach(e=>rows.push(['Adjustment','',e.category||'',...g.players.map(p=>p.id===e.participant?e.delta:0)]));
+rows.push(['Total','',g.finished?'Finished':'In progress',...g.players.map(p=>total(g)[p.id])]);
+rows.push([],['Round details (JSON)']);g.rounds.forEach((r,i)=>rows.push([i+1,JSON.stringify(r.raw)]));
+const q=x=>'"'+String(x??'').replace(/"/g,'""')+'"';
+const blob=new Blob(['\uFEFF'+rows.map(row=>row.map(q).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=(g.name||'scorekeeper').replace(/[^a-z0-9-_]/gi,'-')+'-'+Date.now()+'.csv';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+function finish(g){if(!confirm('Finish this game and show final standings?'))return;g.finished=true;g.completedAt=Date.now();if(g.type==='cribbage'&&g.opts.match){const ids=winnerIds(g);ids.forEach(id=>g.matchWins[id]=(g.matchWins[id]||0)+1)}persist();setScreen('results')}
+function act(e){
+const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act,g=getGame();
+if(a==='welcome'||a==='choose'||a==='library'){if(a==='choose')chosen='simple';setScreen(a);return}
+if(a==='rules'){openHelp(b.dataset.game||chosen);return}
+if(a==='nextSettings'){startNew(chosen);return}
+if(a==='backSettings'){setScreen('settings');return}
+if(a==='nextPeople'){const options=captureOptions();if(!options)return;draftOpts=options;draftPlayers=participants(chosen,draftOpts);setScreen('people');return}
+if(a==='addPerson'){if(draftPlayers.length>=40)return;capturePlayers();draftPlayers.push({id:uid(),name:'Player '+(draftPlayers.length+1)});renderPeople();return}
+if(a==='removePerson'){if(draftPlayers.length<=1)return;capturePlayers();draftPlayers.pop();renderPeople();return}
+if(a==='launch'){if(!capturePlayers())return;const next=newGame(chosen);next.name=draftOpts.gameName;next.opts=draftOpts;next.players=draftPlayers;db.games.push(next);db.activeId=next.id;editing=-1;persist();setScreen('play');return}
+if(a==='open'){db.activeId=b.dataset.id;editing=-1;persist();setScreen(getGame()?.finished?'results':'play');return}
+if(a==='delete'){const old=db.games.find(x=>x.id===b.dataset.id);if(!old||!confirm('Delete '+old.name+' and its entire history? This cannot be undone.'))return;db.games=db.games.filter(x=>x.id!==old.id);if(db.activeId===old.id)db.activeId=null;persist();render();return}
+if(a==='export'){const game=db.games.find(x=>x.id===b.dataset.id)||g;if(game)csv(game);return}
+if(!g)return;
+if(a==='new'){setScreen('choose');return}
+if(a==='finish'){finish(g);return}
+if(a==='reopen'){g.finished=false;persist();setScreen('play');return}
+if(a==='rematch'){if(!confirm('Start the next game with the same participants?'))return;g.finished=false;g.completedAt=null;g.rounds=[];g.events=[];g.draft={};g.draftStep='bid';persist();setScreen('play');return}
+if(a==='undo'){g.events.pop();persist();render();return}
+if(a==='delta'){const n=N(b.dataset.n);if(n===null)return;g.events.push({id:uid(),participant:b.dataset.id,delta:n,category:g.type==='cribbage'?root.querySelector('[data-cat="'+b.dataset.id+'"]')?.value:'Quick adjustment',at:Date.now()});persist();render();return}
+if(a==='saveRound'){submitRound(g);return}
+if(a==='cancelEdit'){editing=-1;g.draft={};g.draftStep='bid';persist();render();return}
+if(a==='toggleHistory'){viewHistory=!viewHistory;render();return}
+if(a==='detail'){const r=g.rounds[Number(b.dataset.index)];$('helpTitle').textContent='Round '+(Number(b.dataset.index)+1);$('helpContent').replaceChildren();const p=document.createElement('p');p.textContent=r.meta||'Round details';$('helpContent').append(p);const pre=document.createElement('pre');pre.style.whiteSpace='pre-wrap';pre.style.overflowWrap='anywhere';pre.textContent=JSON.stringify({inputs:r.raw,points:r.scores},null,2);$('helpContent').append(pre);$('helpDialog').showModal();return}
+if(a==='edit'){editing=Number(b.dataset.index);g.draft={...g.rounds[editing].raw};g.draftStep='bid';render();document.querySelector('#roundForm')?.scrollIntoView({behavior:'smooth'});return}
+if(a==='delRound'){const i=Number(b.dataset.index);if(!confirm('Delete round '+(i+1)+'? Scores will be recalculated.'))return;g.rounds.splice(i,1);editing=-1;g.draft={};g.draftStep='bid';recalc(g);persist();render();return}
+}
+root.addEventListener('click',act);
+root.addEventListener('click',e=>{const b=e.target.closest('[data-type]');if(!b)return;chosen=b.dataset.type;render()});
+root.addEventListener('submit',e=>{const f=e.target.closest('[data-add]');if(!f)return;e.preventDefault();const g=getGame(),x=f.querySelector('input'),n=N(x.value);if(n===null){x.setCustomValidity('Enter a whole number.');x.reportValidity();return}x.setCustomValidity('');g.events.push({id:uid(),participant:f.dataset.add,delta:n,category:g.type==='cribbage'?root.querySelector('[data-cat="'+f.dataset.add+'"]')?.value:'Custom adjustment',at:Date.now()});persist();render()});
+root.addEventListener('change',e=>{const g=getGame();if(g&&screen==='play'&&e.target.closest('#roundForm')){saveDraftValues(g);persist()}});
+root.addEventListener('input',e=>{const g=getGame();if(g&&screen==='play'&&e.target.closest('#roundForm')){saveDraftValues(g);persist()}});
+persist();render();
 })();
 </script></body></html>
