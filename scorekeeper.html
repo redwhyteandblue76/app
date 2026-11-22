@@ -24,7 +24,7 @@ button,input{font:inherit}button{border:1px solid var(--border);border-radius:10
 .name{width:100%;background:#f8f6f3;border:1px solid transparent;border-radius:8px;padding:10px;color:var(--navy);font-weight:800;font-size:18px}
 .name:focus{border-color:var(--red)}.score{text-align:center;font-size:clamp(64px,10vw,92px);font-weight:900;letter-spacing:-.06em;font-variant-numeric:tabular-nums;line-height:1.5}
 .actions{display:flex;gap:12px}.actions button{flex:1;font-size:28px;min-height:60px;line-height:1}.actions button:last-child{background:var(--red);border-color:var(--red);color:white}.actions button:last-child:hover{background:var(--darkred)}
-.custom{display:flex;gap:9px;margin-top:12px}.custom input{min-width:0;flex:1;width:80px;border:1px solid var(--border);border-radius:9px;padding:10px 12px;background:#f8f6f3;color:var(--navy);font-weight:700}.custom button{white-space:nowrap;padding:10px 13px}.remove{display:block;margin:15px auto 0;border:0;background:none;color:var(--muted);font-size:12px;padding:7px}.remove:hover{background:none;color:var(--red)}
+.custom{display:flex;gap:9px;margin-top:12px}.custom input{min-width:0;flex:1;width:80px;border:1px solid var(--border);border-radius:9px;padding:10px 12px;background:#f8f6f3;color:var(--navy);font-weight:700}.custom button{white-space:nowrap;padding:10px 13px}.setupgrid,.featuregrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:15px 0}.setupgrid label,.featuregrid label{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:700}.featuregrid label{flex-direction:row;align-items:center}.setupgrid input,.setupgrid select,.roundrow input{min-width:0;width:100%;border:1px solid var(--border);border-radius:8px;padding:9px;background:#faf9f7;color:var(--navy)}.roundrow{display:grid;grid-template-columns:minmax(90px,1fr) repeat(3,minmax(70px,1fr));gap:9px;align-items:end;padding:10px 0;border-bottom:1px solid var(--border)}.roundrow label{font-size:12px;font-weight:700}.roundrow label input{display:block}.historytable{width:100%;border-collapse:collapse}.historytable td,.historytable th{padding:9px;border-bottom:1px solid var(--border);text-align:left}.historyscroll{overflow:auto}.historytable button{padding:5px 9px}@media(max-width:600px){.roundrow{grid-template-columns:repeat(2,minmax(0,1fr))}.roundrow strong{grid-column:1/-1}}.remove{display:block;margin:15px auto 0;border:0;background:none;color:var(--muted);font-size:12px;padding:7px}.remove:hover{background:none;color:var(--red)}
 .hint{color:var(--muted);text-align:center;font-size:12px;margin:27px 0 0}
 dialog{border:1px solid var(--border);border-radius:16px;padding:25px;background:white;color:var(--navy);width:min(420px,90vw);box-shadow:0 15px 60px #0003}dialog::backdrop{background:#10182099}dialog h2{margin:0 0 8px}dialog p{color:var(--muted)}dialog menu{display:flex;justify-content:flex-end;gap:10px;margin:22px 0 0;padding:0}
 @media(max-width:600px){main{padding:32px 16px 45px}.intro{margin-bottom:23px}.controls button{flex:1}.card{padding:20px}}
@@ -32,39 +32,81 @@ dialog{border:1px solid var(--border);border-radius:16px;padding:25px;background
 <script src="site-footer.js" defer></script>
 </head><body><main>
 <header class="intro"><div><p class="eyebrow">Keep the game moving</p><h1>Score<span>keeper.</span></h1><p>Simple scores, saved on this device.</p></div><button id="reset">Reset scores</button></header>
-<div class="controls"><button class="primary" id="add">+ Add player / team</button><button id="clear">New game</button></div>
+<div class="controls"><button class="primary" id="add">+ Add player / team</button><button id="clear">New game</button><button id="setupToggle">Advanced game setup</button></div>
+<section id="setup" class="card" hidden style="margin-bottom:22px">
+<h2 style="margin-top:0">Advanced game setup</h2>
+<div class="setupgrid"><label>Game preset<select id="preset"><option value="custom">Custom</option><option value="hearts">Hearts</option><option value="rook">Rook</option><option value="river">Up and Down the River</option><option value="fivehundred">500</option><option value="euchre">Euchre</option><option value="spades">Spades</option><option value="bridge">Bridge</option><option value="ohhell">Oh Hell</option><option value="phase10">Phase 10</option><option value="cribbage">Cribbage</option></select></label><label>Game name<input id="gameName" placeholder="Game night"></label><label>Win condition<select id="win"><option value="high">Highest score wins</option><option value="low">Lowest score wins</option></select></label><label>Starting cards<input type="number" min="1" max="52" id="startCards" value="10"></label><label>Round schedule<select id="schedule"><option value="none">None</option><option value="down">Down</option><option value="up">Up</option><option value="downup">Down then up</option></select></label></div>
+<div class="featuregrid" id="featureList"></div><p style="font-size:12px;color:var(--muted)">Presets are editable starting points. Scoring rules vary by group; enter scores using your own rules.</p>
+<div class="controls"><button class="primary" id="applySetup">Apply settings</button><button id="closeSetup">Close</button></div></section>
+<section id="roundPanel" class="card" hidden style="margin-bottom:22px"><h2 style="margin-top:0" id="roundTitle">Round 1</h2><p id="roundMeta" style="color:var(--muted)"></p><div id="roundInputs"></div><div class="controls"><button class="primary" id="saveRound">Save round</button><button id="cancelRound" hidden>Cancel editing</button></div><p id="roundError" role="alert"></p></section>
+<section id="standingsPanel" class="card" hidden style="margin-bottom:22px"><h2 style="margin-top:0">Standings</h2><div id="standings"></div><div class="controls"><button id="finish">Finish game</button><button id="export">Export CSV</button></div><p id="winner"></p></section>
+<section id="historyPanel" class="card" hidden style="margin-bottom:22px"><h2 style="margin-top:0">Round history</h2><div id="history"></div></section>
 <section id="players" class="grid" aria-label="Players and scores"></section>
 <p class="hint">Tap a name to edit it. Scores save automatically in this browser.</p>
 </main>
 <dialog id="confirm"><form method="dialog"><h2 id="dialogTitle">Are you sure?</h2><p id="dialogMessage"></p><menu><button value="cancel">Cancel</button><button class="primary" value="confirm">Continue</button></menu></form></dialog>
 <script>
 (()=>{
-const KEY='simple-scorekeeper-v1';
-const id=()=>globalThis.crypto?.randomUUID?.()||String(Date.now())+Math.random();
-const initial=()=>[{id:id(),name:'Team 1',score:0},{id:id(),name:'Team 2',score:0}];
-let players;
-try{const data=JSON.parse(localStorage.getItem(KEY));players=Array.isArray(data)?data.filter(p=>p&&typeof p.id==='string'&&typeof p.name==='string'&&Number.isSafeInteger(p.score)).slice(0,100):initial()}catch{players=initial()}
-const root=document.querySelector('#players');
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(players))}catch(e){console.warn('Could not save scores',e)}};
-function render(){root.replaceChildren();players.forEach(p=>{
-const card=document.createElement('article');card.className='card';
-const name=document.createElement('input');name.className='name';name.value=p.name;name.maxLength=60;name.setAttribute('aria-label','Player or team name');name.addEventListener('input',()=>{p.name=name.value;save()});
-const score=document.createElement('div');score.className='score';score.textContent=p.score;score.setAttribute('aria-live','polite');
-const actions=document.createElement('div');actions.className='actions';
-for(const [label,delta] of [['−',-1],['+',1]]){const b=document.createElement('button');b.textContent=label;b.setAttribute('aria-label',(delta>0?'Add':'Subtract')+' one point for '+p.name);b.onclick=()=>{if(!Number.isSafeInteger(p.score+delta))return;p.score+=delta;score.textContent=p.score;save()};actions.append(b)}
-const remove=document.createElement('button');remove.className='remove';remove.textContent='Remove';remove.setAttribute('aria-label','Remove '+p.name);remove.onclick=()=>{players=players.filter(x=>x.id!==p.id);save();render()};
-const custom=document.createElement('div');custom.className='custom';
-const amount=document.createElement('input');amount.type='number';amount.step='1';amount.placeholder='Points (e.g. 5 or -3)';amount.setAttribute('aria-label','Custom point adjustment for '+p.name);
-const apply=document.createElement('button');apply.textContent='Apply';apply.setAttribute('aria-label','Apply custom points to '+p.name);
-const adjust=()=>{const raw=amount.value.trim();if(!/^[+-]?\\d+$/.test(raw)){amount.setCustomValidity('Enter a whole number of points.');amount.reportValidity();return}amount.setCustomValidity('');const delta=Number(raw);if(!Number.isSafeInteger(delta)||!Number.isSafeInteger(p.score+delta)){amount.setCustomValidity('Number is too large.');amount.reportValidity();return}p.score+=delta;score.textContent=p.score;save();amount.value=''};
-amount.addEventListener('input',()=>amount.setCustomValidity(''));amount.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();adjust()}});apply.onclick=adjust;custom.append(amount,apply);
-card.append(name,score,actions,custom,remove);root.append(card)
-})}
-const dialog=document.querySelector('#confirm');
-function ask(title,message){document.querySelector('#dialogTitle').textContent=title;document.querySelector('#dialogMessage').textContent=message;dialog.showModal();return new Promise(resolve=>dialog.addEventListener('close',()=>resolve(dialog.returnValue==='confirm'),{once:true}))}
-document.querySelector('#add').onclick=()=>{if(players.length>=100)return;players.push({id:id(),name:'Team '+(players.length+1),score:0});save();render()};
-document.querySelector('#reset').onclick=async()=>{if(await ask('Reset scores?','All scores will return to zero. Player names will stay.')){players.forEach(p=>p.score=0);save();render()}};
-document.querySelector('#clear').onclick=async()=>{if(await ask('Start a new game?','This will replace all players and scores with two new teams.')){players=initial();save();render()}};
+const KEY='scorekeeper-custom-v3',OLD='simple-scorekeeper-v1';
+const $=id=>document.getElementById(id);
+const uid=()=>crypto?.randomUUID?.()||String(Date.now())+Math.random();
+const featureNames={rounds:'Round-by-round scoring',history:'Score history',edit:'Edit previous rounds',win:'High / low score wins',bids:'Bid tracking',dealer:'Dealer rotation',schedule:'Round schedule',standings:'Standings and winner',teams:'Team scoring',export:'Export CSV'};
+const all=Object.keys(featureNames);
+const presets={
+custom:[],hearts:['rounds','history','edit','win','dealer','standings','export'],
+rook:['rounds','history','edit','win','bids','dealer','standings','teams','export'],
+river:['rounds','history','edit','win','bids','dealer','schedule','standings','export'],
+fivehundred:['rounds','history','edit','win','bids','dealer','standings','teams','export'],
+euchre:['rounds','history','edit','win','dealer','standings','teams','export'],
+spades:['rounds','history','edit','win','bids','dealer','standings','teams','export'],
+bridge:['rounds','history','edit','win','bids','dealer','standings','teams','export'],
+ohhell:['rounds','history','edit','win','bids','dealer','schedule','standings','export'],
+phase10:['rounds','history','edit','win','dealer','standings','export'],
+cribbage:['rounds','history','edit','win','dealer','standings','export']};
+const newGame=()=>({players:[{id:uid(),name:'Team 1',score:0},{id:uid(),name:'Team 2',score:0}],rounds:[],features:[],preset:'custom',name:'Game night',win:'high',schedule:'none',startCards:10,finished:false});
+let game;
+try{game=JSON.parse(localStorage.getItem(KEY))}catch{}
+if(!game||!Array.isArray(game.players)||!Array.isArray(game.rounds)){game=newGame();try{const old=JSON.parse(localStorage.getItem(OLD));if(Array.isArray(old))game.players=old.filter(p=>p&&typeof p.name==='string'&&Number.isSafeInteger(p.score)).map(p=>({id:uid(),name:p.name,score:p.score})).slice(0,40)}catch{}}
+game.features=Array.isArray(game.features)?game.features:[];let editing=null;
+const has=k=>game.features.includes(k),save=()=>{try{localStorage.setItem(KEY,JSON.stringify(game))}catch{alert('Unable to save to browser storage.')}};
+const el=(tag,txt,cls)=>{const x=document.createElement(tag);if(txt!==undefined)x.textContent=txt;if(cls)x.className=cls;return x};
+const integer=s=>/^[+-]?\d+$/.test(String(s).trim())&&Number.isSafeInteger(Number(s))?Number(s):null;
+const totals=()=>Object.fromEntries(game.players.map(p=>[p.id,p.score+game.rounds.reduce((sum,r)=>sum+(r.scores[p.id]||0),0)]));
+function cards(n){const v=Math.max(1,Math.min(52,game.startCards||10));if(game.schedule==='down')return Math.max(1,v-n+1);if(game.schedule==='up')return Math.min(52,v+n-1);if(game.schedule==='downup'){const i=(n-1)%(2*v-1);return i<v?v-i:i-v+2}return null}
+function render(){
+$('players').replaceChildren();const t=totals();
+game.players.forEach(p=>{const card=el('article',undefined,'card'),name=el('input');name.className='name';name.value=p.name;name.maxLength=60;name.setAttribute('aria-label','Name');name.oninput=()=>{p.name=name.value;save();renderExtras()};
+const score=el('div',String(t[p.id]),'score'),actions=el('div',undefined,'actions');
+for(const [label,delta] of [['−',-1],['+',1]]){const b=el('button',label);b.setAttribute('aria-label',label+' one point for '+p.name);b.onclick=()=>{if(!Number.isSafeInteger(p.score+delta))return;p.score+=delta;save();render()};actions.append(b)}
+const custom=el('div',undefined,'custom'),amount=el('input');amount.type='number';amount.step='1';amount.placeholder='Points (e.g. 5 or -3)';amount.setAttribute('aria-label','Custom points for '+p.name);const apply=el('button','Apply');const adjust=()=>{const n=integer(amount.value);if(n===null||!Number.isSafeInteger(p.score+n)){amount.setCustomValidity('Enter a valid whole number');amount.reportValidity();return}amount.setCustomValidity('');p.score+=n;save();render()};amount.oninput=()=>amount.setCustomValidity('');amount.onkeydown=e=>{if(e.key==='Enter')adjust()};apply.onclick=adjust;custom.append(amount,apply);
+const remove=el('button','Remove','remove');remove.onclick=()=>{if(!confirm('Remove '+p.name+' and their scores?'))return;game.players=game.players.filter(x=>x.id!==p.id);save();render()};card.append(name,score,actions,custom,remove);$('players').append(card)});
+renderExtras()}
+function renderExtras(){
+const active=has('rounds');$('roundPanel').hidden=!active||game.finished;$('historyPanel').hidden=!(active&&has('history'));$('standingsPanel').hidden=!(has('standings')||has('export')||game.finished);
+$('standings').replaceChildren();const t=totals();const ordered=[...game.players].sort((a,b)=>game.win==='low'?t[a.id]-t[b.id]:t[b.id]-t[a.id]);ordered.forEach((p,i)=>$('standings').append(el('p',(i+1)+'. '+p.name+' — '+t[p.id]+(i===0?' ★':''))));
+$('winner').textContent=game.finished&&ordered.length?'Winner: '+ordered.filter(p=>t[p.id]===t[ordered[0].id]).map(p=>p.name).join(', '):'';
+$('finish').textContent=game.finished?'Reopen game':'Finish game';$('finish').hidden=!has('standings');$('export').hidden=!has('export');
+renderHistory();renderRound()}
+function renderRound(){
+const n=editing===null?game.rounds.length+1:editing+1,r=editing===null?null:game.rounds[editing];$('roundTitle').textContent=(editing===null?'Round ':'Edit round ')+n;
+$('roundMeta').textContent=[has('schedule')&&cards(n)!==null?cards(n)+' cards':'',has('dealer')&&game.players.length?'Dealer: '+game.players[(n-1)%game.players.length].name:''].filter(Boolean).join(' · ');
+$('roundInputs').replaceChildren();game.players.forEach(p=>{const row=el('div',undefined,'roundrow');row.append(el('strong',p.name));for(const kind of ['scores',...(has('bids')?['bids','tricks']:[])]){const l=el('label',kind==='scores'?'Points':kind==='bids'?'Bid':'Tricks taken');const inp=el('input');inp.type='number';inp.step='1';if(kind!=='scores')inp.min='0';inp.value=r?.[kind]?.[p.id]??'';inp.dataset.kind=kind;inp.dataset.id=p.id;l.append(inp);row.append(l)}$('roundInputs').append(row)});
+$('cancelRound').hidden=editing===null;$('saveRound').textContent=editing===null?'Save round':'Save changes';$('roundError').textContent=''}
+function renderHistory(){
+const root=$('history');root.replaceChildren();if(!game.rounds.length){root.append(el('p','No rounds recorded yet.'));return}
+const scroll=el('div',undefined,'historyscroll'),table=el('table',undefined,'historytable'),head=el('tr');['Round',...game.players.map(p=>p.name),'Actions'].forEach(x=>head.append(el('th',x)));table.append(head);
+game.rounds.forEach((r,i)=>{const tr=el('tr');tr.append(el('td',String(i+1)));game.players.forEach(p=>tr.append(el('td',String(r.scores[p.id]??0))));const td=el('td');if(has('edit')){const edit=el('button','Edit');edit.onclick=()=>{editing=i;renderRound();$('roundPanel').scrollIntoView({behavior:'smooth'})};td.append(edit)}const del=el('button','Delete');del.onclick=()=>{if(confirm('Delete round '+(i+1)+'?')){game.rounds.splice(i,1);editing=null;save();render()}};td.append(del);tr.append(td);table.append(tr)});scroll.append(table);root.append(scroll)}
+function setupRender(){const root=$('featureList');root.replaceChildren();all.forEach(k=>{const l=el('label'),x=el('input');x.type='checkbox';x.value=k;x.checked=has(k);l.append(x,el('span',featureNames[k]));root.append(l)});$('preset').value=game.preset;$('gameName').value=game.name;$('win').value=game.win;$('schedule').value=game.schedule;$('startCards').value=game.startCards}
+$('setupToggle').onclick=()=>{$('setup').hidden=!$('setup').hidden;setupRender()};$('closeSetup').onclick=()=>{$('setup').hidden=true};
+$('preset').onchange=()=>{const p=$('preset').value;$('featureList').querySelectorAll('input').forEach(x=>x.checked=presets[p].includes(x.value));$('win').value=['hearts','phase10'].includes(p)?'low':'high';$('schedule').value=['river','ohhell'].includes(p)?'downup':'none';$('gameName').value=({hearts:'Hearts',rook:'Rook',river:'Up and Down the River',fivehundred:'500',euchre:'Euchre',spades:'Spades',bridge:'Bridge',ohhell:'Oh Hell',phase10:'Phase 10',cribbage:'Cribbage'})[p]||'Game night'};
+$('applySetup').onclick=()=>{const selected=[...$('featureList').querySelectorAll('input:checked')].map(x=>x.value);if(selected.includes('history')||selected.includes('edit')||selected.includes('bids')||selected.includes('schedule')||selected.includes('dealer')){if(!selected.includes('rounds'))selected.push('rounds')}const start=integer($('startCards').value);if(start===null||start<1||start>52){alert('Starting cards must be between 1 and 52.');return}game.features=selected;game.preset=$('preset').value;game.name=$('gameName').value;game.win=$('win').value;game.schedule=$('schedule').value;game.startCards=start;editing=null;save();$('setup').hidden=true;render()};
+$('add').onclick=()=>{if(game.players.length>=40)return;game.players.push({id:uid(),name:(has('teams')?'Team ':'Player ')+(game.players.length+1),score:0});save();render()};
+$('reset').onclick=()=>{if(!confirm('Reset all scores and round history?'))return;game.players.forEach(p=>p.score=0);game.rounds=[];game.finished=false;editing=null;save();render()};
+$('clear').onclick=()=>{if(!confirm('Start a new game? All current scores and rounds will be replaced. Export first to keep a copy.'))return;game=newGame();editing=null;save();render();setupRender()};
+$('saveRound').onclick=()=>{const r={scores:{},bids:{},tricks:{}};for(const x of $('roundInputs').querySelectorAll('input')){const v=x.value.trim(),n=integer(v);if((x.dataset.kind==='scores'&&n===null)||(v!==''&&n===null)||(x.dataset.kind!=='scores'&&n!==null&&n<0)){$('roundError').textContent='Enter valid whole numbers for points, and nonnegative numbers for bids and tricks.';x.focus();return}if(n!==null)r[x.dataset.kind][x.dataset.id]=n}if(editing===null)game.rounds.push(r);else game.rounds[editing]=r;editing=null;save();render()};
+$('cancelRound').onclick=()=>{editing=null;renderRound()};
+$('finish').onclick=()=>{game.finished=!game.finished;save();render()};
+$('export').onclick=()=>{const t=totals(),q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';const rows=[['Game',game.name],['Preset',game.preset],[],['Round',...game.players.map(p=>p.name)],...game.rounds.map((r,i)=>[i+1,...game.players.map(p=>r.scores[p.id]??0)]),['Base adjustments',...game.players.map(p=>p.score)],['Total',...game.players.map(p=>t[p.id])]];if(has('bids')){rows.push([],['Round','Player','Bid','Tricks taken']);game.rounds.forEach((r,i)=>game.players.forEach(p=>rows.push([i+1,p.name,r.bids?.[p.id]??'',r.tricks?.[p.id]??''])))}const blob=new Blob(['\uFEFF'+rows.map(r=>r.map(q).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=el('a');a.href=url;a.download='scorekeeper-'+Date.now()+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
 save();render();
 })();
 </script></body></html>
