@@ -184,6 +184,7 @@ function saveDraftValues(g){const f=$('roundForm');if(!f)return;const next=Objec
 function optionsForPlayers(g,except){return g.players.filter(p=>p.id!==except).map(p=>[p.id,p.name])}
 function renderRound(g){
 const r=g.draft||{},bidStep=g.draftStep!=='results',idx=editing<0?g.rounds.length:editing,round=idx+1;
+const biddingGame=['rook4','rook5','rook6','river','phooey','fivehundred','spades4','spades2'].includes(g.type);
 const t=g.type,roundCards=schedule(g)[idx],dealerId=g.players[(Number(g.opts.firstDealer||0)+idx)%g.players.length]?.id;
 let ui='',title='Round '+round+(editing>=0?' · Editing':'');
 const psel=(k,label,ex)=>select(k,label,optionsForPlayers(g,ex),r[k]);
@@ -210,10 +211,10 @@ ui='<p class="subtle">Mark completed phases. Remaining cards can be counted by c
 }else if(t==='custom'){
 ui=(g.opts.features.includes('dealer')?'<p class="subtle">Dealer: '+safe(name(g,dealerId))+'</p>':'')+(g.opts.features.includes('schedule')?'<p class="subtle">Cards: '+safe(roundCards||'Not configured')+'</p>':'')+'<div class="fields">'+g.players.map(p=>input('points_'+p.id,p.name+' points',r['points_'+p.id]??0)+(g.opts.features.includes('bids')?input('bid_'+p.id,p.name+' bid (optional)',r['bid_'+p.id]??''):'')).join('')+'</div>';
 }
-return '<section class="panel"><div class="between"><h2>'+safe(title)+'</h2><span class="badge">'+(bidStep&&['rook4','rook5','rook6','river','phooey','fivehundred','spades4','spades2'].includes(t)?'Bidding':'Results')+'</span></div><form id="roundForm">'+ui+'</form><p id="roundError" class="error" role="alert"></p><div class="actions"><button class="primary" data-act="saveRound">'+(bidStep&&['rook4','rook5','rook6','river','phooey','fivehundred','spades4','spades2'].includes(t)?'Begin round':'Save round')+'</button>'+(editing>=0?'<button data-act="cancelEdit">Cancel edit</button>':'')+'</div></section>';
+return '<section class="panel"><div class="between"><h2>'+safe(title)+'</h2><span class="badge">'+(bidStep&&['rook4','rook5','rook6','river','phooey','fivehundred','spades4','spades2'].includes(t)?'Bidding':'Results')+'</span></div><form id="roundForm">'+ui+'</form><p id="roundError" class="error" role="alert"></p><div class="actions">'+(biddingGame&&!bidStep?'<button data-act="backBids">← Back to bids</button>':'')+(editing<0&&g.rounds.length?'<button data-act="previousRound">← Back to previous round</button>':'')+'<button class="primary" data-act="saveRound">'+(bidStep&&biddingGame?'Begin round':'Save round')+'</button>'+(editing>=0?'<button data-act="cancelEdit">Cancel edit</button>':'')+(g.rounds.length?'<button data-act="undoRound" class="danger">Undo last saved round</button>':'')+'</div></section>';
 }
 function renderHistory(g){
-const rows=g.rounds.map((r,i)=>'<tr><td>'+ (i+1) +'</td>'+g.players.map(p=>'<td>'+ (r.scores?.[p.id]??0) +'</td>').join('')+'<td><button data-act="detail" data-index="'+i+'">Details</button> <button data-act="edit" data-index="'+i+'" '+(g.finished?'disabled':'')+'>Edit</button> <button data-act="delRound" data-index="'+i+'" '+(g.finished?'disabled':'')+'>Delete</button></td></tr>').join('');
+const rows=g.rounds.map((r,i)=>'<tr><td>'+ (i+1) +'</td>'+g.players.map(p=>'<td>'+ (r.scores?.[p.id]??0) +'</td>').join('')+'<td><button data-act="detail" data-index="'+i+'">Details</button> <button data-act="edit" data-index="'+i+'" '+(g.finished?'disabled':'')+'>Edit</button> <button data-act="delRound" data-index="'+i+'" '+(g.finished?'disabled':'')+'>Undo round</button></td></tr>').join('');
 const events=(g.events||[]).map(e=>'<tr><td>'+safe(e.category||'Adjustment')+'</td><td>'+safe(name(g,e.participant))+'</td><td>'+e.delta+'</td></tr>').join('');
 return '<section class="panel"><div class="between"><h2>Score history</h2><button data-act="toggleHistory">'+(viewHistory?'Hide':'Show')+'</button></div>'+(viewHistory?'<div class="tablewrap"><table><thead><tr><th>Round</th>'+g.players.map(p=>'<th>'+safe(p.name)+'</th>').join('')+'<th>Actions</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+(events?'<h3>Point adjustments</h3><div class="tablewrap"><table>'+events+'</table></div>':''):'<p class="subtle">'+g.rounds.length+' rounds and '+g.events.length+' adjustments saved. Expand to review or correct.</p>')+'</section>';
 }
@@ -291,6 +292,8 @@ before.push(r);
 }catch(e){r.issue=e.message;before.push(r)}}
 g.bagCounts={};if(groups.length){const b=g.rounds[g.rounds.length-1]?.bags||{};g.players.forEach((p,i)=>g.bagCounts[p.id]=b[g.type==='spades4'?String(p.team):String(i)]||0)}
 }
+function resumeCurrentRound(g){if(!g.pausedRound)return;g.draft={...g.pausedRound.draft};g.draftStep=g.pausedRound.step;delete g.pausedRound;}
+function undoSavedRound(g,index){if(g.finished){alert('Reopen this game before changing rounds.');return}if(index<0||index>=g.rounds.length)return;const last=index===g.rounds.length-1;if(!confirm('Undo round '+(index+1)+'? Its points will be removed and later round totals recalculated.'))return;const removed=g.rounds.splice(index,1)[0];editing=-1;delete g.pausedRound;if(last){g.draft={...removed.raw};g.draftStep='bid'}else{g.draft={};g.draftStep='bid'}recalc(g);persist();render();}
 function submitRound(g){
 const raw={...(g.draft||{}),...formVals()},bidTypes=['rook4','rook5','rook6','river','phooey','fivehundred','spades4','spades2'];
 if(bidTypes.includes(g.type)&&g.draftStep!=='results'){
@@ -306,7 +309,7 @@ const index=editing<0?g.rounds.length:editing,prior=g.rounds.slice(0,index);
 const result=calculate(g,raw,prior);
 const record={id:editing<0?uid():g.rounds[index].id,raw,scores:result.scores,meta:result.meta,bags:result.bags,at:Date.now()};
 if(editing<0)g.rounds.push(record);else g.rounds[index]=record;
-editing=-1;g.draft={};g.draftStep='bid';recalc(g);persist();render();
+editing=-1;g.draft={};g.draftStep='bid';resumeCurrentRound(g);recalc(g);persist();render();
 }catch(e){const x=$('roundError');if(x)x.textContent=e.message;else alert(e.message)}
 }
 function csv(g){
@@ -341,11 +344,14 @@ if(a==='rematch'){if(!confirm('Start the next game with the same participants?')
 if(a==='undo'){g.events.pop();persist();render();return}
 if(a==='delta'){const n=N(b.dataset.n);if(n===null)return;g.events.push({id:uid(),participant:b.dataset.id,delta:n,category:g.type==='cribbage'?root.querySelector('[data-cat="'+b.dataset.id+'"]')?.value:'Quick adjustment',at:Date.now()});persist();render();return}
 if(a==='saveRound'){saveDraftValues(g);submitRound(g);return}
-if(a==='cancelEdit'){editing=-1;g.draft={};g.draftStep='bid';persist();render();return}
+if(a==='backBids'){if(g.draftStep==='results'){saveDraftValues(g);g.draftStep='bid';persist();render()}return}
+if(a==='previousRound'){if(editing>=0||!g.rounds.length)return;saveDraftValues(g);g.pausedRound={draft:{...(g.draft||{})},step:g.draftStep};editing=g.rounds.length-1;g.draft={...g.rounds[editing].raw};g.draftStep='bid';persist();render();document.querySelector('#roundForm')?.scrollIntoView({behavior:'smooth'});return}
+if(a==='undoRound'){undoSavedRound(g,g.rounds.length-1);return}
+if(a==='cancelEdit'){editing=-1;g.draft={};g.draftStep='bid';resumeCurrentRound(g);persist();render();return}
 if(a==='toggleHistory'){viewHistory=!viewHistory;render();return}
 if(a==='detail'){const r=g.rounds[Number(b.dataset.index)];$('helpTitle').textContent='Round '+(Number(b.dataset.index)+1);$('helpContent').replaceChildren();const p=document.createElement('p');p.textContent=r.meta||'Round details';$('helpContent').append(p);const pre=document.createElement('pre');pre.style.whiteSpace='pre-wrap';pre.style.overflowWrap='anywhere';pre.textContent=JSON.stringify({inputs:r.raw,points:r.scores},null,2);$('helpContent').append(pre);$('helpDialog').showModal();return}
-if(a==='edit'){editing=Number(b.dataset.index);g.draft={...g.rounds[editing].raw};g.draftStep='bid';render();document.querySelector('#roundForm')?.scrollIntoView({behavior:'smooth'});return}
-if(a==='delRound'){const i=Number(b.dataset.index);if(!confirm('Delete round '+(i+1)+'? Scores will be recalculated.'))return;g.rounds.splice(i,1);editing=-1;g.draft={};g.draftStep='bid';recalc(g);persist();render();return}
+if(a==='edit'){if(editing<0){saveDraftValues(g);g.pausedRound={draft:{...(g.draft||{})},step:g.draftStep}}editing=Number(b.dataset.index);g.draft={...g.rounds[editing].raw};g.draftStep='bid';persist();render();document.querySelector('#roundForm')?.scrollIntoView({behavior:'smooth'});return}
+if(a==='delRound'){undoSavedRound(g,Number(b.dataset.index));return}
 }
 root.addEventListener('click',act);
 root.addEventListener('click',e=>{const b=e.target.closest('[data-type]');if(!b)return;chosen=b.dataset.type;render()});
