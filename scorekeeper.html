@@ -52,9 +52,9 @@ const types=[
 const descriptions={
 simple:'Add and subtract points using large buttons, or enter any custom point adjustment. Undo mistakes. Optionally track the highest or lowest score.',
 custom:'Choose quick scoring, editable rounds, bids, dealer tracking, and optional custom schedules. All points are entered manually; no formula builder is required.',
-rook4:'Four players in two partnerships. One team bids. Card points total 180 including the kitty; 20 more go to the side with the most tricks. If tied, the side that took a trick most recently wins the bonus. Last-trick winner takes the kitty. A failed contract loses the full bid. Rook is low trump, or the only trump in No Trump.',
-rook5:'Five individual players. The bidder calls a card and its holder becomes a temporary partner. Both get the full bidding-side score; the other three share the full defending-side score. Rook scoring follows the 180 card points plus 20 most-tricks bonus rules.',
-rook6:'Six players in three partnerships, with 200 card points plus a 20-point most-tricks bonus. One team bids while the other two score independently. Ties for most tricks are broken by the most recent trick among tied teams. Kitty points go to the last-trick side.',
+rook4:'Four players in two partnerships. One team bids, with kitty points added to the final contract. Card points total 180 including the kitty; 20 more go to the side with the most tricks. If tied, the side that took a trick most recently wins the bonus. Last-trick winner takes the kitty. A failed contract loses the full bid. Rook is low trump, or the only trump in No Trump.',
+rook5:'Five individual players. Kitty points increase the final bid. The bidder calls a card and its holder becomes a temporary partner. Both get the full bidding-side score; the other three share the full defending-side score. Rook scoring follows the 180 card points plus 20 most-tricks bonus rules.',
+rook6:'Six players in three partnerships, with 200 card points plus a 20-point most-tricks bonus. Kitty points increase the final bid. One team bids while the other two score independently. Ties for most tricks are broken by the most recent trick among tied teams. Kitty points go to the last-trick side.',
 hearts:'Avoid taking hearts (1 penalty each) and the queen of spades (13). With two decks, there are 52 penalty points. Capturing every penalty card shoots the moon and gives each opponent the full penalty total.',
 river:'Bid tricks before each hand; cards dealt follow a customizable schedule. An exact bid earns 10 plus tricks taken. An incorrect bid earns zero. Dealer rotates each round.',
 fivehundred:'Four players in two partnerships. Choose a bid from six to ten tricks and a suit; each contract has a predefined point value. Defenders earn ten points per trick. Optional Nullo and Open Nullo contracts are available.',
@@ -191,7 +191,7 @@ let ui='',title='Round '+round+(editing>=0?' · Editing':'');
 const psel=(k,label,ex)=>select(k,label,optionsForPlayers(g,ex),r[k]);
 if(['rook4','rook5','rook6'].includes(t)){
 const sides=t==='rook5'?[['bid','Bidding side'],['def','Defending side']]:g.players.map(p=>[p.id,p.name]);
-if(bidStep){ui='<div class="fields">'+select('bidder',t==='rook5'?'Bidding player':'Bidding team',optionsForPlayers(g),r.bidder)+input('bid','Winning bid',r.bid)+select('trump','Trump',suits,r.trump||'red')+input('kitty','Kitty points',r.kitty||0)+(t==='rook5'?input('called','Called card',r.called||'','text'):'')+'</div><p class="subtle">Enter kitty points now. They will go to the side that took the final trick. Rook is always low trump.</p>';}
+if(bidStep){ui='<div class="fields">'+select('bidder',t==='rook5'?'Bidding player':'Bidding team',optionsForPlayers(g),r.bidder)+input('bid','Winning bid',r.bid)+select('trump','Trump',suits,r.trump||'red')+input('kitty','Kitty points',r.kitty||0)+(t==='rook5'?input('called','Called card',r.called||'','text'):'')+'</div><p class="subtle">Kitty points increase the final contract bid and go to the side that took the final trick. Rook is always low trump.</p><div class="entryrow" aria-live="polite"><strong>Final bid: <output id="rookFinalBid">'+(N(r.bid)!==null&&N(r.kitty)!==null?N(r.bid)+N(r.kitty):'—')+'</output> points</strong><p class="subtle">Original bid + kitty points</p></div>';}
 else{ui=(t==='rook5'?'<div class="fields">'+select('partner','Partner revealed',optionsForPlayers(g,r.bidder),r.partner)+'</div>':'')+'<div class="fields">'+sides.map(([id,n])=>input('card_'+id,n+' · card points',r['card_'+id]||0)+input('tricks_'+id,n+' · tricks taken',r['tricks_'+id]||0)).join('')+'</div><div class="fields">'+select('last','Side that took final trick',sides,r.last)+select('tie','Most recent trick among tied sides (if needed)',[['','Choose when tied'],...sides],r.tie)+'</div><p class="subtle">The app automatically awards the 20-point bonus for most tricks. A tie goes to the tied side that took a trick most recently.</p>';}
 }else if(t==='hearts'){ui='<p class="subtle">Enter captured penalty cards; total hearts and queens must match the selected deck count.</p><div class="fields">'+g.players.map(p=>input('hearts_'+p.id,p.name+' · hearts',r['hearts_'+p.id]??0)+input('queen_'+p.id,p.name+' · queens of spades',r['queen_'+p.id]??0)).join('')+'</div>';}
 else if(t==='river'||t==='phooey'){
@@ -233,9 +233,9 @@ const last=raw.last;if(!ids.includes(last))throw Error('Select which side took t
 const most=Math.max(...ids.map(id=>tricks[id])),tied=ids.filter(id=>tricks[id]===most);
 let bonus=tied.length===1?tied[0]:raw.tie;
 if(!tied.includes(bonus))throw Error('Choose which tied side took the most recent trick.');
-const earned={};ids.forEach(id=>earned[id]=card[id]+(id===last?kitty:0)+(id===bonus?20:0));
-if(t==='rook5'){const bidSide=earned.bid>=bid?earned.bid:-bid;for(const person of p)scores[person.id]=person.id===bidder||person.id===partner?bidSide:earned.def;meta='Bidder '+name(g,bidder)+' · Partner '+name(g,partner)+' · Bid '+bid+' · '+raw.trump+' · '+(earned.bid>=bid?'made':'set')+' · Bonus: '+bonus+' · Kitty to '+last;}
-else{for(const person of p)scores[person.id]=person.id===bidder?(earned[person.id]>=bid?earned[person.id]:-bid):earned[person.id];meta='Bid '+bid+' by '+name(g,bidder)+' · '+raw.trump+' · '+(earned[bidder]>=bid?'made':'set')+' · Bonus: '+name(g,bonus)+' · Kitty: '+name(g,last)}
+const finalBid=bid+kitty;const earned={};ids.forEach(id=>earned[id]=card[id]+(id===last?kitty:0)+(id===bonus?20:0));
+if(t==='rook5'){const bidSide=earned.bid>=finalBid?earned.bid:-finalBid;for(const person of p)scores[person.id]=person.id===bidder||person.id===partner?bidSide:earned.def;meta='Bidder '+name(g,bidder)+' · Partner '+name(g,partner)+' · Bid '+bid+' + kitty '+kitty+' = '+finalBid+' · '+raw.trump+' · '+(earned.bid>=finalBid?'made':'set')+' · Bonus: '+bonus+' · Kitty to '+last;}
+else{for(const person of p)scores[person.id]=person.id===bidder?(earned[person.id]>=finalBid?earned[person.id]:-finalBid):earned[person.id];meta='Bid '+bid+' by '+name(g,bidder)+' + kitty '+kitty+' = '+finalBid+' · '+raw.trump+' · '+(earned[bidder]>=finalBid?'made':'set')+' · Bonus: '+name(g,bonus)+' · Kitty: '+name(g,last)}
 }
 else if(t==='hearts'){
 const d=Number(o.decks)||1;let hearts=0,queens=0;for(const person of p){const h=requiredInt(raw,'hearts_'+person.id,0,13*d),q=requiredInt(raw,'queen_'+person.id,0,d);hearts+=h;queens+=q;scores[person.id]=h+13*q}
@@ -299,7 +299,7 @@ function submitRound(g){
 const raw={...(g.bidSnapshot||{}),...(g.draft||{}),...formVals()},bidTypes=['rook4','rook5','rook6','river','phooey','fivehundred','spades4','spades2'];
 if(bidTypes.includes(g.type)&&g.draftStep!=='results'){
 try{
-if(['rook4','rook5','rook6'].includes(g.type)){requiredInt(raw,'bid',0,200);requiredInt(raw,'kitty',0,180);if(!raw.bidder)throw Error('Select a bidder.')}
+if(['rook4','rook5','rook6'].includes(g.type)){requiredInt(raw,'bid',0,g.type==='rook6'?220:200);requiredInt(raw,'kitty',0,g.type==='rook6'?200:180);if(!raw.bidder)throw Error('Select a bidder.')}
 if(['river','phooey'].includes(g.type))for(const p of g.players)requiredInt(raw,'bid_'+p.id,0,schedule(g)[editing<0?g.rounds.length:editing]);
 if(g.type==='fivehundred'&&!raw.bidder)throw Error('Choose a bidding team.');
 if(g.type.startsWith('spades'))for(const p of g.players)if((raw['kind_'+p.id]||'normal')==='normal')requiredInt(raw,'bid_'+p.id,0,13);
@@ -358,7 +358,7 @@ root.addEventListener('click',act);
 root.addEventListener('click',e=>{const b=e.target.closest('[data-type]');if(!b)return;chosen=b.dataset.type;render()});
 root.addEventListener('submit',e=>{const f=e.target.closest('[data-add]');if(!f)return;e.preventDefault();const g=getGame(),x=f.querySelector('input'),n=N(x.value);if(n===null){x.setCustomValidity('Enter a whole number.');x.reportValidity();return}x.setCustomValidity('');g.events.push({id:uid(),participant:f.dataset.add,delta:n,category:g.type==='cribbage'?root.querySelector('[data-cat="'+f.dataset.add+'"]')?.value:'Custom adjustment',at:Date.now()});persist();render()});
 root.addEventListener('change',e=>{if(e.target.name==='loadPreset'&&e.target.value){const preset=db.presets.find(p=>p.id===e.target.value);if(preset){draftOpts=structuredClone(preset.opts);draftOpts.gameName=preset.name;renderSettings()}return}const g=getGame();if(g&&screen==='play'&&e.target.closest('#roundForm')){saveDraftValues(g);persist()}});
-root.addEventListener('input',e=>{const g=getGame();if(g&&screen==='play'&&e.target.closest('#roundForm')){saveDraftValues(g);persist()}});
+root.addEventListener('input',e=>{const g=getGame();if(g&&screen==='play'&&e.target.closest('#roundForm')){saveDraftValues(g);if(['rook4','rook5','rook6'].includes(g.type)){const form=$('roundForm'),output=$('rookFinalBid');if(output&&form){const bid=N(form.elements.namedItem('bid')?.value),kitty=N(form.elements.namedItem('kitty')?.value);output.textContent=bid!==null&&kitty!==null?String(bid+kitty):'—'}}persist()}});
 persist();render();
 })();
 </script></body></html>
