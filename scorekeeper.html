@@ -53,7 +53,9 @@ const types=[
 ['spades2','Spades (2 Players)','Individual bids and bags'],
 ['phooey','Oh Phooey','Custom bid-based scoring'],
 ['phase10','Phase 10','Phases and penalties'],
-['cribbage','Cribbage','Pegging and quick points']];
+['cribbage','Cribbage','Pegging and quick points'],
+['flip7','Flip 7','Multipliers, bonuses and busts'],
+['skyjo','Skyjo','Low-score rounds and finisher penalty']];
 const descriptions={
 simple:'Add and subtract points using large buttons, or enter any custom point adjustment. Undo mistakes. Optionally track the highest or lowest score.',
 custom:'Choose quick scoring, editable rounds, bids, dealer tracking, and optional custom schedules. All points are entered manually; no formula builder is required.',
@@ -68,10 +70,12 @@ spades4:'Four players in two teams. Each player bids; team contracts earn ten po
 spades2:'Two opponents, scoring individually under the same Spades contract, bag, and Nil conventions. Hand construction is handled by players; this app records the results.',
 phooey:'Customize the hand schedule (default 7 down to 1, back to 7, then 9). Exact bid: 0 earns 10, 1 earns 15, 2 earns 20, and higher bids earn ten times bid. Overtricks earn their trick count; undertricks deduct the value of the original bid. No bid restrictions.',
 phase10:'Complete each successive standard phase to advance. Count remaining numbered, Skip, and Wild cards for penalties, or enter the total directly. First to finish Phase 10 wins, with lower cumulative penalties breaking ties.',
-cribbage:'Race to 121. Score pegging, hand, crib, and adjustments with quick buttons. Tracks the dealer and multiple games within a match; a 121-point game awards a skunk if the loser has fewer than 91.'
+cribbage:'Race to 121. Score pegging, hand, crib, and adjustments with quick buttons. Tracks the dealer and multiple games within a match; a 121-point game awards a skunk if the loser has fewer than 91.',
+flip7:'Score each round by adding the number cards, doubling that subtotal if the ×2 card was collected, then adding any + modifier cards and the +15 Flip 7 bonus. Busted players earn zero. Finish the round when anyone reaches 200; highest cumulative score wins.',
+skyjo:'Add each player’s remaining card values after any matching columns have been removed. The player who ended the round must have the uniquely lowest round score or their positive round score doubles (ties count as not lowest). At 100 or more cumulative points after a round, the lowest overall score wins.'
 };
 const featureLabels={quick:'Quick point buttons',rounds:'Round-by-round entry',history:'Round history',edit:'Edit earlier rounds',bids:'Track bids',dealer:'Dealer rotation',schedule:'Custom round schedule',standings:'Standings and winner',export:'CSV export'};
-const baseOptions=t=>({target:({rook4:500,rook5:500,rook6:500,fivehundred:500,euchre:10,spades4:500,spades2:500,hearts:100,cribbage:121})[t]||0,win:['hearts','phase10'].includes(t)?'low':'high',decks:1,playerCount:4,firstDealer:0,scoreMode:'quick',features:['quick','standings'],cards:10,schedule:'10,9,8,7,6,5,4,3,2,1,2,3,4,5,6,7,8,9,10',bagLimit:10,bagPenalty:100,alone:4,trackTrump:false,match:true,cribMode:'two',special:true,slam:true,customBids:false,customDealer:false,customHistory:true,scheduleOn:false,phaseDirect:false,gameName:types.find(x=>x[0]===t)?.[1]||'Game'});
+const baseOptions=t=>({target:({rook4:500,rook5:500,rook6:500,fivehundred:500,euchre:10,spades4:500,spades2:500,hearts:100,cribbage:121,flip7:200,skyjo:100})[t]||0,win:['hearts','phase10','skyjo'].includes(t)?'low':'high',decks:1,playerCount:4,firstDealer:0,scoreMode:'quick',features:['quick','standings'],cards:10,schedule:'10,9,8,7,6,5,4,3,2,1,2,3,4,5,6,7,8,9,10',bagLimit:10,bagPenalty:100,alone:4,trackTrump:false,match:true,cribMode:'two',special:true,slam:true,customBids:false,customDealer:false,customHistory:true,scheduleOn:false,phaseDirect:false,gameName:types.find(x=>x[0]===t)?.[1]||'Game'});
 function defaults(t){
 let o=baseOptions(t);
 if(t==='phooey'){o.schedule='7,6,5,4,3,2,1,2,3,4,5,6,7,9';o.cards=7}
@@ -83,7 +87,7 @@ return o;
 }
 function participants(t,o){
 const teamMode=['rook4','rook6','fivehundred','euchre'].includes(t)||(t==='cribbage'&&o.cribMode==='four');
-const count=teamMode?(t==='rook6'?3:2):t==='rook5'?5:t==='spades2'?2:t==='spades4'?4:t==='cribbage'?(o.cribMode==='four'?2:2):['hearts','river','phooey','phase10'].includes(t)?o.playerCount:2;
+const count=teamMode?(t==='rook6'?3:2):t==='rook5'?5:t==='spades2'?2:t==='spades4'?4:t==='cribbage'?(o.cribMode==='four'?2:2):['hearts','river','phooey','phase10','flip7','skyjo'].includes(t)?o.playerCount:2;
 return Array.from({length:count},(_,i)=>({id:uid(),name:(teamMode?'Team ':'Player ')+(i+1),team:t==='spades4'?i%2:undefined}));
 }
 function newGame(t='simple'){const o=defaults(t);return{id:uid(),type:t,name:o.gameName,opts:o,players:participants(t,o),rounds:[],events:[],draft:{},draftStep:'bid',finished:false,created:Date.now(),matchWins:{},completedAt:null}}
@@ -114,6 +118,7 @@ function schedule(g){const s=String(g.opts.schedule||'').split(/[,;\s]+/).filter
 function escTable(obj){return safe(JSON.stringify(obj))}
 function gameEnded(g){
 if(g.finished)return true;
+if(['flip7','skyjo'].includes(g.type)){const totals=total(g),goal=Number(g.opts.target)||0;return goal>0&&g.rounds.length>0&&Object.values(totals).some(v=>v>=goal)}
 if(g.type==='phase10')return g.players.some(p=>(g.rounds||[]).filter(r=>phaseDone(r.raw?.['complete_'+p.id])).length>=10);
 return false;
 }
@@ -142,6 +147,8 @@ else if(t==='river'||t==='phooey'){bits='<div class="fields">'+optionField('play
 else if(t==='fivehundred'){bits='<p class="notice">500 uses contract values and defending tricks. First to +500 or opponent at −500; defensive points can win.</p>'+optionField('target','Winning target')+check('special','Enable Nullo (250) and Open Nullo (500)',o.special)+check('slam','All 10 tricks: minimum 250 points',o.slam);}
 else if(t==='euchre'){bits='<div class="fields">'+optionField('target','Winning target')+optionField('alone','Lone-hand 5-trick sweep points')+'</div>'+check('trackTrump','Track trump suit optionally',o.trackTrump);}
 else if(t==='spades4'||t==='spades2'){bits='<div class="fields">'+optionField('target','Winning target')+optionField('bagLimit','Bag threshold')+optionField('bagPenalty','Bag penalty (positive number)')+'</div>'+check('special','Enable Nil and Blind Nil',o.special)+'<p class="subtle">Bags count even when a Nil fails. Nil tricks do not count toward a partner’s contract.</p>';}
+else if(t==='flip7'){bits='<p class="notice">Highest score wins when at least one player reaches 200 after a full round. The ×2 modifier doubles the number-card sum only, before additive bonuses.</p><div class="fields">'+optionField('playerCount','Number of players (2–20)')+optionField('target','Game-ending target')+'</div>';}
+else if(t==='skyjo'){bits='<p class="notice">Lowest cumulative score wins after a round brings someone to 100 or more. The round-ending player doubles positive round points unless uniquely lowest.</p><div class="fields">'+optionField('playerCount','Number of players (2–8)')+optionField('target','Game-ending threshold')+'</div>';}
 else if(t==='phase10'){bits='<p class="notice">Ten standard phases. Mark completed phases and enter remaining cards or a penalty total. Lowest penalty score breaks ties.</p>';}
 else if(t==='cribbage'){bits=select('cribMode','Player mode',[['two','Two individual players'],['four','Four players, two teams']],o.cribMode)+optionField('target','Winning target')+check('match','Track multiple games and skunks',o.match);}
 root.innerHTML='<div class="wizard">'+stages(2)+'<section class="panel"><p class="eyebrow">Step 2 of 3</p><h2>Game settings</h2><p class="subtle">'+safe(types.find(x=>x[0]===t)[1])+' · Only relevant settings are shown.</p><div class="helpRow"><button data-act="rules">Game description &amp; rules ⓘ</button></div><form id="settingsForm"><div class="fields">'+input('gameName','Game name',o.gameName,'text','maxlength="70"')+'</div>'+bits+'</form></section><div class="navbuttons"><button data-act="choose">Back</button><button class="primary" data-act="nextPeople">Next: Players &amp; Teams</button></div></div>';
@@ -154,7 +161,7 @@ for(const k of ['special','slam','trackTrump','match'])if(form.querySelector('[n
 if(t==='custom'){o.features=['quick'];if(o.scoreMode!=='quick')o.features.push('rounds');if(o.scoreMode==='rounds')o.features=o.features.filter(x=>x!=='quick');for(const k of ['history','edit','bids','dealer','schedule','standings','export'])if(d.has('f_'+k))o.features.push(k)}
 if(['river','phooey'].includes(t)||(t==='custom'&&o.features.includes('schedule'))){const arr=String(o.schedule).split(/[,;\s]+/).filter(Boolean).map(N);if(!arr.length||arr.some(v=>v===null||v<1||v>52)){alert('Enter a valid card schedule: numbers between 1 and 52, separated by commas.');return null}if(arr.length>300){alert('Use 300 rounds or fewer.');return null}o.schedule=arr.join(',')}
 if(o.target===null||o.target<0||o.target>1000000){alert('Enter a valid nonnegative score target.');return null}
-if(o.playerCount!==null&&(o.playerCount<2||o.playerCount>20)){alert('Use between 2 and 20 players.');return null}
+if(o.playerCount!==null&&(o.playerCount<2||o.playerCount>20||(t==='skyjo'&&o.playerCount>8))){alert(t==='skyjo'?'Skyjo requires 2 to 8 players.':'Use between 2 and 20 players.');return null}
 if(o.bagLimit===null||o.bagLimit<1||o.bagPenalty===null||o.bagPenalty<0||o.alone===null||o.alone<0){alert('Check the scoring values.');return null}
 if(['river','phooey'].includes(t)){const arr=o.schedule.split(',').map(Number);if(arr.some(n=>n*o.playerCount>52*o.decks)){alert('The selected schedule needs more cards than the chosen number of decks provides.');return null}}
 return o;
@@ -198,7 +205,9 @@ if(['rook4','rook5','rook6'].includes(t)){
 const sides=t==='rook5'?[['bid','Bidding side'],['def','Defending side']]:g.players.map(p=>[p.id,p.name]);
 if(bidStep){ui='<div class="fields">'+select('bidder',t==='rook5'?'Bidding player':'Bidding team',optionsForPlayers(g),r.bidder)+input('bid','Winning bid',r.bid)+select('trump','Trump',suits,r.trump||'red')+input('kitty','Kitty points',r.kitty||0)+(t==='rook5'?input('called','Called card',r.called||'','text'):'')+'</div><p class="subtle">Kitty points increase the final contract bid and go to the side that took the final trick. Rook is always low trump.</p><div class="entryrow" aria-live="polite"><strong>Final bid: <output id="rookFinalBid">'+(N(r.bid)!==null&&N(r.kitty)!==null?N(r.bid)+N(r.kitty):'—')+'</output> points</strong><p class="subtle">Original bid + kitty points</p></div>';}
 else{ui=(t==='rook5'?'<div class="fields">'+select('partner','Partner revealed',optionsForPlayers(g,r.bidder),r.partner)+'</div>':'')+'<div class="fields">'+sides.map(([id,n])=>input('card_'+id,n+' · card points',r['card_'+id]||0)+input('tricks_'+id,n+' · tricks taken',r['tricks_'+id]||0)).join('')+'</div><div class="fields">'+select('last','Side that took final trick',sides,r.last)+select('tie','Most recent trick among tied sides (if needed)',[['','Choose when tied'],...sides],r.tie)+'</div><p class="subtle">The app automatically awards the 20-point bonus for most tricks. A tie goes to the tied side that took a trick most recently.</p>';}
-}else if(t==='hearts'){ui='<p class="subtle">Enter captured penalty cards; total hearts and queens must match the selected deck count.</p><div class="fields">'+g.players.map(p=>input('hearts_'+p.id,p.name+' · hearts',r['hearts_'+p.id]??0)+input('queen_'+p.id,p.name+' · queens of spades',r['queen_'+p.id]??0)).join('')+'</div>';}
+}else if(t==='flip7'){ui='<p class="subtle">Enter the sum of number cards, then any ×2 and + modifiers, and the Flip 7 bonus. A bust scores zero. Direct points entry is also available.</p>'+g.players.map(p=>{const id=p.id,mode=r['mode_'+id]||'calculated';return '<div class="entryrow"><strong>'+safe(p.name)+'</strong><div class="fields">'+select('mode_'+id,'Scoring method',[['calculated','Calculate from cards'],['direct','Enter final points'],['bust','Busted (0)']],mode)+input('number_'+id,'Sum of number cards',r['number_'+id]??0)+input('plus_'+id,'Total + modifier points',r['plus_'+id]??0)+check('double_'+id,'×2 modifier',r['double_'+id]==='on')+check('seven_'+id,'Flip 7 bonus (+15)',r['seven_'+id]==='on')+input('direct_'+id,'Direct round points (if selected)',r['direct_'+id]??0)+'</div></div>'}).join('');}
+else if(t==='skyjo'){ui='<p class="subtle">Enter each player’s card total, including negative cards. Removed three-of-a-kind columns are worth zero. Choose the player who ended the round to apply the official doubling rule automatically.</p><div class="fields">'+select('finisher','Player who ended the round',g.players.map(p=>[p.id,p.name]),r.finisher)+g.players.map(p=>input('points_'+p.id,p.name+' · remaining card points',r['points_'+p.id]??0)).join('')+'</div>';}
+else if(t==='hearts'){ui='<p class="subtle">Enter captured penalty cards; total hearts and queens must match the selected deck count.</p><div class="fields">'+g.players.map(p=>input('hearts_'+p.id,p.name+' · hearts',r['hearts_'+p.id]??0)+input('queen_'+p.id,p.name+' · queens of spades',r['queen_'+p.id]??0)).join('')+'</div>';}
 else if(t==='river'||t==='phooey'){
 title+=' · '+(roundCards||'?')+' cards';
 if(bidStep)ui='<p class="subtle">Dealer: '+safe(name(g,dealerId))+' · Enter each prediction before playing.</p><div class="fields">'+g.players.map(p=>input('bid_'+p.id,p.name+' · bid',r['bid_'+p.id]??0)).join('')+'</div>'+(t==='phooey'&&g.opts.trackTrump?select('trump','Optional trump',[['','Not recorded'],...pokerSuits],r.trump):'');
@@ -241,6 +250,12 @@ if(!tied.includes(bonus))throw Error('Choose which tied side took the most recen
 const finalBid=bid+kitty;const earned={};ids.forEach(id=>earned[id]=card[id]+(id===last?kitty:0)+(id===bonus?20:0));
 if(t==='rook5'){const bidSide=earned.bid>=finalBid?earned.bid:-finalBid;for(const person of p)scores[person.id]=person.id===bidder||person.id===partner?bidSide:earned.def;meta='Bidder '+name(g,bidder)+' · Partner '+name(g,partner)+' · Bid '+bid+' + kitty '+kitty+' = '+finalBid+' · '+raw.trump+' · '+(earned.bid>=finalBid?'made':'set')+' · Bonus: '+bonus+' · Kitty to '+last;}
 else{for(const person of p)scores[person.id]=person.id===bidder?(earned[person.id]>=finalBid?earned[person.id]:-finalBid):earned[person.id];meta='Bid '+bid+' by '+name(g,bidder)+' + kitty '+kitty+' = '+finalBid+' · '+raw.trump+' · '+(earned[bidder]>=finalBid?'made':'set')+' · Bonus: '+name(g,bonus)+' · Kitty: '+name(g,last)}
+}
+else if(t==='flip7'){
+for(const person of p){const id=person.id,mode=raw['mode_'+id]||'calculated';if(mode==='bust'){scores[id]=0;continue}if(mode==='direct'){scores[id]=requiredInt(raw,'direct_'+id,0,1000000);continue}if(mode!=='calculated')throw Error('Select a scoring mode for '+person.name+'.');const numbers=requiredInt(raw,'number_'+id,0,78),plus=requiredInt(raw,'plus_'+id,0,100);scores[id]=numbers*(raw['double_'+id]==='on'?2:1)+plus+(raw['seven_'+id]==='on'?15:0)}meta='Flip 7 · Card totals, modifiers and busts';
+}
+else if(t==='skyjo'){
+const finisher=raw.finisher;if(!p.some(person=>person.id===finisher))throw Error('Select the player who ended the round.');for(const person of p)scores[person.id]=requiredInt(raw,'points_'+person.id,-200,200);const lowest=Math.min(...Object.values(scores)),uniqueLowest=p.filter(person=>scores[person.id]===lowest).length===1;const doubled=scores[finisher]>0&&(!uniqueLowest||scores[finisher]!==lowest);if(doubled)scores[finisher]*=2;meta='Skyjo · Round ended by '+name(g,finisher)+(doubled?' · Finisher points doubled':' · No doubling');
 }
 else if(t==='hearts'){
 const d=Number(o.decks)||1;let hearts=0,queens=0;for(const person of p){const h=requiredInt(raw,'hearts_'+person.id,0,13*d),q=requiredInt(raw,'queen_'+person.id,0,d);hearts+=h;queens+=q;scores[person.id]=h+13*q}
