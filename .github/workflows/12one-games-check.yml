@@ -7,6 +7,10 @@ on:
       - 'assassins2.html'
       - 'mafia2.html'
       - 'host.html'
+      - 'assassins3.html'
+      - 'mafia3.html'
+      - 'host3.html'
+      - 'admin3.html'
       - '12one-games/**'
       - '.github/workflows/12one-games-check.yml'
 jobs:
@@ -57,3 +61,23 @@ jobs:
           psql -h localhost -U postgres -d games_test -v ON_ERROR_STOP=1 -f 12one-games/tests/host_fixture.sql
           psql -h localhost -U postgres -d games_test -v ON_ERROR_STOP=1 -f 12one-games/sql/015_host_management.sql
           psql -h localhost -U postgres -d games_test -v ON_ERROR_STOP=1 -f 12one-games/tests/host_management_smoke.sql
+
+  sheets-v3-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate Sheets frontend and backend syntax
+        run: |
+          if [ ! -d 12one-games/sheets-v3 ]; then exit 0; fi
+          node --check 12one-games/sheets-v3/app.js
+          node --check 12one-games/sheets-v3/api.js
+          node --check 12one-games/sheets-v3/config.js
+          node --check < 12one-games/sheets-v3/Code.gs
+      - name: Run Sheets game and workbook regression tests
+        run: |
+          if [ ! -d 12one-games/sheets-v3 ]; then exit 0; fi
+          node 12one-games/sheets-v3/tests.cjs
+          node 12one-games/sheets-v3/transport.test.cjs
