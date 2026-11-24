@@ -1,0 +1,24 @@
+body[data-page=player][data-type=assassins]{background:#000;color:#fff;font:16px/1.5 "Courier New",monospace;color-scheme:dark;min-height:100vh}
+body[data-page=player][data-type=assassins] header{background:#111;border-bottom:2px solid white;justify-content:center;flex-wrap:wrap;padding:10px}
+body[data-page=player][data-type=assassins] main{max-width:500px;padding:16px 20px 48px}
+body[data-page=player][data-type=assassins] .card{background:#222;border:2px solid white;border-radius:8px;padding:20px;margin:0 0 20px;box-shadow:0 4px 10px #0008}
+body[data-page=player][data-type=assassins] h1,body[data-page=player][data-type=assassins] h2{text-align:center;letter-spacing:normal}
+body[data-page=player][data-type=assassins] h1{font-size:26px}
+body[data-page=player][data-type=assassins] button{background:#555;color:#fff;border:1px solid transparent;border-radius:4px;width:100%;margin:6px 0 0;font-weight:normal}
+body[data-page=player][data-type=assassins] button:hover{background:#444}
+body[data-page=player][data-type=assassins] input,body[data-page=player][data-type=assassins] select{background:#444;color:#fff;border:2px solid white;border-radius:4px}
+body[data-page=player][data-type=assassins] .field{font-weight:normal;font-size:16px}
+body[data-page=player][data-type=assassins] .status{color:#88ff88;text-align:center}
+body[data-page=player][data-type=assassins] .status.error{color:#ff8888}
+body[data-page=player][data-type=assassins] .toolbar{justify-content:center}
+body[data-page=player][data-type=assassins] .toolbar h1{width:100%;margin:0}
+body[data-page=player][data-type=assassins] .toolbar button{width:auto;border-color:#777}
+
+body[data-page=player][data-type=assassins] .player-nav{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:12px 0 20px}
+body[data-page=player][data-type=assassins] .player-nav button{width:auto;flex:1 1 auto;margin:0}
+body[data-page=player][data-type=assassins] .player-nav button[aria-pressed=true]{background:#fff;color:#000}
+body[data-page=player][data-type=assassins] .status:empty{display:none}
+body[data-page=player][data-type=assassins] .status.is-busy::before{content:"";display:inline-block;width:16px;height:16px;border:3px solid #888;border-top-color:currentColor;border-radius:50%;vertical-align:middle;margin-right:8px;animation:player-spin .8s linear infinite}
+@keyframes player-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){body[data-page=player] .status.is-busy::before{animation:none}}
+@media(max-width:480px){body[data-page=player][data-type=assassins] main{padding:16px 12px 40px}body[data-page=player][data-type=assassins] .card{padding:16px}}

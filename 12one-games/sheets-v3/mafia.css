@@ -1,0 +1,29 @@
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+body[data-page=player][data-type=mafia]{--accent:#5fb3d9;--danger:#c23b3b;background:#0a0a0a;color:#e8e8e8;font:15px/1.55 Inter,sans-serif;color-scheme:dark;min-height:100vh}
+body[data-page=player][data-type=mafia] header{background:#0f0f0f;border-bottom:2px solid #5fb3d938;padding:16px 20px;flex-wrap:wrap}
+body[data-page=player][data-type=mafia] header a,body[data-page=player][data-type=mafia] h1,body[data-page=player][data-type=mafia] h2,body[data-page=player][data-type=mafia] button{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.06em}
+body[data-page=player][data-type=mafia] header a{font-size:17px;color:var(--accent)}
+body[data-page=player][data-type=mafia] main{max-width:412px;padding:30px 16px 60px}
+body[data-page=player][data-type=mafia] .card{background:#161616;border:1px solid #5fb3d938;border-radius:6px;padding:24px;margin:0 0 20px;box-shadow:0 4px 16px #0008;position:relative}
+body[data-page=player][data-type=mafia] h1{font-size:24px;text-align:center}
+body[data-page=player][data-type=mafia] h2{font-size:17px;font-weight:500;text-align:center;border-bottom:1px solid #262626;padding-bottom:10px;margin-bottom:16px}
+body[data-page=player][data-type=mafia] button{background:var(--accent);color:#08181e;border-radius:3px;font-size:14px;width:100%;margin:8px 0 0}
+body[data-page=player][data-type=mafia] button.secondary{background:transparent;color:#bbb;border:1px solid #444}
+body[data-page=player][data-type=mafia] input,body[data-page=player][data-type=mafia] select{background:#0d0d0d;color:#e8e8e8;border:1px solid #444;border-radius:3px;font-family:"IBM Plex Mono",monospace}
+body[data-page=player][data-type=mafia] .field{color:#aaa;font-weight:400}
+body[data-page=player][data-type=mafia] .toolbar h1{width:100%;margin:0}
+body[data-page=player][data-type=mafia] .toolbar button{width:auto}
+body[data-page=player][data-type=mafia] .status{color:var(--accent);text-align:center}
+body[data-page=player][data-type=mafia] .status.error{color:#ff9999}
+body[data-page=player][data-type=mafia] .card[data-role=mafia]{border-color:#c23b3b}
+body[data-page=player][data-type=mafia] .card[data-role=mafia] h2{color:#ff9999}
+body[data-page=player][data-type=mafia] .card[data-role=detective] h2,body[data-page=player][data-type=mafia] .card[data-role=citizen] h2{color:var(--accent)}
+
+body[data-page=player][data-type=mafia] .player-nav{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:12px 0 20px}
+body[data-page=player][data-type=mafia] .player-nav button{width:auto;flex:1 1 auto;margin:0}
+body[data-page=player][data-type=mafia] .player-nav button[aria-pressed=true]{background:#5fb3d9;color:#000}
+body[data-page=player][data-type=mafia] .status:empty{display:none}
+body[data-page=player][data-type=mafia] .status.is-busy::before{content:"";display:inline-block;width:16px;height:16px;border:3px solid #888;border-top-color:currentColor;border-radius:50%;vertical-align:middle;margin-right:8px;animation:player-spin .8s linear infinite}
+@keyframes player-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){body[data-page=player] .status.is-busy::before{animation:none}}
+@media(max-width:480px){body[data-page=player][data-type=mafia] main{padding:16px 12px 40px}body[data-page=player][data-type=mafia] .card{padding:16px}}
