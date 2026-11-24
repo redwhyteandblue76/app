@@ -1,44 +1,4 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="icon" type="image/svg+xml" href="https://12one.page/favicon.svg">
-<title>12one Games · Mafia (Sheets edition)</title>
-<link rel="stylesheet" href="site-footer.css">
-<style>
-:root{color-scheme:dark;--bg:#0a1220;--panel:#14263c;--line:#3b536b;--txt:#eff5fb;--muted:#b6c5d4;--accent:#8fd0f4}
-*{box-sizing:border-box}
-body{margin:0;background:radial-gradient(circle at 95% 0,#1f3d60,var(--bg) 60%);color:var(--txt);font:16px/1.6 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
-main{max-width:780px;margin:0 auto;padding:36px 18px 50px}
-header{display:flex;gap:20px;align-items:center;justify-content:space-between;padding-bottom:18px;border-bottom:1px solid var(--line)}
-header a{color:var(--muted);text-decoration:none}header a:hover{color:white}
-.logo{font-weight:800;letter-spacing:-.04em;font-size:23px}
-.pill{border:1px solid #567790;color:#b3dcf5;border-radius:100px;padding:5px 12px;font-size:12px}
-h1{font-size:clamp(27px,6vw,42px);line-height:1.16;letter-spacing:-.04em;margin:12px 0 14px}
-p{color:var(--muted)}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:19px;padding:27px;margin:26px 0}
-.eyebrow{color:var(--accent);text-transform:uppercase;font-weight:700;font-size:12px;letter-spacing:.1em}
-label{display:block;margin:20px 0 7px;font-weight:650}
-input{font:inherit;width:100%;border-radius:10px;padding:13px 14px;border:1px solid #60778b;background:#0d1b2e;color:white}
-button{font:inherit;cursor:pointer;border:none;border-radius:11px;padding:13px 18px;margin-top:18px;font-weight:700;background:#b8e2f8;color:#102139}
-button:disabled{cursor:not-allowed;opacity:.48}
-.details{border-top:1px solid var(--line);padding-top:15px;margin-top:24px}
-details summary{cursor:pointer;color:#a5d2ec}
-.status{min-height:26px;color:#d5e5ef;margin:12px 0}
-small{color:var(--muted)}
-@media(max-width:520px){header{flex-wrap:wrap}.panel{padding:18px}}
-</style>
-<script src="site-footer.js" defer></script>
-</head><body data-page="player" data-type="mafia">
-<main>
-<header><a href="index.html" class="logo">12one <span style="font-weight:400">Games</span></a><span class="pill">Google Sheets edition</span></header>
-<section class="panel"><div class="eyebrow">Player portal</div><h1>Mafia</h1><p>Join a Mafia game using its unique game code.</p>
-<label for="gameCode">Game code</label><input id="gameCode" maxlength="16" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="MAFIA123456"><p class="status" role="status" id="connectionStatus">Checking configuration…</p>
-<button id="openApp" type="button">Open Mafia</button>
-<div class="details"><details><summary>Backend setup</summary><p>This edition runs its game interface in Google Apps Script, securely connected to your private Google Sheets workbook. Your Supabase games continue unchanged.</p>
-<label for="scriptUrl">Deployed Apps Script web app URL</label>
-<input id="scriptUrl" type="url" placeholder="https://script.google.com/macros/s/…/exec">
-<button type="button" id="saveUrl">Save URL on this browser</button>
-<p><small>For public player links to work automatically, the repository owner must also configure the deployment URL in <code>12one-games/sheets-launcher.js</code>. Never enter your host key or admin key here.</small></p></details></div>
-</section>
-</main>
-<script src="12one-games/sheets-launcher.js?v=1"></script>
-</body></html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="no-referrer"><meta name="robots" content="noindex"><title>12one Games · Mafia</title>
+<link rel="icon" href="https://12one.page/favicon.svg"><link rel="stylesheet" href="site-footer.css"><link rel="stylesheet" href="12one-games/sheets-v3/styles.css"><script defer src="site-footer.js"></script><script defer src="12one-games/sheets-v3/config.js"></script><script defer src="12one-games/sheets-v3/api.js"></script><script defer src="12one-games/sheets-v3/app.js"></script></head>
+<body data-page="player" data-type="mafia"><header><a href="games.html">12one Games</a><span>Google Sheets edition · development</span></header><main><div id="status" class="status" role="status" aria-live="polite" tabindex="-1"></div><div id="app"><p>Loading…</p></div><noscript>JavaScript is required to play.</noscript></main></body></html>
