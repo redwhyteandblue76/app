@@ -10,3 +10,58 @@ body[data-page=player] .card p{overflow-wrap:anywhere}
 body[data-page=player] .toolbar+p{text-align:center;font-size:13px;opacity:.85;margin-bottom:12px}
 body[data-page=player] .action{margin-top:12px;border-color:#555}
 body[data-page=player] .confirm-action{border:2px solid currentColor}
+
+body[data-page=player] .game-rules{white-space:pre-wrap;line-height:1.65;overflow-wrap:anywhere}
+body[data-page=player] .game-log-entry{padding:12px;border:1px solid #666;border-radius:4px;margin:8px 0;background:#111}
+body[data-page=player] .game-log-entry strong{display:block;font-weight:600}
+body[data-page=player] .game-log-entry small{display:block;margin-top:5px;color:#bbb;font-size:12px}
+
+/* Shared audit restoration, scoped to player pages. */
+body[data-page=player] header{gap:10px;align-items:center}
+body[data-page=player] header .player-nav{margin:0;gap:6px}
+body[data-page=player] .game-code{font-size:11px;text-align:center;opacity:.65;margin:0 0 12px}
+body[data-page=player] .custom-game-name{text-align:center;font-size:16px;margin:0 0 6px}
+body[data-page=player] .announcement-banner{padding:9px;text-align:center;font-size:13.5px;background:#12181a;border:1px solid #555;margin-bottom:16px}
+body[data-page=player] .game-output{padding:10px;border:1px solid #777;border-radius:4px;text-align:center;margin:10px 0;white-space:pre-wrap;overflow-wrap:anywhere;background:#111}
+body[data-page=player] .game-output.success{border-color:#55aa77;color:#9fdfad}
+body[data-page=player] .game-output.error{border-color:#c23b3b;color:#ffaaaa}
+body[data-page=player] .game-output.loading::before{content:"";display:block;margin:0 auto 8px;width:28px;height:28px;border:4px solid #ffffff40;border-top-color:currentColor;border-radius:50%;animation:player-spin 1s linear infinite}
+body[data-page=player] .rule-block{padding:12px 0;border-bottom:1px solid #444}
+body[data-page=player] .rule-block:last-child{border-bottom:0}
+body[data-page=player] .game-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(66px,1fr));gap:6px;margin:10px 0}
+body[data-page=player] .game-stats>div{border:1px solid #555;text-align:center;padding:8px 4px}
+body[data-page=player] .game-stats strong,body[data-page=player] .game-stats small{display:block}
+body[data-page=player] .game-stats strong{font-size:20px}
+body[data-page=player] .game-stats small{font-size:11px}
+body[data-page=player] .game-log-entry{text-align:center;background:#333;border-color:#aaa}
+body[data-page=player] .log-date{font-size:13px;margin:16px 0 8px}
+body[data-page=player] details{margin-top:12px}
+body[data-page=player] summary{cursor:pointer;padding:10px 0}
+body[data-page=player] .player-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #333;overflow-wrap:anywhere}
+body[data-page=player] .stamp{font-size:12px;font-weight:bold}
+body[data-page=player] .stamp.active{color:#88ff88}
+body[data-page=player] .stamp.eliminated{color:#ff8888}
+body[data-page=player][data-type=assassins] .field{margin:6px 0 12px}
+body[data-page=player][data-type=assassins] button.secondary{background:#333;color:#fff;border:1px solid #777}
+body[data-page=player][data-type=mafia] header .player-nav button{background:transparent;color:#8a8a8a;border:1px solid #333;padding:8px 16px;font-size:12px;letter-spacing:.08em}
+body[data-page=player][data-type=mafia] header .player-nav button[aria-pressed=true]{background:#5fb3d9;color:#08181e;border-color:#5fb3d9}
+body[data-page=player][data-type=mafia] .role-tab{position:absolute;top:-11px;left:20px;background:#0a0a0a;padding:2px 10px;font:10.5px Oswald,sans-serif;text-transform:uppercase;letter-spacing:.12em;color:#5fb3d9;border:1px solid}
+body[data-page=player][data-type=mafia] [data-role=mafia] .role-tab{color:#e66}
+body[data-page=player][data-type=mafia] .instructions{background:#0f1416;border-left:3px solid #5fb3d9;padding:10px 12px;font-size:12.5px;line-height:1.55;white-space:pre-wrap;color:#c8d8de}
+body[data-page=player][data-type=mafia] .stamp{font:700 10.5px Oswald,sans-serif;text-transform:uppercase;letter-spacing:.14em;padding:3px 9px;border:2px solid;border-radius:2px;transform:rotate(-6deg);flex-shrink:0}
+body[data-page=player][data-type=mafia] .stamp.active{color:#5fb3d9}
+body[data-page=player][data-type=mafia] .stamp.eliminated{color:#e66;transform:rotate(-8deg)}
+body[data-page=player][data-type=mafia] button.danger{background:#c23b3b;color:#fff;border:1px solid #c23b3b}
+body[data-page=player][data-type=mafia] .field{font-size:12.5px;gap:4px;margin:12px 0 4px;color:#aaa}
+body[data-page=player][data-type=mafia] .announcement-banner{color:#5fb3d9;border-color:#5fb3d938}
+body[data-page=player][data-type=mafia] .cooldown{text-align:center;font-size:13px;color:#aaa}
+body:not([data-page=player]) .host-settings{display:grid;gap:12px}
+body:not([data-page=player]) .host-settings form{border-bottom:1px solid var(--line);padding-bottom:10px}
+body:not([data-page=player]) .host-table-wrap{overflow-x:auto}
+body:not([data-page=player]) .host-table{width:100%;border-collapse:collapse}
+body:not([data-page=player]) .host-table th,body:not([data-page=player]) .host-table td{text-align:left;border-bottom:1px solid var(--line);padding:8px;vertical-align:top}
+body:not([data-page=player]) .game-stats{display:flex;gap:12px;flex-wrap:wrap}
+body:not([data-page=player]) .game-stats>div{flex:1;border:1px solid var(--line);padding:12px;text-align:center}
+body:not([data-page=player]) .game-stats strong,body:not([data-page=player]) .game-stats small{display:block}
+@media(max-width:640px){body[data-page=player] header{padding:12px}body[data-page=player] header .player-nav button{padding:7px 10px}body[data-page=player] .card{padding:16px}}
+@media(prefers-reduced-motion:reduce){body[data-page=player] .game-output.loading::before{animation:none}}
