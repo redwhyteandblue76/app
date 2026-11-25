@@ -52,7 +52,15 @@ const rpc=(action,args={})=>window.GamesV3API.request(endpoint,action,{...args,.
 const rid=()=>crypto.randomUUID?crypto.randomUUID():Array.from(crypto.getRandomValues(new Uint8Array(16))).map(n=>n.toString(16).padStart(2,"0")).join("");
 const title=t=>node("h1",t),sub=t=>node("h3",t),time=t=>t&&Number.isFinite(new Date(t).getTime())?new Date(t).toLocaleString():"—";
 function joinLink(g){return new URL(g.type+"3.html?game="+encodeURIComponent(g.code),location.href).href;}
-async function copy(t){if(navigator.clipboard){await navigator.clipboard.writeText(t);note("Copied.");}else{prompt("Copy this link or code:",t);}}
+async function copy(t){
+ const value=String(t);
+ function legacyCopy(){let field=document.createElement("textarea"),previous=document.activeElement;field.value=value;field.readOnly=true;field.style.cssText="position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;font-size:16px;";document.body.append(field);try{field.focus();field.select();field.setSelectionRange(0,value.length);return typeof document.execCommand==="function"&&document.execCommand("copy")===true;}catch{return false;}finally{field.remove();try{previous?.focus({preventScroll:true});}catch{}}}
+ try{if(navigator.clipboard&&typeof navigator.clipboard.writeText==="function"){await navigator.clipboard.writeText(value);note("Copied to clipboard.");return;}}catch{}
+ if(legacyCopy()){note("Copied to clipboard.");return;}
+ let existing=document.getElementById("manual-copy-panel");if(existing)existing.remove();
+ let panel=card("Copy manually",p("Clipboard access is unavailable. Select and copy the value below."));
+ panel.id="manual-copy-panel";let field=node("input");field.type="text";field.value=value;field.readOnly=true;field.setAttribute("aria-label","Value to copy");let close=localButton("Close",()=>panel.remove());panel.append(field,localButton("Select text",()=>{field.focus();field.select();field.setSelectionRange(0,value.length);}),close);root.prepend(panel);field.focus();field.select();field.setSelectionRange(0,value.length);panel.scrollIntoView({block:"nearest"});note("Select and copy the displayed value.");
+}
 function download(obj,name){let a=node("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(obj,null,2)],{type:"application/json"}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
 async function logout(){try{await rpc("logout");}finally{putSession("");workspace="";if(page==="player"){playerTab="signin";drafts.clear();await player();}else login();}}
 function validCode(c){return new RegExp("^"+type.toUpperCase()+"[0-9]{6}$").test(c);}
