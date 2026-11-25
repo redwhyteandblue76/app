@@ -10,3 +10,8 @@ body[data-page=player] .card p{overflow-wrap:anywhere}
 body[data-page=player] .toolbar+p{text-align:center;font-size:13px;opacity:.85;margin-bottom:12px}
 body[data-page=player] .action{margin-top:12px;border-color:#555}
 body[data-page=player] .confirm-action{border:2px solid currentColor}
+
+body[data-page=player] .game-rules{white-space:pre-wrap;line-height:1.65;overflow-wrap:anywhere}
+body[data-page=player] .game-log-entry{padding:12px;border:1px solid #666;border-radius:4px;margin:8px 0;background:#111}
+body[data-page=player] .game-log-entry strong{display:block;font-weight:600}
+body[data-page=player] .game-log-entry small{display:block;margin-top:5px;color:#bbb;font-size:12px}
